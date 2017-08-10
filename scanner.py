@@ -1,9 +1,9 @@
 ################################################################################
 # During Lexical Analysis the Lexer/Scanner recognizes regular expressions as
-# corresponding token types. These tokens are what is sent to the parser.
+# corresponding token types. These tokens are then sent to the parser.
 # Tokens have a type and value, but can also have character and line number
-# information in them as well. White sapce tokens and comments can be discarded
-# in this phase as well.
+# information as well. White sapce tokens and comments can be discarded
+# in this phase.
 # 
 # Lexical Analysis is usually called by the parser as a subroutine, each time a
 # new token is needed, but it may also read the entire stream and hand it over as
@@ -17,57 +17,91 @@
 # Context free grammars can be converted into PDA's, which require a stack, but
 # they are also more powerful than regular grammars since they can properly deal
 # with recursion.
+# 
+# NOTE: with little changes this class could easily become a regular expression 
+# class. This is due to thomspons algorithm and NFA's equivalence to DFA's which
+# is already being taken advantage of here. The resulting regular expression
+# recognizer will run pretty performantly for ANY regular expression!
 ################################################################################
 
 class Scanner(object):
 
-  name = None
-  regexps = []
+  name = None   # name of scanner for function name upon calling output()
+  regexps = {}  # dictionary of token -> (regular expression, minimized DFA)
+  scanner = None
 
 
   def __init__(name):
     self.name = name
 
 
+  # TODO
   def __valid__(regexp):
     pass
 
 
-  def addToken(name, regexp):
+  # converts regexps to NFA with epsilon productions using thompsons algorithm
+  # TODO
+  def __NFA__(self, regexp):
+    if len(regexp) == 0:
+      return None
+
+
+  # converts the NFA to DFA using subset construction
+  # TODO
+  def __DFA__(self, NFA):
+    return None
+
+
+  # minimizes the DFA
+  # TODO
+  def __minimize__(self, DFA):
+    return None
+
+
+  def token(name, regexp):
     if name is None or regexp is None:
       return False
 
     if not __valid__(regexp):
       return False
     
-    regeps.append((name, regexp))
+    regexps[name] = (regexp, __minimize__(__DFA__(__NFA__(regexp))))
     return True
 
+  # we need to merge all rules/machines together to form a regexp like -> (...)|(...)|...
+  # however, that is not valid since | (union) can only take 2 things!
+  # TODO
+  def make(self, language):
+    if not language.equal("c"):
+      return False
 
-  # converts regexps to NFA with epsilon productions using thompsons algorithm
-  def NFA(self):
-    if len(regexp) == 0:
-      return None
+    scanner = None # make the scanner 
 
+    self.Scanner = scanner
 
-  # converts the NFA to DFA using subset construction and then minimizes the DFA
-  def DFA(self):
-    if len(regexp) == 0:
-      return None
+    return True
+
+  # TODO
+  def output(self, language):
+    print "NOT YET IMPLEMENTED"
+
 
 if __name__ == '__main__':
   scanner = Scanner("Test Scanner")
 
-  if not scanner.addToken("integer",    "[regexp]"): print "invalid integer rule"
-  if not scanner.addToken("float",      "[regexp]"): print "invalid float rule"
-  if not scanner.addToken("boolean",    "[regexp]"): print "invalid boolean rule"
-  if not scanner.addToken("character",  "[regexp]"): print "invalid character rule"
-  if not scanner.addToken("string",     "[regexp]"): print "invalid string rule"
-  if not scanner.addToken("identifier", "[regexp]"): print "invalid identifier rule"
-  if not scanner.addToken("dividor",    "[regexp]"): print "invalid dividor rule"
-  if not scanner.addToken("space",      "[regexp]"): print "invalid space rule"
-  if not scanner.addToken("comment",    "[regexp]"): print "invalid comment rule"
+  if not scanner.token("integer",    "[regexp]"): print "invalid integer rule"
+  if not scanner.token("float",      "[regexp]"): print "invalid float rule"
+  if not scanner.token("boolean",    "[regexp]"): print "invalid boolean rule"
+  if not scanner.token("character",  "[regexp]"): print "invalid character rule"
+  if not scanner.token("string",     "[regexp]"): print "invalid string rule"
+  if not scanner.token("identifier", "[regexp]"): print "invalid identifier rule"
+  if not scanner.token("dividor",    "[regexp]"): print "invalid dividor rule"
+  if not scanner.token("space",      "[regexp]"): print "invalid space rule"
+  if not scanner.token("comment",    "[regexp]"): print "invalid comment rule"
 
-  NFA = scanner.NFA()
+  scanner.make()
 
-  DFA = scanner.DFA()
+  # TODO: write some tests here...  ??
+
+  scanner.output("c")
