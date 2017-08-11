@@ -5,7 +5,7 @@
 # parser for you (if the grammar is LL(1)) in c
 #
 ################################################################################
-import cfg
+import grammar
 import scanner
 
 class Parser(object):
@@ -56,22 +56,41 @@ class Parser(object):
   
   # TODO
   def make(self):
-    pass
+    self.scanner = scanner.Scanner()
+
+    for (token, regexp) in self.tokens:
+      if not self.scanner.token(token, regexp):
+        return False # failure
+
+    self.dfa_graph = scanner.make()
+
+    self.grammar = grammar.ContextFreeGrammar()
+
+    for (rule, productions) in self.productions:
+      self.grammer.ProductionRule(rule, productions)
+
+    self.StartSymbol(self.start)
+
+    self.grammar_dict = self.grammar.make()
+
+    return True
 
 
 if __name__ == '__main__':
   parser = Parser("INI")
 
-  parser.token("integer",    "[regexp]")
-  parser.token("float",      "[regexp]")
-  parser.token("boolean",    "[regexp]")
-  parser.token("character",  "[regexp]")
-  parser.token("string",     "[regexp]")
-  parser.token("identifier", "[regexp]")
-  parser.token("dividor",    "[regexp]")
-  parser.token("space",      "[regexp]")
-  parser.token("comment",    "[regexp]")
+  # common language tokens
 
+  # FIXME: pay attention to the return values and act appropriately
+  parser.token("integer",    "[1-9][0-9]*")
+  parser.token("float",      "[-+]?[0-9]*\.[0-9]+")
+  parser.token("boolean",    "true|false")
+  parser.token("character",  "'[a-zA-Z0-9]'")
+  parser.token("string",     "\".*\"")
+  parser.token("space",      "\s")
+  parser.token("comment",    "(#|;).*\n")
+
+  # FIXME: different productions here for testing
   parser.production('<Ini>',        '<Section> <Ini\'>')
   parser.production('<Ini\'>',      '<Section> <Ini\'> |')
   parser.production('<Section>',    '<Header> <Settings>')
@@ -94,4 +113,9 @@ if __name__ == '__main__':
 
   parser.startProduction('<Ini>')
 
-  parser = parser.make()
+  parser = parser.make() # return combined dictionary from scanner/cfg??
+  # FIXME: whats the point of this class then? abstrating over two other classes and
+  # error handling! also this means the generator just creates a parser and if
+  # successful can just output code in a given language
+
+  # TODO: tests here

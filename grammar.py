@@ -302,15 +302,19 @@ class ContextFreeGrammar(object):
 if __name__ == "__main__":
 # test grammar @http://www.jambe.co.nz/UNI/FirstAndFollowSets.html
   test = ContextFreeGrammar()
+
   test.ProductionRule('<E>',   '<T> <E\'>')
   test.ProductionRule('<E\'>', '+ <T> <E\'> |')
   test.ProductionRule('<T>',   '<F> <T\'>')
   test.ProductionRule('<T\'>', '* <F> <T\'> |')
   test.ProductionRule('<F>',   '( <E> )')
   test.ProductionRule('<F>',   'id')
+
   test.StartSymbol('<E>')
+
   test.PrintBNF()
-  test.Analyze(True)
+
+  test.Analyze(True) # FIXME: change to make, erase printing and return a dictionary with the sets and parse tbl??
 
   print "\t\t**EXPECTED RESULTS**\n"
   print "FIRST(E)   = {(, id}"
