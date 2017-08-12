@@ -24,20 +24,15 @@
 # recognizer will run pretty performantly for ANY regular expression!
 ################################################################################
 
-class Scanner(object):
+class RegularGrammar(object):
 
-  name = None   # name of scanner for function name upon calling output()
-  regexps = {}  # dictionary of token -> (regular expression, minimized DFA)
-  scanner = None
+
+  name = None      # name of scanner
+  regexps = {}     # token dictionary -> (regexp, minimized DFA)
 
 
   def __init__(self, name):
     self.name = name
-
-
-  # TODO
-  def __valid__(self, regexp):
-    pass
 
 
   # converts regexps to NFA with epsilon productions using thompsons algorithm
@@ -60,38 +55,37 @@ class Scanner(object):
 
 
   def token(self, name, regexp):
-    if name is None or regexp is None:
-      return False
+    if not (name is None or regexp is None):
+      regexps[name] = (regexp, __minimize__(__DFA__(__NFA__(regexp))))
 
-    if not self.__valid__(regexp):
-      return False
-    
-    regexps[name] = (regexp, __minimize__(__DFA__(__NFA__(regexp))))
-    return True
-
-  # we need to merge all rules/machines together to form a regexp like -> (...)|(...)|...
-  # however, that is not valid since | (union) can only take 2 things!
-  # TODO
+  # TODO make NFA with epsilon transitions to all token DFA's then do the
+  # process again of nfa->dfa->minimize
   def make(self):
-    scanner = None # make the scanner 
+    tokenizer = None # single minimized DFA for all tokens
 
-    self.Scanner = scanner
+    #regexps[name] = (regexp, __minimize__(__DFA__(__NFA__(regexp))))
 
-    return True
+    return self.regexps
 
 
 if __name__ == '__main__':
-  scanner = Scanner("Test Scanner")
+  scanner = RegularGrammar("Test Scanner")
 
-  # common language tokens
-  if not scanner.token("integer",    "[regexp]"): print "invalid integer rule"
-  if not scanner.token("float",      "[regexp]"): print "invalid float rule"
-  if not scanner.token("boolean",    "[regexp]"): print "invalid boolean rule"
-  if not scanner.token("character",  "[regexp]"): print "invalid character rule"
-  if not scanner.token("string",     "[regexp]"): print "invalid string rule"
-  if not scanner.token("space",      "[regexp]"): print "invalid space rule"
-  if not scanner.token("comment",    "[regexp]"): print "invalid comment rule"
+  scanner.token("integer",    "[regexp]")
+  scanner.token("float",      "[regexp]")
+  scanner.token("boolean",    "[regexp]")
+  scanner.token("character",  "[regexp]")
+  scanner.token("string",     "[regexp]")
+  scanner.token("space",      "[regexp]")
+  scanner.token("comment",    "[regexp]")
 
-  graph = scanner.make() # FIXME: return a graph from make??
+  tokenizer = scanner.make()
 
-  # TODO: write some tests here...  ??
+  passed = True
+
+  #TODO: asset the tokenizer (minimized DFA as a graph) is what i think it should be
+
+  if passed:
+    print "PARSER TEST PASSED!"
+  else:
+    print "PARSER TEST FAILED..."
