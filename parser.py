@@ -1,301 +1,386 @@
 ################################################################################
+# ContextFreeGrammar represents a BNF grammar which can programatically be
+# transformed into a LL1 parse table given the following requirements:
+#   1.
+#   2.
+#   3.
+# although it is possible for any grammar to be specifedi...
 #
-# FIXME: explanation
+# This object can be tested individually by directly calling it with python like
+# so:
+#   $ python parser.py
+# You should see the following output if everything went well: 
+#   ALL PARSER TESTS PASSED!
 #
+# FIXME: continue explanation of object and test
 ################################################################################
-import copy
 
 class ContextFreeGrammar(object):
+
+
+  name = None
 
   Dollar = 0
   Epsilon = 1
 
-  Terminals = None     # set of grammar terminals
-  Nonterminals = None  # set of grammar nonterminals
-  ParseTable = None    # the parse table generated
-  LL1 = None           # boolean to indicate if grammar is LL(1)
-  First = None         # dictionary ::= [non]terminal -> first set
-  Follow = None        # dictionary ::= terminal -> follow set
   Start = None         # which grammar rule is the start symbol of grammar
   Productions = []     # all the production rules in the grammar
 
 
-  def StartSymbol(self, start):
+  def __init__(self, name):
+    self.name = name
+
+
+  def start(self, start):
     self.Start = start
 
 
-  # rule -> (rule #, [[seq of symbols for a production] ...the rest of the productions])
+  # splits a series of productions intos the form:
+  # (rule #, [[seq of symbols for a production] ...the rest of the productions])
   # empty list [] specifies an epsilon production.
-  def ProductionRule(self, lhs, rhs):
-    self.Productions.append((lhs , [productions.split() for productions in rhs.split('|')]))
+  def production(self, lhs, rhs):
+    rule = (lhs , [productions.split() for productions in rhs.split('|')])
+    self.Productions.append(rule)
 
 
   # all literal symbols which appear in the grammar
   def __terminals__(self):
-    self.Terminals = set()
+    terminals = frozenset()
     lhs = {key for (key, _) in self.Productions}
     for (_, v) in self.Productions:
       for production in v:
         for symbol in production:
           if symbol not in lhs:
-            self.Terminals.add(symbol)
+            terminals = terminals | frozenset([symbol])
+    return terminals
 
 
   # all non terminals are just the production rules
   def __nonterminals__(self):
-    self.Nonterminals = {_tuple[0] for _tuple in self.Productions}
+    return frozenset({production for (production, _) in self.Productions})
 
 
   # calculate the first set following the algorithm set forth here:
   # http://www.jambe.co.nz/UNI/FirstAndFollowSets.html
-  def __first__(self):
-    self.First = {}
+  def __first__(self, terminals, nonterminals):
+    first = {}
 
     # 1. If X is a terminal then First(X) is just X!
-    for terminal in self.Terminals:
-      self.First[terminal] = set([terminal])
+    for terminal in terminals:
+      first[terminal] = frozenset([terminal])
 
     # --init first sets for nonterminals--
-    for nonterminal in self.Nonterminals:
-      self.First[nonterminal] = set()
+    for nonterminal in nonterminals:
+      first[nonterminal] = frozenset()
 
     # 2. If there is a Production X -> epsilon then add epsilon to first(X)
     for (X, productions) in self.Productions:
       for production in productions:
         if len(production) == 0:
-          self.First[X].add(self.Epsilon)
+          first[X] = first[X] | frozenset([self.Epsilon])
 
     # 4. First(Y1Y2..Yk) is either:
     #   a. First(Y1) (if First(Y1) doesn't contain epsilon)
-    #   b. OR (if First(Y1) does contain epsilon) then everything in First(Y1) <except for epsilon> as well as everything in First(Y2..Yk)
-    #   c. If First(Y1) First(Y2)..First(Yk) all contain epsilon then add epsilon to First(Y1Y2..Yk) as well
-    def first(Ys):
+    #   b. OR (if First(Y1) does contain epsilon) then everything in First(Y1)
+    #      <except for epsilon> as well as everything in First(Y2..Yk)
+    #   c. If First(Y1) First(Y2)..First(Yk) all contain epsilon then add
+    #      epsilon to First(Y1Y2..Yk) as well
+    def _first(Ys):
       if len(Ys) == 0: # from recursive call
-        return set()
-      elif self.Epsilon not in self.First[Ys[0]]:
-        return self.First[Ys[0]]
-      elif self.Epsilon in self.First[Ys[0]]:
-        s = ((self.First[Ys[0]] - set([self.Epsilon])) | first(Ys[1:]))
+        return frozenset()
+      elif self.Epsilon not in first[Ys[0]]:
+        return first[Ys[0]]
+      elif self.Epsilon in first[Ys[0]]:
+        s = ((first[Ys[0]] - frozenset([self.Epsilon])) | _first(Ys[1:]))
         for Y in Ys:
-          if self.Epsilon not in self.First[Y]:
+          if self.Epsilon not in first[Y]:
             return s
-        return s | set([self.Epsilon])
-
-    # 3. If there is a Production X -> Y1Y2..Yk then add first(Y1Y2..Yk) to first(X)
-    def find():
-      for (X, productions) in self.Productions:
-        for Ys in productions:
-          if len(Ys) != 0: # we already took care of epsilon productions
-            self.First[X].update(first(Ys))
+        return s | frozenset([self.Epsilon])
 
     # --need to repeat until the sets are no longer changing--
     while True:
-      c = copy.deepcopy(self.First)
-      find()
-      changed = False
-      for k in self.First:
-        if self.First[k] != c[k]:
-          changed = True
-          break
+      c = { k: v for (k, v) in first.items() }
 
-      if not changed:
-        return
+      # 3. If there is a Production X -> Y1Y2..Yk
+      #    then add first(Y1Y2..Yk) to first(X)
+      for (X, productions) in self.Productions:
+        for Ys in productions:
+          if len(Ys) != 0: # we already took care of epsilon productions
+            first[X] = first[X] | _first(Ys)
+  
+      if frozenset(c.items()) == frozenset(first.items()):
+        return first
 
 
   # calculate the follow set following the algorithm set forth here:
   # http://www.jambe.co.nz/UNI/FirstAndFollowSets.html
-  def __follow__(self):
-    self.Follow = {}
+  def __follow__(self, nonterminals, first):
+    follow = {}
 
     # --init follow sets for nonterminals--
-    for nonterminal in self.Nonterminals:
-      self.Follow[nonterminal] = set()
+    for nonterminal in nonterminals:
+      follow[nonterminal] = frozenset()
 
-    # 1. First put $ (the end of input marker) in Follow(S) (S is the start symbol)
-    self.Follow[self.Start].add(self.Dollar)
+    # 1. First put $ (end of input marker) in Follow(S) (S is the start symbol)
+    follow[self.Start] = frozenset([self.Dollar])
 
-    def  follow(A, Ys):
+    def _follow(A, Ys):
       for k in range(0, len(Ys)):
         B = Ys[k]
-        if B in self.Nonterminals and k > 0: # find first nonterminal after terminal, or 2nd nonterminal
-          # 3. If there is a production A -> aB, then everything in FOLLOW(A) is in FOLLOW(B)
+        # find first nonterminal after terminal, or 2nd nonterminal
+        if B in nonterminals and k > 0:
+          # 3. If there is a production A -> aB,
+          # then everything in FOLLOW(A) is in FOLLOW(B)
           if k == len(Ys)-1:
-            self.Follow[B].update(self.Follow[A])
+            follow[B] = follow[B] | follow[A]
           else:
-            # 2. If there is a production A -> aBb, (where a can be a whole string) then everything in FIRST(b) except for epsilon is placed in FOLLOW(B).
+            # 2. If there is a production A -> aBb, (where a can be a whole
+            # string) then everything in FIRST(b) except for epsilon is placed
+            # in FOLLOW(B).
             b = Ys[k+1]
-            self.Follow[B].update(self.First[b] - set([self.Epsilon]))
-            # 4. If there is a production A -> aBb, where FIRST(b) contains epsilon, then everything in FOLLOW(A) is in FOLLOW(B)
-            if self.Epsilon in self.First[b]:
-              self.Follow[B].update(self.Follow[A])
+            follow[B] = follow[B] | (first[b] - frozenset([self.Epsilon]))
+            # 4. If there is a production A -> aBb, where FIRST(b) contains
+            # epsilon, then everything in FOLLOW(A) is in FOLLOW(B)
+            if self.Epsilon in first[b]:
+              follow[B] = follow[B] | follow[A]
           return
-
-    def find():
-      for (X, productions) in self.Productions:
-        for Ys in productions:
-          if len(Ys) > 0: # ignore epsilon production
-            follow(X, Ys)
 
     # --need to repeat until the sets are no longer changing--
     while True:
-      c = copy.deepcopy(self.Follow)
-      find()
-      changed = False
-      for k in self.Follow:
-        if self.Follow[k] != c[k]:
-          changed = True
-          break
+      c = { k: v for (k, v) in follow.items() }
 
-      if not changed:
-        return
+      for (X, productions) in self.Productions:
+        for Ys in productions:
+          if len(Ys) > 0: # ignore epsilon production
+            _follow(X, Ys)
+
+      if frozenset(c.items()) == frozenset(follow.items()):
+        return follow
+
+  # construct the LL(1) parsing table by finding predict sets
+  def __table__(self, terminals, nonterminals, first, follow):
+    # Predict(A --> X1...Xm) = 
+    # First(X1...Xm) U (If X1...Xm --> epsilon then Follow(A) else null)
+    # @https://www.cs.rochester.edu/~nelson/courses/csc_173/grammars/parsing.html
+    def predict(X, Ys): # FIXME: incorrect now because we are not ignoring epsilon!!
+      if len(Ys) == 0: # from recursive call
+        return frozenset()
+      elif self.Epsilon not in first[Ys[0]]:
+        return first[Ys[0]]
+      elif self.Epsilon in first[Ys[0]]:
+        s = ((first[Ys[0]] - frozenset([self.Epsilon])) | predict(X, Ys[1:]))
+        for Y in Ys:
+          if self.Epsilon not in first[Y]:
+            return s
+        return s | follow[X]
+
+    # flatten rules so they can be enumerated, and find predict sets
+    productions = []
+    predictions = []
+    for (X, _productions) in self.Productions:
+      for production in _productions:
+        productions.append((X, production))
+        predictions.append((X, predict(X, production)))
+
+    # need to enumerate [non]terminals since we are putting them in a table
+    terminals = list(terminals | frozenset([self.Dollar]))
+    nonterminals = list(nonterminals)
+    table = [[frozenset() for _ in terminals] for _ in nonterminals]
+
+    # fill in the table
+    for k in range(0, len(predictions)):
+      (Nonterminal, _) = productions[k]
+      n = nonterminals.index(Nonterminal)
+      for Terminal in predictions[k][1]:
+        t = terminals.index(Terminal)
+        table[n][t] = table[n][t] | frozenset([k])
+
+    # put row labels
+    for r in range(0, len(table)):
+      table[r].insert(0, nonterminals[r])
+
+    # put column labels
+    terminals.insert(0, ' ')
+    table.insert(0, terminals)
+
+    return (table, productions, predictions)
+
 
   # grammar is ll(1) if parse table has (@maximum) a single entry per table slot
   # conflicting for the predicitions
-  def __parseTable__(self):
-    # flatten rules so they can be enumerated
-    productions = []
-    for (X, _productions) in self.Productions:
-      for production in _productions:
-        if len(production) != 0:                   # FIXME: printing production below is off because of this...should i be ignoring these??
-          productions.append((X, production))
+  def __parsable__(self, table, rules):
+    LL1 = True
+    conflicts = []
+    for r in range(1, len(table)): # ignore column headers
+      for c in range(1, len(table[r])): # ignore row header
+        if len(table[r][c]) > 1:
+          LL1 = False
+          conflicts.append((table[r][0], table[r][c]))
+    return (LL1, conflicts)
 
-    # Predict(A --> X1...Xm) = First(X1...Xm) U 
-    #   If X1...Xm --> epsilon then Follow(A) else null
-    def predict(X, Ys):
-      if len(Ys) == 0: # from recursive call
-        return set()
-      elif self.Epsilon not in self.First[Ys[0]]:
-        return self.First[Ys[0]]
-      elif self.Epsilon in self.First[Ys[0]]:
-        s = ((self.First[Ys[0]] - set([self.Epsilon])) | predict(X, Ys[1:]))
-        for Y in Ys:
-          if self.Epsilon not in self.First[Y]:
-            return s
-        return s | self.Follow[X]
 
-    predictions = []
-    for (X, production) in productions:
-      if len(production) != 0:
-        predictions.append(predict(X, production))
-   
-    terminals = [t for t in (self.Terminals | set([self.Dollar]))]
-    nonterminals = [n for n in self.Nonterminals]
-    self.ParseTable = [[set() for column in terminals] for row in nonterminals]
+  def make(self):
+    terminals = self.__terminals__()
+    nonterminals = self.__nonterminals__()
+    first = self.__first__(terminals, nonterminals)
+    follow = self.__follow__(nonterminals, first)
+    (table, rules, predictions) = self.__table__(terminals, nonterminals, first, follow)
+    (LL1, conflicts) = self.__parsable__(table, rules)
 
-    for k in range(0, len(predictions)):
-      (Nonterminal, _) = productions[k]
-      n = 0
-      for _n in nonterminals:
-        if _n == Nonterminal:
-          break
-        n += 1
-
-      Terminals = predictions[k]
-      for Terminal in Terminals:
-        t = 0
-        for _t in terminals:
-          if _t == Terminal:
-            break
-          t += 1
-
-        self.ParseTable[n][t].add(k)
-
-    # check grammar is LL1
-    self.LL1 = True
-    done = False
-    for r in self.ParseTable:
-      for c in r:
-        if len(c) > 1:
-          self.LL1 = False
-          done = True
-        if done: break
-      if done: break
-
-    # put row labels
-    for r in range(0, len(self.ParseTable)):
-      self.ParseTable[r].insert(0, nonterminals[r])
-
-    # put column labels
-    col_lbls = [' ']
-    col_lbls.extend(terminals)
-    self.ParseTable.insert(0, col_lbls)
-
-    # TODO
-    def make(self):
-      rules = None
-      terminals = None
-      nonterminals = None
-      first =  None
-      follow =  None
-      table =  None
-      parsable =  None
-      conflicts =  None
-
-      return {
-        "rules":         rules,
-        "terminals":     terminals,
-        "nonterminals":  nonterminals,
-        "first":         first,
-        "follow":        follow,
-        "table":         table,
-        "parsable?":     parsable,
-        "conflicts":     conflicts,
-      }
+    return {
+      "name":          self.name,
+      "start":         self.Start,
+      "rules":         rules,
+      "predictions":   predictions,
+      "terminals":     terminals,
+      "nonterminals":  nonterminals,
+      "first":         first,
+      "follow":        follow,
+      "table":         table,
+      "parsable?":     LL1,
+      "conflicts":     conflicts,
+    }
 
 
 if __name__ == "__main__":
 # test grammar @http://www.jambe.co.nz/UNI/FirstAndFollowSets.html
-  test = ContextFreeGrammar()
+  test = ContextFreeGrammar("Test Grammar")
 
-  test.ProductionRule('<E>',   '<T> <E\'>')
-  test.ProductionRule('<E\'>', '+ <T> <E\'> |')
-  test.ProductionRule('<T>',   '<F> <T\'>')
-  test.ProductionRule('<T\'>', '* <F> <T\'> |')
-  test.ProductionRule('<F>',   '( <E> )')
-  test.ProductionRule('<F>',   'id')
+  test.production('<E>',   '<T> <E\'>')
+  test.production('<E\'>', '+ <T> <E\'> |')
+  test.production('<T>',   '<F> <T\'>')
+  test.production('<T\'>', '* <F> <T\'> |')
+  test.production('<F>',   '( <E> ) | id')
 
-  test.StartSymbol('<E>')
+  test.start('<E>')
 
   LL1 = test.make()
 
-  # TERMINALS = { +, *, id }
-  for terminal in test.terminals():
-    if False:
-      print "PARSER TEST FAILED..."
-      return
+  if LL1['name'] != 'Test Grammar':
+    raise ValueError('Invalid name produced')
 
-  # NONTERMINALS = { <E>, <E\'>, <T>, <T\'>, <F> }
-  for nonterminal in test.nonterminals():
-    if False:
-      print "PARSER TEST FAILED..."
-      return
+  if LL1['start'] != '<E>':
+    raise ValueError('Invalid start production produced')
 
-  if not LL1["parsable?"]:
-    print "PARSER TEST FAILED..."
-    return
+  if not LL1['parsable?']:
+    raise ValueError('Improper reporting of the grammars parsability')
 
-  # FIRST(E)   = {(, id}
-  # FIRST(E')  = {+, epsilon}
-  # FIRST(T)   = {(, id}
-  # FIRST(T')  = {*, epsilon}
-  # FIRST(F)   = {(, id}
-  for first in test.firstset():
-    if False:
-      print "PARSER TEST FAILED..."
-      return
+  if len(LL1['conflicts']) > 0:
+    raise ValueError('Invalid conflicts produced')
 
-  # FOLLOW(E)  = {$, )}
-  # FOLLOW(E') = {$, )}
-  # FOLLOW(T)  = {+, $, )}
-  # FOLLOW(T') = {+, $, )}
-  # FOLLOW(F)  = {*, +, $, )}
-  for follow in test.followset():
-    if False:
-      print "PARSER TEST FAILED..."
-      return
+  if LL1['terminals'] != frozenset(['(', ')', '+', '*', 'id']):
+    raise ValueError('Invalid terminal set produced')
 
-  if not conflicts is None:
-    print "PARSER TEST FAILED..."
-    return
+  if LL1['nonterminals'] != frozenset(['<T>', '<F>', '<E>', "<E'>", "<T'>"]): 
+    raise ValueError('Invalid nonterminal set produced')
 
-  print "PARSER TEST PASSED!"
+  first = {
+    '(': frozenset(['(']),
+    ')': frozenset([')']),
+    '+': frozenset(['+']),
+    '*': frozenset(['*']),
+    'id': frozenset(['id']),
+    '<E>': frozenset(['(', 'id']),
+    "<E'>": frozenset([1, '+']),
+    '<T>': frozenset(['(', 'id']),
+    "<T'>": frozenset([1, '*']),
+    '<F>': frozenset(['(', 'id'])
+  }
+
+  for elem in LL1['first']:
+    if first[elem] != LL1['first'][elem]:
+      raise ValueError('Invalid first set produced')
+
+  follow = {
+    '<E>': frozenset([0, ')']),
+    "<E'>": frozenset([0, ')']),
+    '<T>': frozenset([0, ')', '+']),
+    "<T'>": frozenset([0, ')', '+']),
+    '<F>': frozenset([0, ')', '+', '*'])
+  }
+
+  for nonterminal in LL1['follow']:
+    if follow[nonterminal] != LL1['follow'][nonterminal]:
+      raise ValueError('Invalid follow set produced')
+
+  rules = [ # flattened set in the order we entered them earlier
+    ('<E>',  ['<T>', "<E'>"]),
+    ("<E'>", ['+', '<T>', "<E'>"]),
+    ("<E'>", []),
+    ('<T>',  ['<F>', "<T'>"]),
+    ("<T'>", ['*', '<F>', "<T'>"]),
+    ("<T'>", []),
+    ('<F>',  ['(', '<E>', ')']),
+    ('<F>',  ['id'])
+  ]
+
+  if len(LL1['rules']) != 8:
+    raise ValueError('Invalid rule set produced')
+
+  for rule in range(0, 8):
+    if rules[rule][0] != LL1['rules'][rule][0]:
+      raise ValueError('Invalid rule LHS produced')
+    if len(rules[rule][1]) != len(LL1['rules'][rule][1]):
+      raise ValueError('Invalid rule RHS produced')
+    for i in range(0, len(rules[rule][1])):
+      if rules[rule][1][i] != LL1['rules'][rule][1][i]:
+        raise ValueError('Invalid rule RHS produced')
+
+  predictions = [ # 1:1 correspondence with rules
+    ('<E>',  frozenset(['(', 'id'])),
+    ("<E'>", frozenset(['+'])),
+    ("<E'>", frozenset([0, ')'])),
+    ('<T>',  frozenset(['(', 'id'])),
+    ("<T'>", frozenset(['*'])),
+    ("<T'>", frozenset(['+', 0, ')'])),
+    ('<F>',  frozenset(['('])),
+    ('<F>',  frozenset(['id']))
+  ]
+
+  if len(LL1['predictions']) != 8:
+    raise ValueError('Invalid prediction set produced')
+
+
+  print LL1['table']
+
+  for prediction in range(0, 8):
+    if predictions[prediction][0] != LL1['predictions'][prediction][0]:
+      raise ValueError('Invalid prediction LHS produced')
+    if predictions[prediction][1] != LL1['predictions'][prediction][1]:
+      raise ValueError('Invalid prediction RHS produced')
+
+# CORRECT TABLE
+#[
+#  [ ,  "+", "*", "(", ")", "id", "$"],
+#  [E,   ,    ,    ,    ,    ,       ],
+#  [E',  ,    ,   0,    ,   0,       ],
+#  [T,  1,    ,    ,   2,    ,    2  ],
+#  [T',  ,    ,   3,    ,   3,       ],
+#  [F,  5,   4,    ,   5,    ,    5  ],
+#  [F,   ,    ,   6,    ,   7,       ]
+#]
+
+# MY TABLE
+#[
+#  [ ,  0,             ')',           '(',            '+',            '*',            'id'          ],
+#  [E,  frozenset([]), frozenset([]), frozenset([0]), frozenset([]),  frozenset([]),  frozenset([0])],
+#  [E', frozenset([]), frozenset([]), frozenset([]),  frozenset([1]), frozenset([]),  frozenset([]) ],
+#  [T,  frozenset([]), frozenset([]), frozenset([3]), frozenset([]),  frozenset([]),  frozenset([3])],
+#  [T', frozenset([]), frozenset([]), frozenset([]),  frozenset([]),  frozenset([4]), frozenset([]) ]
+#  [F', frozenset([]), frozenset([]), frozenset([6]), frozenset([]),  frozenset([]),  frozenset([7])],
+#]
+ 
+#  if len(LL1['table']) != 6:
+#    raise ValueError('Invalid number of table rows produced')
+
+#  for r in range(0, len(LL1['table'])):
+#    if len(LL1['table'][r]) != 7:
+#      raise ValueError('Invalid number of table columns produced')
+
+#  for r in range(0, 6): 
+#    for c in range(0, 7):
+#      if LL1['table'][r][c] != table[r][c]:
+#        print r, c
+#        raise ValueError('Invalid table value produced')
+
+  print "ALL PARSER TESTS PASSED!"
