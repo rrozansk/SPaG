@@ -1,18 +1,16 @@
 ################################################################################
-# ContextFreeGrammar represents a BNF grammar which can programatically be
+# ContextFreeGrammar represents a BNF grammar which can be programatically
 # transformed into a LL1 parse table given the following requirements:
-#   1.
-#   2.
-#   3.
-# although it is possible for any grammar to be specifedi...
+#   1. No left recursion
+#   2. Must be left factored
+# Although, it is possible for any grammar to be specified as all conflicts will
+# be reported if any exist in the grammar.
 #
-# This object can be tested individually by directly calling it with python like
-# so:
+# This object can be tested by directly calling it with python like:
 #   $ python parser.py
 # You should see the following output if everything went well: 
 #   ALL PARSER TESTS PASSED!
-#
-# FIXME: continue explanation of object and test
+# otherwise a value error is thrown with the appropriate error.
 ################################################################################
 
 class ContextFreeGrammar(object):
@@ -51,7 +49,7 @@ class ContextFreeGrammar(object):
       for production in v:
         for symbol in production:
           if symbol not in lhs:
-            terminals = terminals | frozenset([symbol])
+            terminals |= frozenset([symbol])
     return terminals
 
 
@@ -77,7 +75,7 @@ class ContextFreeGrammar(object):
     for (X, productions) in self.Productions:
       for production in productions:
         if len(production) == 0:
-          first[X] = first[X] | frozenset([self.Epsilon])
+          first[X] |= frozenset([self.Epsilon])
 
     # 4. First(Y1Y2..Yk) is either:
     #   a. First(Y1) (if First(Y1) doesn't contain epsilon)
@@ -106,7 +104,7 @@ class ContextFreeGrammar(object):
       for (X, productions) in self.Productions:
         for Ys in productions:
           if len(Ys) != 0: # we already took care of epsilon productions
-            first[X] = first[X] | _first(Ys)
+            first[X] |= _first(Ys)
   
       if frozenset(c.items()) == frozenset(first.items()):
         return first
@@ -132,17 +130,17 @@ class ContextFreeGrammar(object):
           # 3. If there is a production A -> aB,
           # then everything in FOLLOW(A) is in FOLLOW(B)
           if k == len(Ys)-1:
-            follow[B] = follow[B] | follow[A]
+            follow[B] |= follow[A]
           else:
             # 2. If there is a production A -> aBb, (where a can be a whole
             # string) then everything in FIRST(b) except for epsilon is placed
             # in FOLLOW(B).
             b = Ys[k+1]
-            follow[B] = follow[B] | (first[b] - frozenset([self.Epsilon]))
+            follow[B] |= (first[b] - frozenset([self.Epsilon]))
             # 4. If there is a production A -> aBb, where FIRST(b) contains
             # epsilon, then everything in FOLLOW(A) is in FOLLOW(B)
             if self.Epsilon in first[b]:
-              follow[B] = follow[B] | follow[A]
+              follow[B] |= follow[A]
           return
 
     # --need to repeat until the sets are no longer changing--
@@ -162,7 +160,9 @@ class ContextFreeGrammar(object):
     # Predict(A --> X1...Xm) = 
     # First(X1...Xm) U (If X1...Xm --> epsilon then Follow(A) else null)
     # @https://www.cs.rochester.edu/~nelson/courses/csc_173/grammars/parsing.html
-    def predict(X, Ys): # FIXME: incorrect now because we are not ignoring epsilon!!
+    def predict(X, Ys):
+      if len(Ys) == 1 and Ys[0] == self.Epsilon:
+        return follow[X]
       if len(Ys) == 0: # from recursive call
         return frozenset()
       elif self.Epsilon not in first[Ys[0]]:
@@ -180,28 +180,29 @@ class ContextFreeGrammar(object):
     for (X, _productions) in self.Productions:
       for production in _productions:
         productions.append((X, production))
-        predictions.append((X, predict(X, production)))
+        if len(production) == 0:
+          predictions.append((X, predict(X, [self.Epsilon])))
+        else:
+          predictions.append((X, predict(X, production)))
 
     # need to enumerate [non]terminals since we are putting them in a table
     terminals = list(terminals | frozenset([self.Dollar]))
     nonterminals = list(nonterminals)
-    table = [[frozenset() for _ in terminals] for _ in nonterminals]
+    table = [[] for _ in nonterminals]
+    for row in range(0, len(table)):
+      table[row].append(nonterminals[row])
+      for _ in terminals:
+        table[row].append(frozenset())
+    terminals.insert(0, ' ')
+    table.insert(0, terminals)
 
     # fill in the table
     for k in range(0, len(predictions)):
-      (Nonterminal, _) = productions[k]
-      n = nonterminals.index(Nonterminal)
-      for Terminal in predictions[k][1]:
+      (Nonterminal, Terminals) = predictions[k]
+      n = nonterminals.index(Nonterminal)+1 # account for column headers
+      for Terminal in Terminals:
         t = terminals.index(Terminal)
-        table[n][t] = table[n][t] | frozenset([k])
-
-    # put row labels
-    for r in range(0, len(table)):
-      table[r].insert(0, nonterminals[r])
-
-    # put column labels
-    terminals.insert(0, ' ')
-    table.insert(0, terminals)
+        table[n][t] |= frozenset([k])
 
     return (table, productions, predictions)
 
@@ -244,6 +245,8 @@ class ContextFreeGrammar(object):
 
 if __name__ == "__main__":
 # test grammar @http://www.jambe.co.nz/UNI/FirstAndFollowSets.html
+# externally validated using tool located
+# @http://hackingoff.com/compilers/predict-first-follow-set 
   test = ContextFreeGrammar("Test Grammar")
 
   test.production('<E>',   '<T> <E\'>')
@@ -340,47 +343,37 @@ if __name__ == "__main__":
   if len(LL1['predictions']) != 8:
     raise ValueError('Invalid prediction set produced')
 
-
-  print LL1['table']
-
   for prediction in range(0, 8):
     if predictions[prediction][0] != LL1['predictions'][prediction][0]:
       raise ValueError('Invalid prediction LHS produced')
     if predictions[prediction][1] != LL1['predictions'][prediction][1]:
       raise ValueError('Invalid prediction RHS produced')
 
-# CORRECT TABLE
-#[
-#  [ ,  "+", "*", "(", ")", "id", "$"],
-#  [E,   ,    ,    ,    ,    ,       ],
-#  [E',  ,    ,   0,    ,   0,       ],
-#  [T,  1,    ,    ,   2,    ,    2  ],
-#  [T',  ,    ,   3,    ,   3,       ],
-#  [F,  5,   4,    ,   5,    ,    5  ],
-#  [F,   ,    ,   6,    ,   7,       ]
-#]
+  table = [
+    [' ',    0,              ')',            '(',            '+',            '*',            'id'          ],
+    ['<E>',  frozenset([]),  frozenset([]),  frozenset([0]), frozenset([]),  frozenset([]),  frozenset([0])],
+    ["<E'>", frozenset([2]), frozenset([2]), frozenset([]),  frozenset([1]), frozenset([]),  frozenset([]) ],
+    ["<T>",  frozenset([]),  frozenset([]),  frozenset([3]), frozenset([]),  frozenset([]),  frozenset([3])],
+    ["<T'>", frozenset([5]), frozenset([5]), frozenset([]),  frozenset([5]), frozenset([4]), frozenset([]) ],
+    ["<F>",  frozenset([]),  frozenset([]),  frozenset([6]), frozenset([]),  frozenset([]),  frozenset([7])]
+  ]
 
-# MY TABLE
-#[
-#  [ ,  0,             ')',           '(',            '+',            '*',            'id'          ],
-#  [E,  frozenset([]), frozenset([]), frozenset([0]), frozenset([]),  frozenset([]),  frozenset([0])],
-#  [E', frozenset([]), frozenset([]), frozenset([]),  frozenset([1]), frozenset([]),  frozenset([]) ],
-#  [T,  frozenset([]), frozenset([]), frozenset([3]), frozenset([]),  frozenset([]),  frozenset([3])],
-#  [T', frozenset([]), frozenset([]), frozenset([]),  frozenset([]),  frozenset([4]), frozenset([]) ]
-#  [F', frozenset([]), frozenset([]), frozenset([6]), frozenset([]),  frozenset([]),  frozenset([7])],
-#]
- 
-#  if len(LL1['table']) != 6:
-#    raise ValueError('Invalid number of table rows produced')
+  if len(LL1['table']) != 6:
+    raise ValueError('Invalid number of table rows produced')
 
-#  for r in range(0, len(LL1['table'])):
-#    if len(LL1['table'][r]) != 7:
-#      raise ValueError('Invalid number of table columns produced')
+  for r in range(0, len(LL1['table'])):
+    if len(LL1['table'][r]) != 7:
+      raise ValueError('Invalid number of table columns produced')
 
-#  for r in range(0, 6): 
-#    for c in range(0, 7):
-#      if LL1['table'][r][c] != table[r][c]:
-#        print r, c
-#        raise ValueError('Invalid table value produced')
+  # sort table rows so both tables match allowing comparison
+  for row in range(0, len(table)):
+    for _row in range(0, len(LL1['table'])):
+      if table[row][0] == LL1['table'][_row][0] and row != _row:
+        LL1['table'][row], LL1['table'][_row] = LL1['table'][_row], LL1['table'][row]
+
+  for r in range(0, 6): 
+    for c in range(0, 7):
+      if LL1['table'][r][c] != table[r][c]:
+        raise ValueError('Invalid table value produced')
 
   print "ALL PARSER TESTS PASSED!"
