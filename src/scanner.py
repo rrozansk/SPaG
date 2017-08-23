@@ -247,7 +247,8 @@ class RegularGrammar(object):
       else:
         DFAs[name]['error'] = None
         DFAs[name]['expanded'] = expanded
-        DFAs[name]['NFA'] = self.__NFA__(DFAs[name]['expanded'])
+        DFAs[name]['NFA'] = None
+        #DFAs[name]['NFA'] = self.__NFA__(DFAs[name]['expanded'])
         DFAs[name]['DFA'] = self.__DFA__(DFAs[name]['NFA'])
         DFAs[name]['min DFA'] = self.__min__(DFAs[name]['DFA'])
 

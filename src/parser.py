@@ -244,9 +244,9 @@ class ContextFreeGrammar(object):
 
 
 if __name__ == "__main__":
-# test grammar @http://www.jambe.co.nz/UNI/FirstAndFollowSets.html
-# externally validated using tool located
-# @http://hackingoff.com/compilers/predict-first-follow-set 
+  # test grammar @http://www.jambe.co.nz/UNI/FirstAndFollowSets.html
+  # externally validated using tool located
+  # @http://hackingoff.com/compilers/predict-first-follow-set 
   test = ContextFreeGrammar("Test Grammar")
 
   test.production('<E>',   '<T> <E\'>')
@@ -375,5 +375,3 @@ if __name__ == "__main__":
     for c in range(0, 7):
       if LL1['table'][r][c] != table[r][c]:
         raise ValueError('Invalid table value produced')
-
-  print "ALL PARSER TESTS PASSED!"

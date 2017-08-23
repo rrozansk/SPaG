@@ -24,20 +24,21 @@
 # ...likewise if invalid regular expressions are given they will not be
 # recognized in the generated scanner.
 ################################################################################
-import parser
-import scanner
-import generator
+import src.parser as parser
+import src.scanner as scanner
+import src.generator as generator
 
 ################################### SCANNER ####################################
 tokenizer = scanner.RegularGrammar("ScanINI")
 
-tokenizer.token("int",     "[1-9][0-9]*")
-tokenizer.token("float",   "[-+]?[0-9]*\.[0-9]+")
-tokenizer.token("bool",    "true|false")
-tokenizer.token("char",    "'[a-zA-Z0-9]'")
-tokenizer.token("string",  "\".*\"")
-tokenizer.token("space",   "\s")
-tokenizer.token("comment", "(#|;).*\n")
+tokenizer.token("int",     True, "(-|+)?[1-9][0-9]*")
+tokenizer.token("float",   True, "(-|+)?([1-9][0-9]*)?\.[0-9]+")
+tokenizer.token("bool",    True, "true|false")
+tokenizer.token("char",    True, "'([a-z]|[A-Z]|[0-9])'") # FIXME: specials, metas?
+tokenizer.token("id",      True, "[a-z]|[A-Z]*") # FIXME: must have alphas
+tokenizer.token("string",  True, "\".*\"") # FIXME: escapes?
+tokenizer.token("space",   False, "\s|\t|\n|\r|\f|\v")
+tokenizer.token("comment", False, "(#|;).*\n")
 
 scanner = tokenizer.make()
 
@@ -47,7 +48,7 @@ LL1 = parser.ContextFreeGrammar("ParseINI")
 LL1.production('<Ini>',        '<Section> <Ini\'>')
 LL1.production('<Ini\'>',      '<Section> <Ini\'> |')
 LL1.production('<Section>',    '<Header> <Settings>')
-LL1.production('<Header>',     '[ identifier ]')
+LL1.production('<Header>',     '[ id ]')
 LL1.production('<Settings>',   '<Setting> <Settings\'>')
 LL1.production('<Settings\'>', '<Setting> <Settings\'> |')
 LL1.production('<Setting>',    'identifier dividor <Value>')
