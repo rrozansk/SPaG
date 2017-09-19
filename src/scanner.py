@@ -2,8 +2,8 @@
 # During Lexical Analysis the Lexer/Scanner recognizes regular expressions as
 # corresponding token types. These tokens are then sent to the parser.
 # Tokens have a type and value, but can also have character and line number
-# information as well. White space tokens and comments are usually discarded
-# in this phase, but any token type desired may be discarded.
+# information as well. White space tokens and comments are usually discarded,
+# but any token type desired may be discarded.
 # 
 # The difference between lexers and parser is that a lexer reconizes regular
 # grammars/expressions, while parser recognize context free grammars. The main
@@ -14,6 +14,7 @@
 # they are also more powerful than regular grammars since they can properly deal
 # with recursion.
 ################################################################################
+import uuid
 
 class RegularGrammar(object):
 
@@ -28,13 +29,26 @@ class RegularGrammar(object):
               '=', '>', '-', '^', '\\', '{', '}', '~', ',', '@'}
   metas = { '?', '+', '[', ']', '.', '(', ')', '*', '|'}
 
+  characters  = (self.uppers | self.lowers | self.digits | self.spaces | self.specials)
+
   Star = 0
   Union = 1
   Concat = 2
   Plus = 3
   Question = 4
-
   Epsilon = 5
+  Left = 6
+  Right = 7
+
+  ops = {      # ***higher is more important***
+      self.Left:     (3, None),
+      self.Right:    (3, None),
+      self.Star:     (2, False), # right-associative
+      self.Plus:     (2, False), # right-associative
+      self.Question: (2, False), # right-associative
+      self.Concat:   (1, True),  # left-associative
+      self.Union:    (0, True),  # left-associative
+  }
 
   Dot = None       # internal rep of '.' regexp
 
@@ -61,42 +75,44 @@ class RegularGrammar(object):
 
 
   # 'pretreat' the regular expression to simplify and validate it.
+  # also insert concatentation to make it explicit.
   # simplifies the following expressions:
-  #   *      -> self.Start
-  #   |      -> self.Union
-  #   +      -> self.Plus
-  #   ?      -> self.Question
-  #   \e     -> self.Epsilon
-  #   \\     -> \
-  #   .      -> ** anything **
+  #   *       -> self.Start
+  #   |       -> self.Union
+  #   +       -> self.Plus
+  #   ?       -> self.Question
+  #   \e      -> self.Epsilon
+  #   \\      -> \
+  #   \[meta] -> [meta]
+  #   (       -> self.Left
+  #   )       -> self.Right
+  #   .       -> ** anything **
   # future extns [], {}, \d, \w, etc.
-  #   ()     -> python list
-  def __expand__(self, regexp):
+  #   - 'd': None,   # any digit
+  #   - 's': None,   # any space
+  #   - 'l': None,   # any lower alpha
+  #   - 'u': None,   # any upper alpha
+  #   - 'w': None,   # any alpha numeric
+  #   - 'm': None,   # any meta
+  #   - 'g': None,   # any non meta graph
+  def __expand__(self, regexp): # FIXME: inset concatenation to make it explicit
     call_stk = []
     expr = []
     escape = False
-    cs = (self.uppers | self.lowers | self.digits | self.spaces | self.specials)
     for c in regexp:
-      if c in cs:
+      if c in self.characters:
         if not escape:
           if c == '\\': escape = True
-          else: expr.append(c) 
+          else: expr.append(c)  # TODO inset concat?
         else:
           escape = False
-          if c == 'e': expr.append(self.Epsilon)
-          elif c == '\\': expr.append('\\')
-          # 'd': None,   # any digit
-          # 's': None,   # any space
-          # 'l': None,   # any lower alpha
-          # 'u': None,   # any upper alpha
-          # 'w': None,   # any alpha numeric
-          # 'm': None,   # any meta
-          # 'g': None,   # any non meta graph
+          if c == 'e': expr.append(self.Epsilon) # TODO inset concat?
+          elif c == '\\': expr.append('\\') # TODO inset concat?
           else: return 'Error: invalid escape sequence'
       elif c in self.metas:
         if escape: # all meta's are escaped for literal
           escape = False
-          expr.append(c)
+          expr.append(c) # TODO inset concat?
         else:
           if c == '*':
             if len(expr) == 0: return 'Error: empty kleene star (*) sequence'
@@ -129,96 +145,114 @@ class RegularGrammar(object):
     if expr[-1] == self.Union: return 'Error: invalid Union (|) sequence'
     return expr
 
-  # reformats the epression into prefix triples (op, e0, e1) this also allows
-  # the removal of the list/parenthesis groupings
-  def __format__(regexp): # TODO: | is the only infix operator --> all others are postfix (concat is implicit)
-    _type = type(regexp)
-    if _type is list: # grouping
-      expr = [__format__(e) for e in regexp]
-      args = []
-      for e in expr:
-        _type = type(e)
-        if _type is str: return e # bubble error up
-        elif _type is int: # op
-          if len(args) != 1: return 'Error: *,+,? only require a single argument'
-          if e == self.Star: args.append((self.Star, args.pop(), None))
-          if e == self.Union: args.append((self.Union, args.pop(), None)) # FIXME: 2nd arg needed
-          elif e == self.Plus: args.append((self.Plus, args.pop(), None))
-          elif e == self.Question: args.append((self.Question, args.pop(), None))
-          else: return 'Error: unknown operator encountered during formatting'
-        elif _type is tuple: # implicit concat 
-          # push or make concat 
-          if len(args) != 2: return 'Error: concatenation requires 2 arguments'
-          e1 = args.pop()
-          e0 = args.pop()
-          args.append((self.Concat, e0, e1))
-        else: return 'Error: unknown type encountered during formatting'
-      return expr
-    elif _type is int:
-      if regexp == self.Epsilon: return  (None, regexp, None) # epsilon
-      else: return regexp # op (+, ?, *, |) 
-    elif _type is str: return (None, regexp, None) # character
-    else: return 'Error: unknown type encountered during regexp formatting'
+
+  # as explained @https://en.wikipedia.org/wiki/Shunting-yard_algorithm
+  def __shunt__(self, expression):
+    stk = []  # operator stack
+    q = []    # output Q
+
+    for token in expression:
+      if token in self.characters: q.append(token)
+      elif token is self.Left: stk.append(self.Left)
+      elif token is self.Right:
+        while len(stk) > 0 and stk[-1] is not self.Left: q.append(stk.pop())
+        if len(stk) is 0 or stk[-1] is not self.Left:
+          return 'Error: mismatched parenthesis'
+        stk.pop()
+      elif token in self.ops:
+        while len(stk) > 0 and self.ops[stk[-1]][0] >= self.ops[token][0] and self.ops[stk[-1]][1]:
+            q.append(stk.pop())
+        stk.append(token)
+      else: return 'Error: invalid input'
+
+    while len(stk) > 0:
+      if stk[-1] is self.Left or stk[-1] is self.Right:
+        return 'Error: mismatched parenthesis'
+      q.append(stk.pop())
+
+    return q # RPN (reverse polish notation) expression
 
 
-  # converts a regular expression to an NFA with epsilon productions using
-  # thompsons algorithm, which is able to handle: union |, kleene star *,
+  # converts a regular expression in RPN to an NFA with epsilon productions
+  # using thompsons algorithm, which is able to handle: union |, kleene star *,
   # concatenation ., epsilon \e, literals, and syntax extensions + and ?.
-  # followed the algorithm set forth in 'A taxonomy of finite automata
-  # construction algorithms' by Bruce Watson, located at:
+  # adapted from section 4.1 in 'A taxonomy of finite automata construction
+  # algorithms' by Bruce Watson, located at:
   # http://alexandria.tue.nl/extra1/wskrap/publichtml/9313452.pdf
-  def __NFA__(self, regexp):
+  def __eNFA__(self, expression): # exression is in RPN (postfix)
+    stk = [] # NFA machine stk
+    s, f, t = None, None, None # stk frame vars
     E = self.Epsilon # shorhand convience
 
-    def gen_state():
-      for i in range(0, sys.maxint): yield i
+    for token in expression:
+      if token is self.ops:
+        if token == self.Concat:
+          M1 = stk.pop()
+          M2 = stk.pop()
+          s, f = M1['s'], M2['f']
+          t = frozenset([(M1['f'], M2['s'], E)]) | M1['t'] | M2['t']
+        elif token == self.Union:
+          M1 = stk.pop()
+          M2 = stk.pop()
+          s, f = uuid.uuid1(), uuid.uuid1()
+          t = frozenset([(s, M1['s'], E), (s, M2['s'], E), (M1['f'], f, E), (M2['f'], f, E)]) | M1['t'] | M2['t']
+        elif token == self.Star:
+          M = stk.pop()
+          s, f = uuid.uuid1(), uuid.uuid1()
+          t = frozenset([(s, f, E), (M['s'], M['f'], E), (s, M['s'], E), (M['f'], f, E)]) | M['t']
+        elif token == self.Plus:
+          M = stk.pop()
+          s, f = uuid.uuid1(), uuid.uuid1()
+          t = frozenset([(M['s'], M['f'], E), (s, M['s'], E), (M['f'], f, E)]) | M['t']
+        elif token == self.Question:
+          M = stk.pop()
+          s, f = uuid.uuid1(), uuid.uuid1()
+          t = frozenset([(s, f, E), (s, M['s'], E), (M['f'], f, E)]) | M['t']
+        else: return 'Error: unrecognized operator in thompson construction'
+      else: # token is a character literal or self.Epsilon
+        s, f = uuid.uuid1(), uuid.uuid1()
+        t = frozenset([(s, f, (s, f, token))])
+      stk.push({ 's': s, 'f': f, 't': t })
 
-    # return set of state transitions of the form: (in, out, on)
-    def thompson(s, f, (op, e0, e1)):
-      if op == self.Concat:
-        p = gen_state()
-        q = gen_state()
-        M1 = thompson(s, p, e0)
-        M2 = thompson(q, f, e1)
-        return frozenset([(p, q, E)]) | M1 | M2
-      elif op == self.Union:
-        p = gen_state()
-        q = gen_state()
-        r = gen_state()
-        t = gen_state()
-        M1 = thompson(p, q, e0)
-        M2 = thompson(r, t, e1)
-        return frozenset([(s, p, E), (s, r, E), (q, f, E), (t, f, E)]) | M1 | M2
-      elif op == self.Star:
-        p = gen_state()
-        q = gen_state()
-        M = thompson(p, q, e0)
-        return frozenset([(s, p, E), (q, p, E), (s, f, E), (q, f, E)]) | M
-      elif op == self.Plus:
-        p = gen_state()
-        q = gen_state()
-        M = thompson(p, q, e0)
-        return frozenset([(s, p, E), (q, p, E), (q, f, E)]) | M
-      elif op == self.Question:
-        p = gen_state()
-        q = gen_state()
-        M = thompson(p, q, e0)
-        return frozenset([(s, p, E), (q, f, E), (s, f, E)]) | M
-      else: # op == None, literal or epsilon
-        return frozenset([(s, f, e0)])
+    return stk.pop()
 
-    s = gen_state()
-    f = gen_state()
-    return {
-      's': s,
-      'f': f,
-      't': thompson(s, f, regexp)
-    }
-     
 
-  # converts the NFA to DFA using subset construction
-  def __DFA__(self, NFA): # TODO
-    return None
+  # find the e closure: { q' | q ->*e q' } from a given start state q given a
+  # dictionary of epsilon transitions in the form: in -> out, automatically
+  # handling cycles
+  def e_closure(q, etransitions):
+    if q not in etransitions: return frozenset()
+
+    explore = closure = etransitions[q]
+    while len(explore) > 0:
+      q = explore.pop()
+      if q not in etransitions: continue 
+      for transition in etransitions[q]:
+        if transition in closure: continue
+        closure |= frozenset(transition)
+        explore |= frozenset(transition)
+
+    return closure
+
+
+  # converts the eNFA to DFA using subset construction and e closure conversion
+  def __DFA__(self, eNFA):
+    etransitions = {}
+    for (s, f, t) in eNFA['t']:
+      if t is self.Epsilon:
+        if s in etransitions: etransitions[s] |= frozenset(f)
+        else: etransitions[s] = frozenset(f)
+
+    closures = {}
+
+    DFA = {}
+    # TODO: powerset construction with e_closure
+    #if q in closures: return closures[q] # check cache
+    #closure[q] = e_closure(q, etransitions) # add to cache
+    #q0 = eNFA['s']
+    #q0 = eNFA['f']
+    #q0 = eNFA['t']
+    return DFA
 
 
   # minimizes the DFA
@@ -247,8 +281,7 @@ class RegularGrammar(object):
       else:
         DFAs[name]['error'] = None
         DFAs[name]['expanded'] = expanded
-        DFAs[name]['NFA'] = None
-        #DFAs[name]['NFA'] = self.__NFA__(DFAs[name]['expanded'])
+        DFAs[name]['NFA'] = self.__eNFA__(self.__format__(DFAs[name]['expanded']))
         DFAs[name]['DFA'] = self.__DFA__(DFAs[name]['NFA'])
         DFAs[name]['min DFA'] = self.__min__(DFAs[name]['DFA'])
 
@@ -261,7 +294,7 @@ class RegularGrammar(object):
     # and ignore them - i.e. continue in the FSM (recursive call)
 
     #formal = self.__expand__(scanner)
-    #NFA = self.__NFA__(formal)
+    #NFA = self.__eNFA__(formal)
     #DFA = self.__DFA__(NFA)
     #mdfa = self.__min__(DFA)
     #DFAs['__scanner__'] = {
@@ -446,9 +479,7 @@ if __name__ == '__main__':
   }
 
   def cmp_digraph(_g, g):
-    if _g['s'] != g['s']: return False
-    if _g['f'] != g['f']: return False
-    return _g['t'] == g['t']
+    return _g['s'] == g['s'] and _g['f'] == g['f'] and _g['t'] == g['t']
 
   def cmp_deeplist(_ls, ls):
     if len(_ls) != len(ls): return False
