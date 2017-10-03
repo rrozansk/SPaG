@@ -1,27 +1,34 @@
 """
- parser.py includes ContextFreeGrammar and testing...
- 
- represents a BNF grammar which can be programatically
- transformed into a LL1 parse table given the following requirements:
-   1. No left recursion
-   2. Must be left factored
- Although, it is possible for any grammar to be specified as all conflicts will
- be reported if any exist in the grammar.
+ parser.py includes the implementation and testing of ContextFreeGrammar
+ objects.
 
- This object can be tested by directly calling it with python like:
+ The ContextFreeGrammar object represents a BNF style grammar which can be
+ programatically transformed into a parser for the given language. While
+ it is possible for any grammar to be specified, only LL1 grammars are
+ supported with the following requirements to produce a parse table:
+   1. No left recursion (direct and indirect)
+   2. Must be left factored
+   3. No ambiguity
+ However, if you do specify a grammar which has any of the above do not fret,
+ as everything will still run all conflict will be reported.
+
+ Testing is implemented in a table driven fashion using the black box method.
+ The test may be run at the command line with the following invocation:
+
    $ python parser.py
- You should see no output if all test passed, otherwise a value error is thrown
- with the appropriate message.
+
+ If all tests passed no output will be produced. In the event of a failure a
+ ValueError is thrown with the appropriate error/failure message.
 """
 
 
 class ContextFreeGrammar(object):
     """
-    doc ...
+    ContextFreeGrammar represents a Backus Normal Form (BNF) grammar.
     """
 
-    Dollar = 0
-    Epsilon = 1
+    EOI = 0  # end of input marker
+    EPS = 1  # Epsilon marker
 
     name = None
     starting = None     # which grammar rule is the start symbol of grammar
@@ -29,163 +36,165 @@ class ContextFreeGrammar(object):
 
     def __init__(self, name):
         """
-        doc...
+        Object constructor which initializes grammar name and productions.
         """
         self.name = name
         self.productions = []
 
     def start(self, starting):
         """
-        start symbol of the grammar
+        Declare the start symbol of the grammar.
         """
         self.starting = starting
 
     def production(self, lhs, rhs):
         """
-        splits a series of productions intos the form:
-        (rule #, [[seq of symbols for a production] ...])
-        empty list [] specifies an epsilon production.
+        Add a production rule to the grammar. Once added the production cannot
+        be removed. lhs is a nonterminal symbol and rhs is a string containing
+        the productions, seperated by a vertical bar (|), an empty production
+        specifies an epsilon.
         """
         rule = (lhs, [productions.split() for productions in rhs.split('|')])
         self.productions.append(rule)
 
-    def __terminals__(self):
+    def terminals(self):
         """
-        all literal symbols which appear in the grammar
+        report all literal symbols which appear in the grammar
         """
         terminals = frozenset()
-        lhs = {key for (key, _) in self.productions}
-        for (_, v) in self.productions:
-            for production in v:
+        nonterminals = frozenset({key for (key, _) in self.productions})
+        for (_, productions) in self.productions:
+            for production in productions:
                 for symbol in production:
-                    if symbol not in lhs:
+                    if symbol not in nonterminals:
                         terminals |= frozenset([symbol])
         return terminals
 
-    def __nonterminals__(self):
+    def nonterminals(self):
         """
-        all non terminals are just the production rules
+        report all non terminals are just the production rules
         """
         return frozenset({production for (production, _) in self.productions})
 
-    def __firstOfProduction__(self, Xs, first):
+    def _first_production(self, production, first):
         """
         compute the first set of a given productions rhs
         """
-        if len(Xs) == 0:
-            return frozenset([self.Epsilon])
+        if len(production) == 0:
+            return frozenset([self.EPS])
 
-        tmp = first[Xs[0]] - frozenset([self.Epsilon])
-        k = 1
-        while k < len(Xs) and self.Epsilon in first[Xs[k-1]]:
-            tmp |= first[Xs[k]] - frozenset([self.Epsilon])
-            k += 1
+        _first = first[production[0]] - frozenset([self.EPS])
+        idk = 1
+        while idk < len(production) and self.EPS in first[production[idk-1]]:
+            _first |= first[production[idk]] - frozenset([self.EPS])
+            idk += 1
 
         # epsilon only if X_1, X_2, ... X_n -> epsilon
-        if self.Epsilon in first[Xs[k-1]]:
-            tmp |= frozenset([self.Epsilon])
+        if self.EPS in first[production[idk-1]]:
+            _first |= frozenset([self.EPS])
 
-        return tmp
+        return _first
 
-    def __first__(self, terminals, nonterminals):
+    def first(self, terminals, nonterminals):
         """
         calculate the first set following the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
         """
-        _first = {}
+        first = {}
 
         # foreach elem A of TERMS do _first[A] = {A}
         for terminal in terminals:
-            _first[terminal] = frozenset([terminal])
+            first[terminal] = frozenset([terminal])
 
         # foreach elem A of NONTERMS do _first[A] = {}
         for nonterminal in nonterminals:
-            _first[nonterminal] = frozenset()
+            first[nonterminal] = frozenset()
 
         # loop until nothing new happens updating the _first sets
         while True:
             changed = False
 
-            for (A, productions) in self.productions:
-                for Xs in productions:
-                    new = _first[A] | self.__firstOfProduction__(Xs, _first)
-                    if new != _first[A]:
-                        _first[A] = new
+            for (nonterminal, productions) in self.productions:
+                for production in productions:
+                    new = self._first_production(production, first) | \
+                          first[nonterminal]
+                    if new != first[nonterminal]:
+                        first[nonterminal] = new
                         changed = True
 
             if not changed:
-                return _first
+                return first
 
-    def __follow__(self, nonterminals, first):
+    def follow(self, nonterminals, first):
         """
         calculate the follow set following the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
         """
-        _follow = {}
+        follow = {}
 
         # foreach elem A of NONTERMS do Follow[A] = {}
         for nonterminal in nonterminals:
-            _follow[nonterminal] = frozenset()
+            follow[nonterminal] = frozenset()
 
         # put $ (end of input marker) in Follow(<Start>)
-        _follow[self.starting] = frozenset([self.Dollar])
+        follow[self.starting] = frozenset([self.EOI])
 
         # loop until nothing new happens updating the First sets
         while True:
             changed = False
 
-            for (A, productions) in self.productions:
-                for Xs in productions:
-                    for i in range(0, len(Xs)):
-                        if Xs[i] in nonterminals:
-                            old = _follow[Xs[i]]
-                            add = self.__firstOfProduction__(Xs[i+1:], first)
-                            _follow[Xs[i]] |= add - frozenset([self.Epsilon])
-                            if self.Epsilon in add:
-                                _follow[Xs[i]] |= _follow[A]
+            for (nonterminal, productions) in self.productions:
+                for prod in productions:
+                    for idx in range(0, len(prod)):
+                        if prod[idx] in nonterminals:
+                            old = follow[prod[idx]]
+                            add = self._first_production(prod[idx+1:], first)
+                            follow[prod[idx]] |= add - frozenset([self.EPS])
+                            if self.EPS in add:
+                                follow[prod[idx]] |= follow[nonterminal]
 
-                            if old != _follow[Xs[i]]:
+                            if old != follow[prod[idx]]:
                                 changed = True
 
             if not changed:
-                return _follow
+                return follow
 
-    def __predict__(self, A, Xs, first, follow):
+    def _predict(self, nonterminal, production, first, follow):
         """
         calculate the predict set following the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
         """
-        tmp = self.__firstOfProduction__(Xs, first)
-        if self.Epsilon in tmp:
-            tmp |= follow[A]
-        return tmp - frozenset([self.Epsilon])
+        predict = self._first_production(production, first)
+        if self.EPS in predict:
+            predict |= follow[nonterminal]
+        return predict - frozenset([self.EPS])
 
-    def __table__(self, terminals, nonterminals, first, follow):
+    def table(self, terminals, nonterminals, first, follow):
         """
-        construct the LL(1) parsing table by finding predict sets
+        construct the LL(1) parsing table by finding predict sets.
         """
         # build the table with row and column headers
-        terminals = list(terminals | frozenset([self.Dollar]))
+        terminals = list(terminals | frozenset([self.EOI]))
         nonterminals = list(nonterminals)
-        table = [[n]+[frozenset() for t in terminals] for n in nonterminals]
+        table = [[n]+[frozenset() for _ in terminals] for n in nonterminals]
         table.insert(0, [' ']+terminals)
 
         # flatten productions, and fill in table
         productions = []
         rule = 0
-        for (A, _productions) in self.productions:
-            n = nonterminals.index(A)+1  # account for column header
-            for Xs in _productions:
-                predict = self.__predict__(A, Xs, first, follow)
+        for (nonterminal, _productions) in self.productions:
+            idx_n = nonterminals.index(nonterminal)+1  # acct for column header
+            for production in _productions:
+                predict = self._predict(nonterminal, production, first, follow)
                 for terminal in predict:
-                    t = terminals.index(terminal)+1  # account for row header
-                    table[n][t] |= frozenset([rule])
-                productions.append((rule, A, Xs))
+                    idx_t = terminals.index(terminal)+1  # acct for row header
+                    table[idx_n][idx_t] |= frozenset([rule])
+                productions.append((rule, nonterminal, production))
                 rule += 1
 
         return (table, productions)
 
-    def __conflicts__(self, table, rules):
+    def conflicts(self, table):
         """
         grammar is ll(1) if parse table has (@maximum) a single entry per
         table slot conflicting for the predicitions
@@ -200,19 +209,19 @@ class ContextFreeGrammar(object):
 
     def make(self):
         """
-        doc...
+        driver function to construct all the necessary information for the
+        given grammar once it has been input.
         """
-        terms = self.__terminals__()
-        nonterms = self.__nonterminals__()
-        first = self.__first__(terms, nonterms)
-        follow = self.__follow__(nonterms, first)
-        (table, rules) = self.__table__(terms, nonterms, first, follow)
-        conflicts = self.__conflicts__(table, rules)
+        terms = self.terminals()
+        nonterms = self.nonterminals()
+        first = self.first(terms, nonterms)
+        follow = self.follow(nonterms, first)
+        (table, rules) = self.table(terms, nonterms, first, follow)
+        conflicts = self.conflicts(table)
 
         return {
             'name':         self.name,
             'start':        self.starting,
-            'productions':  self.productions,
             'terminals':    terms,
             'nonterminals': nonterms,
             'first':        first,
@@ -224,264 +233,275 @@ class ContextFreeGrammar(object):
 
 
 if __name__ == "__main__":
-    def cmp_deep_seq(seq1, seq2):
-        """Compare two arbitrary sequences for deep equality."""
-        if len(seq1) != len(seq2):
-            return False
-        for i in range(0, len(seq1)):
-            if isinstance(type(seq1[i]), type(seq2[i])):
-                return False
-            _type = type(seq1[i])
-            if _type is list or _type is tuple:
-                if not cmp_deep_seq(seq1[i], seq2[i]):
-                    return False
-            else:
-                if seq1[i] != seq2[i]:
-                    return False
-        return True
 
-    TESTS = [{
-            'name': 'Invalid Grammar: Left Recursive',
-            '_productions': [
-                ('<exp>', '<exp> <addop> <term> | <term>'),
-                ('<addop>', '+ | -'),
-                ('<term>', '<term> <mulop> <factor> | <factor>'),
-                ('<mulop>', '*'),
-                ('<factor>', '( <exp> ) | num'),
-            ],
+    TESTS = [
+        {
+            'name': 'Invalid Grammar: First/First Conflict',
             'productions': [
-                ('<exp>', [['<exp>', '<addop>', '<term>'], ['<term>']]),
-                ('<addop>', [['+'], ['-']]),
-                ('<term>', [['<term>', '<mulop>', '<factor>'], ['<factor>']]),
-                ('<mulop>', [['*']]),
-                ('<factor>', [['(', '<exp>', ')'], ['num']]),
+                ('<S>', '<E> | <E> a'),
+                ('<E>', 'b |')
             ],
-            'start': '<exp>',
-            'terminals': frozenset(['(', ')', '+', '*', '-', 'num']),
-            'nonterminals': frozenset(['<exp>', '<addop>', '<term>', '<mulop>',
-                                       '<factor>']),
+            'start': '<S>',
+            'terminals': frozenset(['a', 'b']),
+            'nonterminals': frozenset(['<S>', '<E>']),
             'first': {
-                '(': frozenset(['(']),
-                ')': frozenset([')']),
-                '+': frozenset(['+']),
-                '-': frozenset(['-']),
-                '*': frozenset(['*']),
-                'num': frozenset(['num']),
-                '<exp>': frozenset(['(', 'num']),
-                '<addop>': frozenset(['+', '-']),
-                '<term>': frozenset(['(', 'num']),
-                '<mulop>': frozenset(['*']),
-                '<factor>': frozenset(['(', 'num']),
+                'a': frozenset(['a']),
+                'b': frozenset(['b']),
+                '<S>': frozenset(['b', 'a', 1]),
+                '<E>': frozenset(['b', 1])
             },
             'follow': {
-                '<exp>': frozenset([0, '+', '-', ')']),
-                '<addop>': frozenset(['(', 'num']),
-                '<term>': frozenset([0, '+', '-', '*', ')']),
-                '<mulop>': frozenset(['(', 'num']),
-                '<factor>': frozenset([0, '+', '-', '*', ')']),
+                '<S>': frozenset([0]),
+                '<E>': frozenset([0, 'a'])
             },
             'rules': [
-                (0, '<exp>', ['<exp>', '<addop>', '<term>']),
-                (1, '<exp>', ['<term>']),
-                (2, '<addop>', ['+']),
-                (3, '<addop>', ['-']),
-                (4, '<term>', ['<term>', '<mulop>', '<factor>']),
-                (5, '<term>', ['<factor>']),
-                (6, '<mulop>', ['*']),
-                (7, '<factor>', ['(', '<exp>', ')']),
-                (8, '<factor>', ['num']),
+                (0, '<S>', ['<E>']),
+                (1, '<S>', ['<E>', 'a']),
+                (2, '<E>', ['b']),
+                (3, '<E>', [])
             ],
             'table': [
-                [' ', 0, 'num', ')', '(', '+', '*', '-'],
-                ['<exp>', frozenset([]), frozenset([0, 1]), frozenset([]),
-                 frozenset([0, 1]), frozenset([]), frozenset([]),
-                 frozenset([])],
-                ['<addop>', frozenset([]), frozenset([]), frozenset([]),
-                 frozenset([]), frozenset([2]), frozenset([]), frozenset([3])],
-                ['<mulop>', frozenset([]), frozenset([]), frozenset([]),
-                 frozenset([]), frozenset([]), frozenset([6]), frozenset([])],
-                ['<term>', frozenset([]), frozenset([4, 5]), frozenset([]),
-                 frozenset([4, 5]), frozenset([]), frozenset([]),
-                 frozenset([])],
-                ['<factor>', frozenset([]), frozenset([8]), frozenset([]),
-                 frozenset([7]), frozenset([]), frozenset([]), frozenset([])]
-                ],
-            'conflicts': [
-                ('<exp>', 'num', frozenset([0, 1])),
-                ('<exp>', '(', frozenset([0, 1])),
-                ('<term>', 'num', frozenset([4, 5])),
-                ('<term>', '(', frozenset([4, 5]))
-            ]
+                [' ', 'a', 0, 'b'],
+                ['<S>', frozenset([1]), frozenset([0]), frozenset([0, 1])],
+                ['<E>', frozenset([3]), frozenset([3]), frozenset([2])]
+            ],
+            'conflicts': [('<S>', 'b', frozenset([0, 1]))]
         },
         {
-            'name': 'Valid Grammar: Epsilon Example 1',
-            '_productions': [
-                ('<exp>', '<term> <expx>'),
-                ('<expx>', '<addop> <term> <expx> |'),
-                ('<addop>', '+ | - '),
-                ('<term>', '<factor> <termx>'),
-                ('<termx>', '<mulop> <factor> <termx> |'),
-                ('<mulop>', '*'),
-                ('<factor>', '( <exp> ) | num )'),
-            ],
+            'name': 'Invalid Grammar: First/Follow Conflict',
             'productions': [
-                ('<exp>', [['<term>', '<expx>']]),
-                ('<expx>', [['<addop>', '<term>', '<expx>'], []]),
-                ('<addop>', [['+'], ['-']]),
-                ('<term>', [['<factor>', '<termx>']]),
-                ('<termx>', [['<mulop>', '<factor>', '<termx>'], []]),
-                ('<mulop>', [['*']]),
-                ('<factor>', [['(', '<exp>', ')'], ['num', ')']]),
+                ('<S>', '<A> a b'),
+                ('<A>', 'a |')
             ],
-            'start': '<exp>',
-            'terminals': frozenset(['+', '-', '*', '(', ')', 'num']),
-            'nonterminals': frozenset(['<exp>', '<expx>', '<addop>', '<term>',
-                                       '<termx>', '<mulop>', '<factor>']),
+            'start': '<S>',
+            'terminals': frozenset(['a', 'b']),
+            'nonterminals': frozenset(['<S>', '<A>']),
             'first': {
-                '+': frozenset(['+']),
-                '-': frozenset(['-']),
-                '*': frozenset(['*']),
-                '(': frozenset(['(']),
-                ')': frozenset([')']),
-                'num': frozenset(['num']),
-                '<exp>': frozenset(['(', 'num']),
-                '<expx>': frozenset(['+', '-', 1]),
-                '<addop>': frozenset(['+', '-']),
-                '<term>': frozenset(['(', 'num']),
-                '<termx>': frozenset([1, '*']),
-                '<mulop>': frozenset(['*']),
-                '<factor>': frozenset(['(', 'num']),
+                'a': frozenset(['a']),
+                'b': frozenset(['b']),
+                '<S>': frozenset(['a']),
+                '<A>': frozenset(['a', 1])
             },
             'follow': {
-                '<exp>': frozenset([0, ')']),
-                '<expx>': frozenset([0, ')']),
-                '<addop>': frozenset(['(', 'num']),
-                '<term>': frozenset([')', '+', '-', 0]),
-                '<termx>': frozenset([')', '+', '-', 0]),
-                '<mulop>': frozenset(['(', 'num']),
-                '<factor>': frozenset([')', '+', '-', '*', 0]),
+                '<S>': frozenset([0]),
+                '<A>': frozenset(['a'])
             },
             'rules': [
-                (0, '<exp>', ['<term>', '<expx>']),
-                (1, '<expx>', ['<addop>', '<term>', '<expx>']),
-                (2, '<expx>', []),
-                (3, '<addop>', ['+']),
-                (4, '<addop>', ['-']),
-                (5, '<term>', ['<factor>', '<termx>']),
-                (6, '<termx>', ['<mulop>', '<factor>', '<termx>']),
-                (7, '<termx>', []),
-                (8, '<mulop>', ['*']),
-                (9, '<factor>', ['(', '<exp>', ')']),
-                (10, '<factor>', ['num', ')']),
+                (0, '<S>', ['<A>', 'a', 'b']),
+                (1, '<A>', ['a']),
+                (2, '<A>', [])
             ],
             'table': [
-                [' ', 0, 'num', ')', '(', '+', '*', '-'],
-                ['<exp>', frozenset([]), frozenset([0]), frozenset([]),
-                 frozenset([0]), frozenset([]), frozenset([]), frozenset([])],
-                ['<expx>', frozenset([2]), frozenset([]), frozenset([2]),
-                 frozenset([]), frozenset([1]), frozenset([]), frozenset([1])],
-                ['<addop>', frozenset([]), frozenset([]), frozenset([]),
-                 frozenset([]), frozenset([3]), frozenset([]), frozenset([4])],
-                ['<term>', frozenset([]), frozenset([5]), frozenset([]),
-                 frozenset([5]), frozenset([]), frozenset([]), frozenset([])],
-                ['<termx>', frozenset([7]), frozenset([]), frozenset([7]),
-                 frozenset([]), frozenset([7]), frozenset([6]),
-                 frozenset([7])],
-                ['<mulop>', frozenset([]), frozenset([]), frozenset([]),
-                 frozenset([]), frozenset([]), frozenset([8]), frozenset([])],
-                ['<factor>', frozenset([]), frozenset([10]), frozenset([]),
-                 frozenset([9]), frozenset([]), frozenset([]), frozenset([])]
+                [' ', 'a', 0, 'b'],
+                ['<S>', frozenset([0]), frozenset([]), frozenset([])],
+                ['<A>', frozenset([1, 2]), frozenset([]), frozenset([])]
             ],
-            'conflicts': [],
+            'conflicts': [('<A>', 'a', frozenset([1, 2]))]
         },
         {
-            'name': 'Valid Grammar: Epsilon Example 2',
-            '_productions': [
-                ('<E>', '<T> <E\'>'),
-                ('<E\'>', '+ <T> <E\'> |'),
-                ('<T>', '<F> <T\'>'),
-                ('<T\'>', '* <F> <T\'> |'),
-                ('<F>', '( <E> ) | id'),
-            ],
+            'name': 'Invalid Grammar: Left Recursion',
             'productions': [
-                ('<E>', [['<T>', '<E\'>']]),
-                ('<E\'>', [['+', '<T>', '<E\'>'], []]),
-                ('<T>', [['<F>', '<T\'>']]),
-                ('<T\'>', [['*', '<F>', '<T\'>'], []]),
-                ('<F>', [['(', '<E>', ')'], ['id']]),
+                ('<E>', '<E> <A> <T> | <T>'),
+                ('<A>', '+ | -'),
+                ('<T>', '<T> <M> <F> | <F>'),
+                ('<M>', '*'),
+                ('<F>', '( <E> ) | id')
             ],
             'start': '<E>',
-            'terminals': frozenset(['(', ')', '+', '*', 'id']),
-            'nonterminals': frozenset(['<E>', '<E\'>', '<T>', '<T\'>', '<F>']),
+            'terminals': frozenset(['(', ')', '+', '*', '-', 'id']),
+            'nonterminals': frozenset(['<E>', '<A>', '<T>', '<M>', '<F>']),
             'first': {
                 '(': frozenset(['(']),
                 ')': frozenset([')']),
                 '+': frozenset(['+']),
+                '-': frozenset(['-']),
                 '*': frozenset(['*']),
                 'id': frozenset(['id']),
                 '<E>': frozenset(['(', 'id']),
-                "<E'>": frozenset([1, '+']),
+                '<A>': frozenset(['+', '-']),
                 '<T>': frozenset(['(', 'id']),
-                "<T'>": frozenset([1, '*']),
+                '<M>': frozenset(['*']),
+                '<F>': frozenset(['(', 'id'])
+            },
+            'follow': {
+                '<E>': frozenset([0, '+', '-', ')']),
+                '<A>': frozenset(['(', 'id']),
+                '<T>': frozenset([0, '+', '-', '*', ')']),
+                '<M>': frozenset(['(', 'id']),
+                '<F>': frozenset([0, '+', '-', '*', ')'])
+            },
+            'rules': [
+                (0, '<E>', ['<E>', '<A>', '<T>']),
+                (1, '<E>', ['<T>']),
+                (2, '<A>', ['+']),
+                (3, '<A>', ['-']),
+                (4, '<T>', ['<T>', '<M>', '<F>']),
+                (5, '<T>', ['<F>']),
+                (6, '<M>', ['*']),
+                (7, '<F>', ['(', '<E>', ')']),
+                (8, '<F>', ['id'])
+            ],
+            'table': [
+                [' ', 0, 'id', ')', '(', '+', '*', '-'],
+                ['<E>', frozenset([]), frozenset([0, 1]), frozenset([]),
+                 frozenset([0, 1]), frozenset([]), frozenset([]),
+                 frozenset([])],
+                ['<A>', frozenset([]), frozenset([]), frozenset([]),
+                 frozenset([]), frozenset([2]), frozenset([]), frozenset([3])],
+                ['<M>', frozenset([]), frozenset([]), frozenset([]),
+                 frozenset([]), frozenset([]), frozenset([6]), frozenset([])],
+                ['<T>', frozenset([]), frozenset([4, 5]), frozenset([]),
+                 frozenset([4, 5]), frozenset([]), frozenset([]),
+                 frozenset([])],
+                ['<F>', frozenset([]), frozenset([8]), frozenset([]),
+                 frozenset([7]), frozenset([]), frozenset([]), frozenset([])]
+            ],
+            'conflicts': [
+                ('<E>', 'id', frozenset([0, 1])),
+                ('<E>', '(', frozenset([0, 1])),
+                ('<T>', 'id', frozenset([4, 5])),
+                ('<T>', '(', frozenset([4, 5]))
+            ]
+        },
+        {
+            'name': 'Valid Grammar: With Epsilon',
+            'productions': [
+                ('<E>', '<T> <E\'>'),
+                ('<E\'>', '<A> <T> <E\'> |'),
+                ('<A>', '+ | - '),
+                ('<T>', '<F> <T\'>'),
+                ('<T\'>', '<M> <F> <T\'> |'),
+                ('<M>', '*'),
+                ('<F>', '( <E> ) | id')
+            ],
+            'start': '<E>',
+            'terminals': frozenset(['+', '-', '*', '(', ')', 'id']),
+            'nonterminals': frozenset(['<E>', '<E\'>', '<A>', '<T>', '<T\'>',
+                                       '<M>', '<F>']),
+            'first': {
+                '+': frozenset(['+']),
+                '-': frozenset(['-']),
+                '*': frozenset(['*']),
+                '(': frozenset(['(']),
+                ')': frozenset([')']),
+                'id': frozenset(['id']),
+                '<E>': frozenset(['(', 'id']),
+                '<E\'>': frozenset(['+', '-', 1]),
+                '<A>': frozenset(['+', '-']),
+                '<T>': frozenset(['(', 'id']),
+                '<T\'>': frozenset([1, '*']),
+                '<M>': frozenset(['*']),
                 '<F>': frozenset(['(', 'id'])
             },
             'follow': {
                 '<E>': frozenset([0, ')']),
-                "<E'>": frozenset([0, ')']),
-                '<T>': frozenset([0, ')', '+']),
-                "<T'>": frozenset([0, ')', '+']),
-                '<F>': frozenset([0, ')', '+', '*'])
+                '<E\'>': frozenset([0, ')']),
+                '<A>': frozenset(['(', 'id']),
+                '<T>': frozenset([')', '+', '-', 0]),
+                '<T\'>': frozenset([')', '+', '-', 0]),
+                '<M>': frozenset(['(', 'id']),
+                '<F>': frozenset([')', '+', '-', '*', 0])
             },
             'rules': [
-                (0, '<E>',  ['<T>', "<E'>"]),
-                (1, "<E'>", ['+', '<T>', "<E'>"]),
-                (2, "<E'>", []),
-                (3, '<T>',  ['<F>', "<T'>"]),
-                (4, "<T'>", ['*', '<F>', "<T'>"]),
-                (5, "<T'>", []),
-                (6, '<F>',  ['(', '<E>', ')']),
-                (7, '<F>',  ['id'])
+                (0, '<E>', ['<T>', '<E\'>']),
+                (1, '<E\'>', ['<A>', '<T>', '<E\'>']),
+                (2, '<E\'>', []),
+                (3, '<A>', ['+']),
+                (4, '<A>', ['-']),
+                (5, '<T>', ['<F>', '<T\'>']),
+                (6, '<T\'>', ['<M>', '<F>', '<T\'>']),
+                (7, '<T\'>', []),
+                (8, '<M>', ['*']),
+                (9, '<F>', ['(', '<E>', ')']),
+                (10, '<F>', ['id'])
             ],
             'table': [
-                [' ', 0, ')', '(', '+', '*', 'id'],
-                ['<E>',  frozenset([]),  frozenset([]),  frozenset([0]),
-                 frozenset([]),  frozenset([]),  frozenset([0])],
-                ["<E'>", frozenset([2]), frozenset([2]), frozenset([]),
-                 frozenset([1]), frozenset([]),  frozenset([])],
-                ["<T>",  frozenset([]),  frozenset([]),  frozenset([3]),
-                 frozenset([]),  frozenset([]),  frozenset([3])],
-                ["<T'>", frozenset([5]), frozenset([5]), frozenset([]),
-                 frozenset([5]), frozenset([4]), frozenset([])],
-                ["<F>",  frozenset([]),  frozenset([]),  frozenset([6]),
-                 frozenset([]),  frozenset([]),  frozenset([7])]
+                [' ', 0, 'id', ')', '(', '+', '*', '-'],
+                ['<E>', frozenset([]), frozenset([0]), frozenset([]),
+                 frozenset([0]), frozenset([]), frozenset([]), frozenset([])],
+                ['<E\'>', frozenset([2]), frozenset([]), frozenset([2]),
+                 frozenset([]), frozenset([1]), frozenset([]), frozenset([1])],
+                ['<A>', frozenset([]), frozenset([]), frozenset([]),
+                 frozenset([]), frozenset([3]), frozenset([]), frozenset([4])],
+                ['<T>', frozenset([]), frozenset([5]), frozenset([]),
+                 frozenset([5]), frozenset([]), frozenset([]), frozenset([])],
+                ['<T\'>', frozenset([7]), frozenset([]), frozenset([7]),
+                 frozenset([]), frozenset([7]), frozenset([6]),
+                 frozenset([7])],
+                ['<M>', frozenset([]), frozenset([]), frozenset([]),
+                 frozenset([]), frozenset([]), frozenset([8]), frozenset([])],
+                ['<F>', frozenset([]), frozenset([10]), frozenset([]),
+                 frozenset([9]), frozenset([]), frozenset([]), frozenset([])]
+            ],
+            'conflicts': []
+        },
+        {
+            'name': 'Valid Grammar: No Epsilon',
+            'productions': [
+                ('<S>', '<A> a <A> b'),
+                ('<S>', '<B> b <B> a'),
+                ('<A>', ''),
+                ('<B>', '')
+            ],
+            'start': '<S>',
+            'terminals': frozenset(['a', 'b']),
+            'nonterminals': frozenset(['<S>', '<A>', '<B>']),
+            'first': {
+                'a': frozenset(['a']),
+                'b': frozenset(['b']),
+                '<S>': frozenset(['a', 'b']),
+                '<A>': frozenset([1]),
+                '<B>': frozenset([1])
+            },
+            'follow': {
+                '<S>': frozenset([0]),
+                '<A>': frozenset(['b', 'a']),
+                '<B>': frozenset(['a', 'b'])
+            },
+            'rules': [
+                (0, '<S>', ['<A>', 'a', '<A>', 'b']),
+                (1, '<S>', ['<B>', 'b', '<B>', 'a']),
+                (2, '<A>', []),
+                (3, '<B>', [])
+            ],
+            'table': [
+                [' ', 0, 'a', 'b'],
+                ['<S>', frozenset([]), frozenset([0]), frozenset([1])],
+                ['<A>', frozenset([]), frozenset([2]), frozenset([2])],
+                ['<B>', frozenset([]), frozenset([3]), frozenset([3])]
             ],
             'conflicts': [],
-        }
-        # TODO: { 'name': 'Valid Grammar: No Epsilon Example 1', },
-        # TODO: { 'name': 'Invalid Grammar: Not Left Factored', },
+        },
     ]
 
+    def cmp_deep_seq(seq1, seq2):
+        """Compare two arbitrary sequences for deep equality."""
+        if len(seq1) != len(seq2):
+            return False
+        for idx in range(0, len(seq1)):
+            if isinstance(type(seq1[idx]), type(seq2[idx])):
+                return False
+            _type = type(seq1[idx])
+            if _type is list or _type is tuple:
+                if not cmp_deep_seq(seq1[idx], seq2[idx]):
+                    return False
+            else:
+                if seq1[idx] != seq2[idx]:
+                    return False
+        return True
+
     for test in TESTS:
-        _test = ContextFreeGrammar(test['name'])
-        _test.start(test['start'])
-        for i in range(0, len(test['_productions'])):
-            (A, Ps) = test['_productions'][i]
-            _test.production(A, Ps)
-        result = _test.make()
+        grammar = ContextFreeGrammar(test['name'])
+        grammar.start(test['start'])
+        for (nonterminal, productions) in test['productions']:
+            grammar.production(nonterminal, productions)
+        result = grammar.make()
 
         if result['name'] != test['name']:
             raise ValueError('Invalid name produced')
 
         if result['start'] != test['start']:
             raise ValueError('Invalid start production produced')
-
-        if len(result['productions']) != len(test['productions']):
-            raise ValueError('Invalid productions produced')
-
-        result['productions'].sort(key=lambda production: production[0])
-        test['productions'].sort(key=lambda production: production[0])
-        if not cmp_deep_seq(result['productions'], test['productions']):
-            raise ValueError('Invalid production produced')
 
         if result['terminals'] != test['terminals']:
             raise ValueError('Invalid terminal set produced')
@@ -527,5 +547,7 @@ if __name__ == "__main__":
         if not cmp_deep_seq(result['table'], test['table']):
             raise ValueError('Invalid table value produced')
 
+        result['conflicts'].sort(key=lambda conflict: conflict[0]+conflict[1])
+        test['conflicts'].sort(key=lambda conflict: conflict[0]+conflict[1])
         if not cmp_deep_seq(result['conflicts'], test['conflicts']):
             raise ValueError('Invalid conflicts produced')
