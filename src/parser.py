@@ -472,6 +472,108 @@ if __name__ == "__main__":
             ],
             'conflicts': [],
         },
+        {
+            'name': 'Valid Grammar: Simple language',
+            'productions': [
+                ('<STMT>', 'if <EXPR> then <STMT>\
+                            | while <EXPR> do <STMT>\
+                            | <EXPR>'),
+                ('<EXPR>', '<TERM> -> id\
+                            | zero? <TERM>\
+                            | not <EXPR>\
+                            | ++ id\
+                            | -- id'),
+                ('<TERM>', 'id | constant'),
+                ('<BLOCK>', '<STMT> | { <STMTS> }'),
+                ('<STMTS>', '<STMT> <STMTS> |')
+            ],
+            'start': '<BLOCK>',
+            'terminals': frozenset(['if', 'then', 'while', 'do', '->', 'zero?',
+                                    'not', '++', '--', 'id', 'constant', '{',
+                                    '}']),
+            'nonterminals': frozenset(['<STMT>', '<STMTS>', '<BLOCK>',
+                                       '<TERM>', '<EXPR>']),
+            'first': {
+              'if': frozenset(['if']),
+              'then': frozenset(['then']),
+              'while': frozenset(['while']),
+              'do': frozenset(['do']),
+              '->': frozenset(['->']),
+              'zero?': frozenset(['zero?']),
+              'not': frozenset(['not']),
+              '++': frozenset(['++']),
+              '--': frozenset(['--']),
+              'id': frozenset(['id']),
+              'constant': frozenset(['constant']),
+              '{': frozenset(['{']),
+              '}': frozenset(['}']),
+              '<STMT>': frozenset(['constant', '++', 'zero?', 'while', 'not',
+                                   '--', 'id', 'if']),
+              '<STMTS>': frozenset([1, 'constant', '++', 'zero?', 'while',
+                                    'not', '--', 'id', 'if']),
+              '<BLOCK>': frozenset(['constant', '++', 'zero?', 'while', 'not',
+                                    '--', '{', 'id', 'if']),
+              '<TERM>': frozenset(['constant', 'id']),
+              '<EXPR>': frozenset(['++', 'not', 'constant', 'zero?', '--',
+                                  'id'])
+            },
+            'follow': {
+                '<STMT>': frozenset([0, 'constant', '++', 'not', 'while',
+                                     'zero?', '--', '}', 'id', 'if']),
+                '<STMTS>': frozenset(['}']),
+                '<BLOCK>': frozenset([0]),
+                '<TERM>': frozenset([0, 'then', 'constant', 'do', 'not', 'id',
+                                     'if', '++', '--', 'while', 'zero?', '->',
+                                     '}']),
+                '<EXPR>': frozenset([0, 'then', 'constant', 'do', '++', '--',
+                                     'while', 'not', 'zero?', '}', 'id',
+                                     'if'])
+            },
+            'rules': [
+                (0, '<STMT>', ['if', '<EXPR>', 'then', '<STMT>']),
+                (1, '<STMT>', ['while', '<EXPR>', 'do', '<STMT>']),
+                (2, '<STMT>', ['<EXPR>']),
+                (3, '<EXPR>', ['<TERM>', '->', 'id']),
+                (4, '<EXPR>', ['zero?', '<TERM>']),
+                (5, '<EXPR>', ['not', '<EXPR>']),
+                (6, '<EXPR>', ['++', 'id']),
+                (7, '<EXPR>', ['--', 'id']),
+                (8, '<TERM>', ['id']),
+                (9, '<TERM>', ['constant']),
+                (10, '<BLOCK>', ['<STMT>']),
+                (11, '<BLOCK>', ['{', '<STMTS>', '}']),
+                (12, '<STMTS>', ['<STMT>', '<STMTS>']),
+                (13, '<STMTS>', [])
+            ],
+            'table': [
+                [' ', 0, 'then', 'constant', 'do', '++', 'zero?', 'while',
+                 'not', '--', '{', '->', '}', 'id', 'if'],
+                ['<STMT>', frozenset([]), frozenset([]), frozenset([2]),
+                 frozenset([]), frozenset([2]), frozenset([2]), frozenset([1]),
+                 frozenset([2]), frozenset([2]), frozenset([]), frozenset([]),
+                 frozenset([]), frozenset([2]), frozenset([0])],
+                ['<EXPR>', frozenset([]), frozenset([]), frozenset([3]),
+                 frozenset([]), frozenset([6]), frozenset([4]), frozenset([]),
+                 frozenset([5]), frozenset([7]), frozenset([]), frozenset([]),
+                 frozenset([]), frozenset([3]), frozenset([])],
+                ['<BLOCK>', frozenset([]), frozenset([]), frozenset([10]),
+                 frozenset([]), frozenset([10]), frozenset([10]),
+                 frozenset([10]), frozenset([10]), frozenset([10]),
+                 frozenset([11]), frozenset([]), frozenset([]),
+                 frozenset([10]), frozenset([10])],
+                ['<STMTS>', frozenset([]), frozenset([]), frozenset([12]),
+                 frozenset([]), frozenset([12]), frozenset([12]),
+                 frozenset([12]), frozenset([12]), frozenset([12]),
+                 frozenset([]), frozenset([]), frozenset([13]),
+                 frozenset([12]), frozenset([12])],
+                ['<TERM>', frozenset([]), frozenset([]), frozenset([9]),
+                 frozenset([]), frozenset([]), frozenset([]), frozenset([]),
+                 frozenset([]), frozenset([]), frozenset([]), frozenset([]),
+                 frozenset([]), frozenset([8]), frozenset([])]
+            ],
+            'conflicts': [],
+        }
+
     ]
 
     def cmp_deep_seq(seq1, seq2):
