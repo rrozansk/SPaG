@@ -487,7 +487,7 @@ if __name__ == "__main__":
                 ('<BLOCK>', '<STMT> | { <STMTS> }'),
                 ('<STMTS>', '<STMT> <STMTS> |')
             ],
-            'start': '<BLOCK>',
+            'start': '<STMTS>',
             'terminals': frozenset(['if', 'then', 'while', 'do', '->', 'zero?',
                                     'not', '++', '--', 'id', 'constant', '{',
                                     '}']),
@@ -520,8 +520,8 @@ if __name__ == "__main__":
             'follow': {
                 '<STMT>': frozenset([0, 'constant', '++', 'not', 'while',
                                      'zero?', '--', '}', 'id', 'if']),
-                '<STMTS>': frozenset(['}']),
-                '<BLOCK>': frozenset([0]),
+                '<STMTS>': frozenset([0, '}']),
+                '<BLOCK>': frozenset([]),
                 '<TERM>': frozenset([0, 'then', 'constant', 'do', 'not', 'id',
                                      'if', '++', '--', 'while', 'zero?', '->',
                                      '}']),
@@ -561,7 +561,7 @@ if __name__ == "__main__":
                  frozenset([10]), frozenset([10]), frozenset([10]),
                  frozenset([11]), frozenset([]), frozenset([]),
                  frozenset([10]), frozenset([10])],
-                ['<STMTS>', frozenset([]), frozenset([]), frozenset([12]),
+                ['<STMTS>', frozenset([13]), frozenset([]), frozenset([12]),
                  frozenset([]), frozenset([12]), frozenset([12]),
                  frozenset([12]), frozenset([12]), frozenset([12]),
                  frozenset([]), frozenset([]), frozenset([13]),
@@ -571,9 +571,8 @@ if __name__ == "__main__":
                  frozenset([]), frozenset([]), frozenset([]), frozenset([]),
                  frozenset([]), frozenset([8]), frozenset([])]
             ],
-            'conflicts': [],
+            'conflicts': []
         }
-
     ]
 
     def cmp_deep_seq(seq1, seq2):
