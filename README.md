@@ -1,6 +1,6 @@
-# Grammars
+# Grammar-Generator
 
-[![LICENSE](https://img.shields.io/badge/LICENSE-MIT-green.svg)](https://github.com/rrozansk/Grammars/blob/master/LICENSE.txt) [![BUILD](https://img.shields.io/badge/BUILD-IN_DEVELOPMENT-yellow.svg)]()
+[![LICENSE](https://img.shields.io/badge/LICENSE-MIT-green.svg)](https://github.com/rrozansk/Grammar-Generator/blob/master/LICENSE.txt) [![BUILD](https://img.shields.io/badge/BUILD-IN_DEVELOPMENT-yellow.svg)]()
 
 
 ## Prerequisites
@@ -12,8 +12,8 @@ To run the generated code:
 
 ## Getting Started
 ```sh
-$ git clone https://github.com/rrozansk/Grammars.git
-$ cd Grammars
+$ git clone https://github.com/rrozansk/Grammar-Generator.git
+$ cd Grammar_Generator
 $ vim main.py # edit the grammar to your needs/wants, and what to generate
 $ ./main      # produce a file with generated code or error
 ```
