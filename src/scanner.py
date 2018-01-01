@@ -1,36 +1,57 @@
 """
-During Lexical Analysis the Lexer/Scanner recognizes regular expressions as
-corresponding token types. These tokens are then sent to the parser.
-Tokens have a type and value, but can also have character and line number
-information as well.
+ scanner.py includes the implementation and testing of RegularGrammar objects.
 
-The difference between lexers and parser is that a lexer reconizes regular
-grammars/expressions, while parser recognize context free grammars. The main
-difference is regular grammars can be converted into NFA with epsilon
-prodcutions using thompsons algorithm, and then used to construct a
-corresponding DFA using subset construction. After this is completed it can
-further be minimized. Context free grammars can be converted into PDA's,
-which require a stack, but they are also more powerful than regular grammars
-since they can properly deal with recursion.
+ The RegularGrammar object represents a group of regular expressions which can
+ be programatically transformed into tokenizers/scanners for use with lexical
+ analysis.
+
+ Regular expressions must be specified following these guidlines:
+    - only ascii characters are supported
+    - supported operators:
+        | (union -> choice -> either or)
+        ? (question -> choice -> 1 or none)
+        . (concatenation -> combine)
+        * (kleene star -> repitition >= 0)
+        + (plus -> repitition >= 1)
+    - supported escape sequences:
+        operator literals (\?, \*, etc.)
+        epsilon (\e)
+    - grouping/disambiguation is allowed using parenthesis
+    - literal parenthesis can be obtained by escaping like: \( and \)
+
+        **COMING SOON**
+    - more supported escape sequences:
+        \a alpha
+        \w word
+        ...
+    - concatenation is implicit, so '.' is given the meaning of any character
+    - character classes [abc] and [a..c]
+    - perhaps negation (^) and start of line ($) as well?
+
+ Testing is implemented in a table driven fashion using the black box method.
+ The test may be run at the command line with the following invocation:
+
+   $ python scanner.py
+
+ If all tests passed no output will be produced. In the event of a failure a
+ ValueError is thrown with the appropriate error/failure message.
 """
 from uuid import uuid4
-from itertools import permutations
 
 
 class RegularGrammar(object):
     """
     RegularGrammar represents a collection of formal regular expressions which
-    can be programatically transformed into a parser.
+    can be programatically transformed into a scanner.
     """
 
+    digits = set('0123456789')
     spaces = set('\s\t\v\f\r\n')
     uppers = set('abcdefghijklmnopqrstuvwxyz')
     lowers = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-    digits = set('0123456789')
-    specials = set('!"#$%&\'`_/:;<=>-^\\{}~,@[]')
-    metas = set('?+()*|.')  # FIXME: . just tmp for testing
+    punctuation = set('!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~')
 
-    characters = uppers | lowers | digits | spaces | specials
+    characters = digits | spaces | uppers | lowers | punctuation
 
     Star = 0
     Union = 1
@@ -41,19 +62,29 @@ class RegularGrammar(object):
     Left = 6
     Right = 7
 
-    escapes = {
+    operators = {
         '*': Star,
         '|': Union,
         '+': Plus,
         '?': Question,
         '(': Left,
         ')': Right,
-        '.': Concat,  # FIXME: . just tmp for testing
-        'e': Epsilon,
-        '\\': '\\'
+        '.': Concat,
     }
 
-    shunt = {  # ***precedence (higher is better), left associative?***
+    escapable = {
+        '*': '*',
+        '|': '|',
+        '+': '+',
+        '?': '?',
+        '(': '(',
+        ')': ')',
+        '.': '.',
+        '\\': '\\',
+        'e': Epsilon
+    }
+
+    shunt = {  # precedence; higher is better
         Left:     (3, None),
         Right:    (3, None),
         Star:     (2, False),  # right-associative
@@ -64,7 +95,7 @@ class RegularGrammar(object):
     }
 
     name = None      # name of scanner
-    regexps = None     # token dictionary ::=  name -> regexp
+    regexps = None   # token map ::=  name -> regexp
 
     def __init__(self, name):
         """ Initialize the RegularGrammar class with a name."""
@@ -73,9 +104,9 @@ class RegularGrammar(object):
 
     def token(self, descriptor, expression):
         """
-        add a token (expression) to the language as a regular expression to
+        Add a token (expression) to the language as a regular expression to
         match against with a given name and whether or not discard the token
-        after reading it (ex. comments). only accepts printable ASCII char
+        after reading it (ex. comments). Only accepts printable ASCII char
         values (33-126) and space chars ( \s, \t, \v, \f, \r, \n)
         """
         self.regexps[descriptor] = expression
@@ -90,41 +121,39 @@ class RegularGrammar(object):
           escaped escape -> character
           escape sequence -> internal representation
 
-        runs in time linear to the input expression O(n).
-        input expr: string -> output expr: list or raise ValueError
+        Runs in time linear to the input expression O(n).
+        Input expr: string -> output expr: list or raise ValueError
         """
         output = []
         escape = False
         for char in expr:
             if escape:
-                escape = False
-                if char in self.metas:
-                    output.append(char)
-                if char in self.escapes:
-                    output.append(self.escapes[char])
+                if char in self.escapable:
+                    escape = False
+                    output.append(self.escapable[char])
                 else:
                     raise ValueError('Error: invalid escape seq: \\' + char)
             else:
                 if char == '\\':
                     escape = True
+                elif char in self.operators:
+                    output.append(self.operators[char])
                 elif char in self.characters:
                     output.append(char)
-                elif char in self.metas:
-                    output.append(self.escapes[char])
                 else:
                     raise ValueError('Error: unrecognized character: ' + char)
         if escape:
             raise ValueError('Error: empty escape sequence')
         return output
 
-    def _shunt(self, expression):  # FIXME: expose concatenation
+    def _shunt(self, expression):
         """
-        converts infix notation expression into a postfix (reverse poslish
+        Converts infix notation expression into a postfix (reverse poslish
         notation; RPN) expression, therefore removing the need for
         parenthesis and allowing for the output expression to easily be
         evaluated with an iterative stack based method.
-        algorithm @https://en.wikipedia.org/wiki/Shunting-yard_algorithm
-        runs in time linear to the input expression O(n).
+        Algorithm @https://en.wikipedia.org/wiki/Shunting-yard_algorithm
+        Runs in time linear to the input expression O(n).
         """
         stack, queue = [], []  # operators, output (RPN expression)
 
@@ -158,16 +187,22 @@ class RegularGrammar(object):
 
         return queue
 
+    def _state(self):
+        """
+        Generate a new universally unique state id.
+        """
+        return str(uuid4())
+
     def _eNFA(self, expression):
         """
-        converts a regular expression in RPN to an NFA with epsilon productions
+        Converts a regular expression in RPN to an NFA with epsilon productions
         (eNFA) which can handle: union |, kleene star *, concatenation .,
-        epsilon \e, literals, and syntax extensions + and ?. adapted to a
+        epsilon \e, literals, and syntax extensions + and ?. Adapted to a
         iterative stacked based evaluation algorithm (standard RPN evaluation
         algorithm) from thompson construction as described in section 4.1 in 'A
         taxonomy of finite automata construction algorithms' by Bruce Watson,
         located @http://alexandria.tue.nl/extra1/wskrap/publichtml/9313452.pdf
-        runs in time linear to the input expression O(n).
+        Runs in time linear to the input expression O(n).
         """
         Q = set()  # set of states
         V = set()  # set of input symbols (alphabet)
@@ -175,8 +210,6 @@ class RegularGrammar(object):
         E = set()  # e-transition relation: E in P(Q x Q)
         S = None   # start state S in Q
         F = None   # accepting state F in Q
-
-        def state(): return str(uuid4())
 
         stk = []  # NFA machine stk
         for token in expression:
@@ -192,34 +225,34 @@ class RegularGrammar(object):
                         raise ValueError('Error: not enough args to op |')
                     p, q = stk.pop()
                     r, t = stk.pop()
-                    S, F = state(), state()
+                    S, F = self._state(), self._state()
                     E.update([(S, p), (S, r), (q, F), (t, F)])
                 elif token == self.Star:
                     if len(stk) < 1:
                         raise ValueError('Error: not enough args to op *')
                     p, q = stk.pop()
-                    S, F = state(), state()
+                    S, F = self._state(), self._state()
                     E.update([(S, p), (q, p), (q, F), (S, F)])
                 elif token == self.Plus:
                     if len(stk) < 1:
                         raise ValueError('Error: not enough args to op +')
                     p, q = stk.pop()
-                    S, F = state(), state()
+                    S, F = self._state(), self._state()
                     E.update([(S, p), (q, p), (q, F)])
                 elif token == self.Question:
                     if len(stk) < 1:
                         raise ValueError('Error: not enough args to op ?')
                     p, q = stk.pop()
-                    S, F = state(), state()
+                    S, F = self._state(), self._state()
                     E.update([(S, p), (q, F), (S, F)])
                 else:
                     raise ValueError('Error: operator not implemented')
             elif token in self.characters:
-                S, F = state(), state()
+                S, F = self._state(), self._state()
                 V.update([token])
                 T.update([(S, token, F)])
             elif token == self.Epsilon:
-                S, F = state(), state()
+                S, F = self._state(), self._state()
                 E.update([(S, F)])
             else:
                 raise ValueError('Error: invalid input')
@@ -235,7 +268,7 @@ class RegularGrammar(object):
         """
         { q' | q ->*e q' } from a given start state q given a set of epsilon
         transitions in the form: (in, out), find all reachable state using only
-        epsilon transitions, handling cycles appropriately. optionally a cache
+        epsilon transitions, handling cycles appropriately. Optionally a cache
         can be passed for memoization; map NFA state -> set of NFA states
         """
         if q in cache:
@@ -250,8 +283,7 @@ class RegularGrammar(object):
             closure.update([qp])
             if qp in cache:
                 closure.update(cache[qp])
-            else:
-                # perform a single step: { q' | q ->e q' }
+            else:  # perform a single step: { q' | q ->e q' }
                 explore.update({t[1] for t in E if t[0] == qp})
 
         cache[q] = closure
@@ -259,9 +291,9 @@ class RegularGrammar(object):
 
     def _DFA(self, eNFA):
         """
-        converts the eNFA to DFA using subset construction and e closure
+        Converts the eNFA to DFA using subset construction and e closure
         conversion. We only consider states reachable from the start state,
-        so the resulting DFA is minimized with reguard to reachable states
+        so the resulting DFA is minimized with reguard to reachable states.
         """
         Q, V, T, E, S, F = eNFA
 
@@ -290,11 +322,11 @@ class RegularGrammar(object):
 
     def _Hopcroft(self, dfa):
         """
-        minimizes the DFA using hopcrafts algorithm to merge equivalent states
+        Minimizes the DFA using hopcrafts algorithm to merge equivalent states.
         """
         Q, V, T, S, F = dfa
 
-        P = set([F, Q - F])  # partitions -> set of DFA state
+        P = set([F, Q - F])   # partitions -> set of DFA state
         if frozenset() in P:  # if Q - F was empty
             P.remove(frozenset())
 
@@ -338,17 +370,22 @@ class RegularGrammar(object):
 
     def make(self):
         """
-        converts all tokens representing regular expressions (regular grammars)
+        Converts all tokens representing regular expressions (regular grammars)
         to NFAs with epsilon transitions, which are then converted into
         equivalent DFAs and finally minimized to a unique DFA capable of
         parsing any input in O(n) time to produce a possible match against any
-        token type specified to the tokenizer
+        token type specified to the tokenizer.
         """
-        scanners = {}
+        start = self._state()
+        expr = ''
+        scanner = [set(), set(), set(), set(), set([start]), set()]
+        tokenizers = {}
         for (name, regexp) in self.regexps.items():
+            # build up individual tokenizer
             expression = self._shunt(self._convert(regexp))
-            (Q, V, T, S, F) = self._Hopcroft(self._DFA(self._eNFA(expression)))
-            scanners[name] = {
+            nfa = self._eNFA(expression)
+            (Q, V, T, S, F) = self._Hopcroft(self._DFA(nfa))
+            tokenizers[name] = {
                 'expr': regexp,
                 'Q': Q,
                 'V': V,
@@ -357,22 +394,239 @@ class RegularGrammar(object):
                 'F': F,
             }
 
-        # FIXME: combine all token is 1 scanner. | between all tokens
-        # add this as new key in return dictionary
+            # construct part of the scanner with tokenizer
+            scanner[0] |= nfa[0]  # Q
+            scanner[1] |= nfa[1]  # V
+            scanner[2] |= nfa[2]  # T
+            scanner[3] |= nfa[3] | set([(start, list(nfa[4])[0])])  # E
+            scanner[5] |= nfa[5]  # F
+            expr += '(' + regexp + ')|'
 
-        return {'name': self.name, 'scanners': scanners}
+        (Q, V, T, S, F) = self._Hopcroft(self._DFA(tuple(scanner)))
+        return {
+          'name': self.name,
+          'tokenizers': tokenizers,
+          'scanner': {
+            'expr': expr[:-1],  # correct expression
+            'Q': Q,
+            'V': V,
+            'T': T,
+            'S': S,
+            'F': F
+          }
+        }
 
 
 if __name__ == '__main__':
+    from itertools import permutations
 
     TESTS = [
         {
             'name': 'Core Functionality',
             'tokens': {
-                'test0': 'a*.(b|c.d)*',
-                'test1': '(a|\e).b*',
+                'testAlpha': 'a',
+                'testConcat': 'a.b',
+                'testAlt': 'a|b',
+                'testKleene': 'a*',
+                'testMaybe': 'a?',
+                'testPlus': 'a+',
+                'testGroup': '(a|b)*',
+                'testAssoc': 'a|b*'
             },
-            'scanners': {
+            'tokenizers': {
+                'testAlpha': {
+                    'expr': 'a',
+                    'Q': frozenset(['S', 'A']),
+                    'V': frozenset(['a']),
+                    'T': frozenset([('S', 'a', 'A')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['A'])
+                 },
+                'testConcat': {
+                    'expr': 'a.b',
+                    'Q': frozenset(['S', 'A', 'B']),
+                    'V': frozenset(['a', 'b']),
+                    'T': frozenset([('S', 'a', 'A'), ('A', 'b', 'B')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['B'])
+                 },
+                'testAlt': {
+                    'expr': 'a|b',
+                    'Q': frozenset(['S', 'AB']),
+                    'V': frozenset(['a', 'b']),
+                    'T': frozenset([('S', 'a', 'AB'), ('S', 'b', 'AB')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['AB'])
+                 },
+                'testKleene': {
+                    'expr': 'a*',
+                    'Q': frozenset(['A']),
+                    'V': frozenset(['a']),
+                    'T': frozenset([('A', 'a', 'A')]),
+                    'S': frozenset(['A']),
+                    'F': frozenset(['A'])
+                 },
+                'testMaybe': {
+                    'expr': 'a?',
+                    'Q': frozenset(['S', 'A']),
+                    'V': frozenset(['a']),
+                    'T': frozenset([('S', 'a', 'A')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['S', 'A'])
+                 },
+                'testPlus': {
+                    'expr': 'a+',
+                    'Q': frozenset(['S', 'A']),
+                    'V': frozenset(['a']),
+                    'T': frozenset([('S', 'a', 'A'), ('A', 'a', 'A')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['A'])
+                 },
+                'testGroup': {
+                    'expr': '(a|b)*',
+                    'Q': frozenset(['AB*']),
+                    'V': frozenset(['a', 'b']),
+                    'T': frozenset([('AB*', 'a', 'AB*'), ('AB*', 'b', 'AB*')]),
+                    'S': frozenset(['AB*']),
+                    'F': frozenset(['AB*'])
+                },
+                'testAssoc': {
+                    'expr': 'a|b*',
+                    'Q': frozenset(['S', 'A', 'B']),
+                    'V': frozenset(['a', 'b']),
+                    'T': frozenset([
+                        ('S', 'a', 'A'),
+                        ('S', 'b', 'B'),
+                        ('B', 'b', 'B')
+                    ]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['S', 'A', 'B'])
+                }
+            },
+            'scanner': {
+                'expr': '(a)|(a.b)|(a|b)|(a*)|(a?)|(a+)|(a|b)*|(a|b*)',
+                'Q': frozenset(['S']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('S', 'a', 'S'),
+                    ('S', 'b', 'S')
+                ]),
+                'S': frozenset(['S']),
+                'F': frozenset(['S'])
+            }
+        },
+        {
+            'name': 'Escape Sequences',
+            'tokens': {
+                'testConcat': '\.',
+                'testAlt': '\|',
+                'testKleene': '\*',
+                'testMaybe': '\?',
+                'testPlus': '\+',
+                'testEpsilon': '\e',
+                'testBackslash': '\\\\',
+                'testGroupStart': '\(',
+                'testGroupEnd': '\)'
+            },
+            'tokenizers': {
+                'testConcat': {
+                    'expr': '\.',
+                    'Q': frozenset(['S', 'F']),
+                    'V': frozenset(['.']),
+                    'T': frozenset([('S', '.', 'F')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['F'])
+                },
+                'testAlt': {
+                    'expr': '\|',
+                    'Q': frozenset(['S', 'F']),
+                    'V': frozenset(['|']),
+                    'T': frozenset([('S', '|', 'F')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['F'])
+                },
+                'testKleene': {
+                    'expr': '\*',
+                    'Q': frozenset(['S', 'F']),
+                    'V': frozenset(['*']),
+                    'T': frozenset([('S', '*', 'F')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['F'])
+                },
+                'testMaybe': {
+                    'expr': '\?',
+                    'Q': frozenset(['S', 'F']),
+                    'V': frozenset(['?']),
+                    'T': frozenset([('S', '?', 'F')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['F'])
+                },
+                'testPlus': {
+                    'expr': '\+',
+                    'Q': frozenset(['S', 'F']),
+                    'V': frozenset(['+']),
+                    'T': frozenset([('S', '+', 'F')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['F'])
+                },
+                'testEpsilon': {
+                    'expr': '\e',
+                    'Q': frozenset(['S']),
+                    'V': frozenset([]),
+                    'T': frozenset([]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['S'])
+                },
+                'testBackslash': {
+                    'expr': '\\\\',
+                    'Q': frozenset(['S', 'F']),
+                    'V': frozenset(['\\']),
+                    'T': frozenset([('S', '\\', 'F')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['F'])
+                },
+                'testGroupStart': {
+                    'expr': '\(',
+                    'Q': frozenset(['S', 'F']),
+                    'V': frozenset(['(']),
+                    'T': frozenset([('S', '(', 'F')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['F'])
+                },
+                'testGroupEnd': {
+                    'expr': '\)',
+                    'Q': frozenset(['S', 'F']),
+                    'V': frozenset([')']),
+                    'T': frozenset([('S', ')', 'F')]),
+                    'S': frozenset(['S']),
+                    'F': frozenset(['F'])
+                }
+            },
+            'scanner': {
+                'expr': '(\.)|(\|)|(\*)|(\?)|(\+)|(\e)|(\\\\)|(\()|(\))',
+                'Q': frozenset(['S', 'F']),
+                'V': frozenset(['.', '|', '*', '?', '+', '\\', '(', ')']),
+                'T': frozenset([
+                    ('S', '.', 'F'),
+                    ('S', '|', 'F'),
+                    ('S', '*', 'F'),
+                    ('S', '?', 'F'),
+                    ('S', '+', 'F'),
+                    ('S', '\\', 'F'),
+                    ('S', '(', 'F'),
+                    ('S', ')', 'F')
+                ]),
+                'S': frozenset(['S']),
+                'F': frozenset(['S', 'F'])
+            }
+        },
+        {
+            'name': 'Random Complexity',  # TODO: expand with more tokens
+            'tokens': {
+                'test0': 'a*.(b|c.d)*',
+                'test1': '(a|\e).b*'
+            },
+            'tokenizers': {
                 'test0': {
                     'expr': 'a*.(b|c.d)*',
                     'Q': frozenset(['AC', 'B', 'DE']),
@@ -383,7 +637,7 @@ if __name__ == '__main__':
                         ('AC', 'c', 'B'),
                         ('B', 'd', 'DE'),
                         ('DE', 'b', 'DE'),
-                        ('DE', 'c', 'B'),
+                        ('DE', 'c', 'B')
                     ]),
                     'S': frozenset(['AC']),
                     'F': frozenset(['AC', 'DE']),
@@ -395,15 +649,109 @@ if __name__ == '__main__':
                     'T': frozenset([
                         ('A', 'a', 'B'),
                         ('A', 'b', 'B'),
-                        ('B', 'b', 'B'),
+                        ('B', 'b', 'B')
                     ]),
                     'S': frozenset(['A']),
-                    'F': frozenset(['A', 'B']),
+                    'F': frozenset(['A', 'B'])
                 }
             },
-            '': None  # 'test*': '(a|\e).b*', NOTE: composite scanner testing spec
+            'scanner': {
+                'expr': '(a*.(b|c.d)*)|((a|\e).b*)',
+                'Q': frozenset(['A', 'B', 'C']),
+                'V': frozenset(['a', 'b', 'c', 'd']),
+                'T': frozenset([
+                    ('A', 'a', 'A'),
+                    ('A', 'b', 'C'),
+                    ('A', 'c', 'B'),
+                    ('B', 'd', 'C'),
+                    ('C', 'b', 'C'),
+                    ('C', 'c', 'B')
+                ]),
+                'S': frozenset(['A']),
+                'F': frozenset(['A', 'C'])
+            }
         }
+        #  { TODO
+        #      'name': 'Real World Examples',
+        #      'tokens': {
+        #          'integer': '',
+        #          'float': '',
+        #          'boolean': '',
+        #          'string': '',
+        #          'character': '',
+        #          'identifier': '',
+        #          'white-space': '',
+        #          'line-comment': '',
+        #          'block-comment': ''
+        #      },
+        #      'tokenizers': {
+        #          'integer': {
+        #              'expr': '',
+        #              'Q': frozenset([]),
+        #              'V': frozenset([]),
+        #              'T': frozenset([]),
+        #              'S': frozenset([]),
+        #              'F': frozenset([])
+        #          },
+        #          'float': {
+        #          },
+        #          'boolean': {
+        #          },
+        #          'string': {
+        #          },
+        #          'character': {
+        #          },
+        #          'identifier': {
+        #          },
+        #          'white-space': {
+        #          },
+        #          'line-comment': {
+        #          },
+        #          'block-comment': {
+        #          }
+        #      },
+        #      'scanner': {
+        #      }
+        #  }
     ]
+
+    def isomorphic(dfa, _dfa):
+        """
+        Attempt to find if dfa's are isomorphic by finding a bijection.
+        Assumes both dfa's are the same size. Finds all mappings and then
+        just check if one matches...slow but works.
+        """
+        qs1, qs2 = list(_dfa['Q']), list(dfa['Q'])
+
+        mappings = []
+        for perm in list(permutations(qs2, len(qs2))):
+            mappings.append({qs1[i]: perm[i] for i in range(0, len(qs1))})
+
+        while len(mappings) != 0:
+            imap = mappings.pop()  # possibly an isomorphic map
+            try:
+                for start in _dfa['S']:
+                    if imap[start] not in dfa['S']:
+                        raise ValueError('Error: Incorrect start set')
+
+                for final in _dfa['F']:
+                    if imap[final] not in dfa['F']:
+                        raise ValueError('Error: Incorrect final set')
+
+                for tran in _dfa['T']:
+                    if (imap[tran[0]], tran[1], imap[tran[2]]) not in dfa['T']:
+                        raise ValueError('Error: Incorrect transition set')
+            except ValueError:
+                continue
+            return   # found a mapping which didn't give an error
+
+        raise ValueError('Error: Incorrect dfa produced')
+
+    def cmp_expr(got, expected):
+        # NOTE: _DFA['expr'] =?= DFA['expr'])
+        # ignored for now since it isnt necessary for verification
+        # raise ValueError('Error: Incorrect expression')
+        pass
 
     for test in TESTS:
         grammar = RegularGrammar(test['name'])
@@ -414,11 +762,11 @@ if __name__ == '__main__':
         if result['name'] != test['name']:
             raise ValueError('Error: Incorrect reporting of scanner name')
 
-        if len(result['scanners']) != len(test['scanners']):
+        if len(result['tokenizers']) != len(test['tokenizers']):
             raise ValueError('Error: Incorrect number of tokenizers produced')
 
-        for (tname, DFA) in test['scanners'].items():
-            _DFA = result['scanners'].get(tname, None)
+        for (tname, DFA) in test['tokenizers'].items():
+            _DFA = result['tokenizers'].get(tname, None)
 
             if _DFA is None:
                 raise ValueError('Error: No scanner produced for token')
@@ -441,34 +789,26 @@ if __name__ == '__main__':
             if len(_DFA['F']) != len(DFA['F']):
                 raise ValueError('Error: Incorrect number of end states')
 
-            # attempt to find if DFA's are isomorphic by finding a bijection.
-            # since both DFA's are the same size we find all mappings and then
-            # just check if one matches...slow but works
-            qs1, qs2 = list(_DFA['Q']), list(DFA['Q'])
+            isomorphic(DFA, _DFA)
 
-            mappings = []
-            for p in list(permutations(qs2, len(qs2))):
-                mappings.append({qs1[i]: p[i] for i in range(0, len(qs1))})
+        _DFA = result['scanner']
+        DFA = test['scanner']
 
-            found = False
-            while len(mappings) != 0:
-                imap = mappings.pop()  # possibly an isomorphic map
-                try:
-                    for s in _DFA['S']:
-                        if imap[s] not in DFA['S']:
-                            raise ValueError('Error: Incorrect start set')
+        cmp_expr(_DFA, DFA)
 
-                    for f in _DFA['F']:
-                        if imap[f] not in DFA['F']:
-                            raise ValueError('Error: Incorrect final set')
+        if _DFA['V'] != DFA['V']:
+            raise ValueError('Error: Incorrect alphabet')
 
-                    for t in _DFA['T']:
-                        if (imap[t[0]], t[1], imap[t[2]]) not in DFA['T']:
-                            raise ValueError('Error: Incorrect transition set')
-                except ValueError as e:
-                    continue
-                found = True  # found a mapping which didn't give an error
-                break
+        if len(_DFA['Q']) != len(DFA['Q']):
+            raise ValueError('Error: Incorrect number of states')
 
-            if not found:
-                raise ValueError('Error: Incorrect DFA produced')
+        if len(_DFA['T']) != len(DFA['T']):
+            raise ValueError('Error: Incorrect number of transitions')
+
+        if len(_DFA['S']) != len(DFA['S']):
+            raise ValueError('Error: Incorrect number of start states')
+
+        if len(_DFA['F']) != len(DFA['F']):
+            raise ValueError('Error: Incorrect number of end states')
+
+        isomorphic(_DFA, DFA)

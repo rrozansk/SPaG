@@ -15,25 +15,33 @@ inside the generator object. Also note that the string given to the object at
 instantiation will become the name of the function in the corresponding
 generated code and it will be written out in the specified file mentioned
 below. If you choose to have the language analysis done it will be written out
-in the comments of the file. The current example below is a ini like
-configuration file which recognizes basic data types.
+in the comments of the file. For more detailed information about data input,
+capabilities, and limitations see the comments in parser.py and scanner.py
+under the src directory. Given below is a working example of a ini like
+configuration file language which recognizes basic data types.
 """
 
-import src.parser as parser
 import src.scanner as scanner
+import src.parser as parser
 import src.generator as generator
 
 # ******************************* SCANNER ********************************
 TOKENIZER = scanner.RegularGrammar("ScanINI")
 
-TOKENIZER.token("int",     "(-|+)?[1-9][0-9]*")
-TOKENIZER.token("float",   "(-|+)?([1-9][0-9]*)?\.[0-9]+")
-TOKENIZER.token("bool",    "true|false")
-TOKENIZER.token("char",    "'([a-z]|[A-Z]|[0-9])'")
-TOKENIZER.token("id",      "[a-z]|[A-Z]*")
-TOKENIZER.token("string",  "\".*\"")
-TOKENIZER.token("space",   "\s|\t|\n|\r|\f|\v")
-TOKENIZER.token("comment", "(#|;).*\n")
+TOKENIZER.token("int",      "(-|+)?[1-9][0-9]*")
+TOKENIZER.token("float",    "(-|+)?([1-9][0-9]*)?\.[0-9]+")
+TOKENIZER.token("bool",     "true|false")
+TOKENIZER.token("char",     "'([a-z]|[A-Z]|[0-9])'")
+TOKENIZER.token("id",       "([a-z]|[A-Z])*")
+TOKENIZER.token("string",   "\".*\"")
+TOKENIZER.token("space",    "(\s|\t|\n|\r|\f|\v)*")  # not in parser; discard
+TOKENIZER.token("comment",  "(#|;).*\n")             # not in parser; discard
+TOKENIZER.token("lbracket", "[")
+TOKENIZER.token("rbracket", "]")
+TOKENIZER.token("lcurly",   "{")
+TOKENIZER.token("rcurly",   "}")
+TOKENIZER.token("comma",    ",")
+TOKENIZER.token("dividor",  ":|=")
 
 SCANNER = TOKENIZER.make()
 
@@ -43,36 +51,36 @@ LL1 = parser.ContextFreeGrammar("ParseINI")
 LL1.production("<Ini>",       "<Section> <Ini'>")
 LL1.production("<Ini'>",      "<Section> <Ini'> |")
 LL1.production("<Section>",   "<Header> <Settings>")
-LL1.production("<Header>",    "[ id ]")
+LL1.production("<Header>",    "lbracket id rbracket")
 LL1.production("<Settings>",  "<Setting> <Settings'>")
 LL1.production("<Settings'>", "<Setting> <Settings'> |")
-LL1.production("<Setting>",   "identifier dividor <Value>")
-LL1.production("<Value>",
-               "int | float | bool | char | string | { <Array> }")
-LL1.production("<Array>",
-               "<Ints> | <Floats> | <Bools> | <Chars> | <Strings>")
+LL1.production("<Setting>",   "id dividor <Value>")
+LL1.production("<Value>",     "int | float | bool | char | string | lcurly <Array> rcurly")
+LL1.production("<Array>",     "<Ints> | <Floats> | <Bools> | <Chars> | <Strings>")
 LL1.production("<Ints>",      "int <Ints'>")
-LL1.production("<Ints'>",     ", int <Ints'>|")
+LL1.production("<Ints'>",     "comma int <Ints'>|")
 LL1.production("<Floats>",    "float <Floats'>")
-LL1.production("<Floats'>",   ", float <Floats'>|")
+LL1.production("<Floats'>",   "comma float <Floats'>|")
 LL1.production("<Bools>",     "bool <Bools'>")
-LL1.production("<Bools'>",    ", bool <Bools'>|")
+LL1.production("<Bools'>",    "comma bool <Bools'>|")
 LL1.production("<Chars>",     "char <Chars'>")
-LL1.production("<Chars'>",    ", char <Chars'>|")
+LL1.production("<Chars'>",    "comma char <Chars'>|")
 LL1.production("<Strings>",   "string <Strings'>")
-LL1.production("<Strings'>",  ", string <Strings'>|")
+LL1.production("<Strings'>",  "comma string <Strings'>|")
 
 LL1.start("<Ini>")
 
 PARSER = LL1.make()
 
 # ****************************** GENERATOR *******************************
-GENERATOR = generator.Generator(PARSER, SCANNER)
+GENERATOR = generator.Generator(SCANNER, PARSER)
 
-OUTPUT = GENERATOR.ANALYSIS\
-         | GENERATOR.SCANNER\
-         | GENERATOR.PARSER
+WHAT = GENERATOR.ANALYSIS\
+       | GENERATOR.SCANNER\
+       | GENERATOR.PARSER
 
 LANGUAGE = GENERATOR.C
 
-GENERATOR.output(OUTPUT, LANGUAGE)
+FILENAME = "INIexample.c"
+
+GENERATOR.output(WHAT, LANGUAGE, FILENAME)
