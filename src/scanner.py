@@ -13,17 +13,16 @@
         . (concatenation -> combine)
         * (kleene star -> repitition >= 0)
         + (plus -> repitition >= 1)
+    - grouping/disambiguation is allowed using parenthesis
     - supported escape sequences:
         operator literals (\?, \*, etc.)
         epsilon (\e)
-    - grouping/disambiguation is allowed using parenthesis
-    - literal parenthesis can be obtained by escaping like: \( and \)
+        parenthesis literal \( and \)
 
         **COMING SOON**
     - more supported escape sequences:
         \a alpha
         \w word
-        ...
     - concatenation is implicit, so '.' is given the meaning of any character
     - character classes [abc] and [a..c]
     - perhaps negation (^) and start of line ($) as well?
