@@ -10,7 +10,9 @@ import parser as parser
 
 class Generator(object):
     """
-    A simple object for compiling scanner's and/or parser's to other languages.
+    A simple superclass object for getting and setting RegularGrammars and/or
+    ContextFreeGrammars so subclasses which override the output method may
+    generate a scanner and/or parser for the specified language of interest.
     """
 
     _scanner = None
@@ -21,44 +23,54 @@ class Generator(object):
 
     def set_scanner(self, _scanner):
         """
-        Set the scanner which is to be used for code generation.
-        """
-        if _scanner is None:
-            self._scanner = None
-            return
+        Set the scanner to be used for code generation.
 
-        if type(_scanner) is not scanner.RegularGrammar:
+        Runtime: O(1) - constant
+        Type: None | RegularGrammar -> None | ValueError
+        """
+        if _scanner is not None and\
+           type(_scanner) is not scanner.RegularGrammar:
             raise ValueError('Invalid Input: scanner not a RegularGrammar')
 
-        self._scanner = _scanner.make()
+        self._scanner = _scanner
 
     def get_scanner(self):
         """
-        Get the scanner which is to be used for code generation.
+        Get the scanner [to be] used for code generation.
+
+        Runtime: O(1) - constant
+        Type: None | RegularGrammar
         """
         return self._scanner
 
     def set_parser(self, _parser):
         """
-        Set the parser which is to be used for code generation.
-        """
-        if _parser is None:
-            self._parser = None
-            return
+        Set the parser to be used for code generation.
 
-        if type(_parser) is not parser.ContextFreeGrammar:
+        Runtime: O(1) - constant
+        Type: None | ContextFreeGrammar -> None | ValueError
+        """
+        if _parser is not None and\
+           type(_parser) is not parser.ContextFreeGrammar:
             raise ValueError('Invalid Input: parser not a ContextFreeGrammar')
 
-        self._parser = _parser.make()
+        self._parser = _parser
 
     def get_parser(self):
         """
-        Get the parser which is to be used for code generation.
+        Get the parser [to be] used for code generation.
+
+        Runtime: O(1) - constant
+        Type: None | ContextFreeGrammar
         """
         return self._parser
 
     def output(self, filename):
         """
-        Override this method in subclass for specific language generation.
+        Override this method in subclasses to write the necessary files for the
+        specific language to be generated.
+
+        Runtime: O(?) - ?
+        Type: string -> None | ValueError
         """
         pass
