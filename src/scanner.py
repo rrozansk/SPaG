@@ -1,31 +1,35 @@
 """
  scanner.py includes the implementation and testing of RegularGrammar objects.
 
- The RegularGrammar object represents a group of regular expressions which can
- be programatically transformed into tokenizers/scanners for use with lexical
- analysis.
+ The RegularGrammar object represents a group of formal regular expressions
+ which can be programatically transformed into a minimal DFA.
 
- Regular expressions must be specified following these guidlines:
-    - only ascii characters are supported
+ The entire transformation on the input can be visualized as:
+
+   regular expression => epsilon NFA => DFA => minimal DFA
+
+ The final DFA produced will have a complete delta (transition) function and
+ will include an extra sink/error state to absorb all invalid input if needed.
+
+ Regular expressions must be specified following these guidelines:
+    - only printable ascii characters (33-126) and spaces are supported
     - supported operators:
         | (union -> choice -> either or)
         ? (question -> choice -> 1 or none)
         . (concatenation -> combine)
         * (kleene star -> repitition >= 0)
         + (plus -> repitition >= 1)
-    - grouping/disambiguation is allowed using parenthesis
+    - concat can be either implicit or explicit
+    - grouping/disambiguation is allowed using parenthesis ()
     - supported escape sequences:
-        operator literals (\?, \*, etc.)
-        epsilon (\e)
-        parenthesis literal \( and \)
+        operator literals -> \?, \*, \., \+, \|
+        grouping literals -> \(, \)
+        epsilon           -> \e
 
         **COMING SOON**
-    - more supported escape sequences:
-        \a alpha
-        \w word
-    - concatenation is implicit, so '.' is given the meaning of any character
-    - character classes [abc] and [a..c]
-    - perhaps negation (^) and start of line ($) as well?
+    - character classes [abc]
+    - character ranges [a..c]
+    - character class/range negation (^)
 
  Testing is implemented in a table driven fashion using the black box method.
  The test may be run at the command line with the following invocation:
@@ -33,7 +37,8 @@
    $ python scanner.py
 
  If all tests passed no output will be produced. In the event of a failure a
- ValueError is thrown with the appropriate error/failure message.
+ ValueError is thrown with the appropriate error/failure message. Both positive
+ and negative tests cases are extensively tested.
 """
 from uuid import uuid4
 
@@ -41,37 +46,37 @@ from uuid import uuid4
 class RegularGrammar(object):
     """
     RegularGrammar represents a collection of formal regular expressions which
-    can be programatically transformed into a scanner.
+    can be programatically transformed/compiled into a minmal DFA.
     """
 
-    digits = set('0123456789')
-    spaces = set('\s\t\v\f\r\n')
-    uppers = set('abcdefghijklmnopqrstuvwxyz')
-    lowers = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-    punctuation = set('!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~')
+    _digits = set('0123456789')
+    _spaces = set(' \t\v\f\r\n')
+    _uppers = set('abcdefghijklmnopqrstuvwxyz')
+    _lowers = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+    _punctuation = set('!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~')
 
-    characters = digits | spaces | uppers | lowers | punctuation
+    _characters = _digits | _spaces | _uppers | _lowers | _punctuation
 
-    Star = 0
-    Union = 1
-    Concat = 2
-    Plus = 3
-    Question = 4
-    Epsilon = 5
-    Left = 6
-    Right = 7
+    _Star = 0
+    _Union = 1
+    _Concat = 2
+    _Plus = 3
+    _Question = 4
+    _Epsilon = 5
+    _Left = 6
+    _Right = 7
 
-    operators = {
-        '*': Star,
-        '|': Union,
-        '+': Plus,
-        '?': Question,
-        '(': Left,
-        ')': Right,
-        '.': Concat,
+    _operators = {
+        '*': _Star,
+        '|': _Union,
+        '+': _Plus,
+        '?': _Question,
+        '(': _Left,
+        ')': _Right,
+        '.': _Concat
     }
 
-    escapable = {
+    _escapable = {
         '*': '*',
         '|': '|',
         '+': '+',
@@ -80,64 +85,174 @@ class RegularGrammar(object):
         ')': ')',
         '.': '.',
         '\\': '\\',
-        'e': Epsilon
+        'e': _Epsilon
     }
 
-    shunt = {  # precedence; higher is better
-        Left:     (3, None),
-        Right:    (3, None),
-        Star:     (2, False),  # right-associative
-        Plus:     (2, False),  # right-associative
-        Question: (2, False),  # right-associative
-        Concat:   (1, True),   # left-associative
-        Union:    (0, True),   # left-associative
+    _postfix = set([_Right, _Star, _Plus, _Question]) | _characters
+    _prefix = set([_Left]) | _characters
+
+    _precedence = {  # higher is better
+        _Left:     (3, None),
+        _Right:    (3, None),
+        _Star:     (2, False),  # right-associative
+        _Plus:     (2, False),  # right-associative
+        _Question: (2, False),  # right-associative
+        _Concat:   (1, True),   # left-associative
+        _Union:    (0, True),   # left-associative
     }
 
-    name = None      # name of scanner
-    regexps = None   # token map ::=  name -> regexp
+    _name = None
+    _expressions = None
 
-    def __init__(self, name):
-        """ Initialize the RegularGrammar class with a name."""
-        self.name = name
-        self.regexps = {}
+    _states = None
+    _alphas = None
+    _deltas = None
+    _starts = None
+    _finals = None
 
-    def token(self, descriptor, expression):
+    def __init__(self, name, expressions):
         """
-        Add a token (expression) to the language as a regular expression to
-        match against with a given name and whether or not discard the token
-        after reading it (ex. comments). Only accepts printable ASCII char
-        values (33-126) and space chars ( \s, \t, \v, \f, \r, \n)
-        """
-        self.regexps[descriptor] = expression
+        Attempt to initialize a RegularGrammar object with the specified name,
+        recognizing the given expressions. Expr's have a type/name/descriptor
+        and an associated pattern/regular expression. If creation is
+        unsuccessful a value error will be thrown, otherwise the results can be
+        queried through the API provided below.
 
-    def _convert(self, expr):
+        Type: string x dict[string]string -> None | raise ValueError
         """
-        Convert the expression from an external to an internal representation.
+        if type(name) is not str:
+            raise ValueError('Invalid Input: name must be a string')
 
-        character conversions:
+        self._name = name
+
+        if type(expressions) is not dict:
+            raise ValueError('Invalid Input: expressions must be a dictionary')
+
+        _pattern = ''
+        self._expressions = dict()
+
+        for name, pattern in expressions.items():
+            if type(name) is not str:
+                raise ValueError('Invalid Input: name must be a string')
+
+            if type(pattern) is not str:
+                raise ValueError('Invalid Input: pattern must be a string')
+
+            self._expressions[name] = pattern
+            _pattern += '|(' + pattern + ')'
+
+        _pattern = _pattern[1:]
+
+        expr = self._scan(_pattern)
+        expr = self._expand(expr)
+        expr = self._shunt(expr)
+
+        nfa = self._NFA(expr)
+
+        dfa = self._DFA(nfa)
+        dfa = self._total(dfa)
+        dfa = self._Hopcroft(dfa)
+
+        Q, V, T, S, F = self._alpha(dfa)
+
+        self._states = Q
+        self._alphas = V
+        self._deltas = T
+        self._start = S
+        self._finals = F
+
+    def name(self):
+        """
+        Get the name of the Regular Grammar.
+
+        Runtime: O(1) - constant
+        Type: None -> string
+        """
+        return self._name
+
+    def expressions(self):
+        """
+        Get the patterns recognized by the Regular Grammar.
+
+        Runtime: O(n) - linear to the number of expressions.
+        Type: None -> dict[string]string
+        """
+        return self._expressions.copy()
+
+    def states(self):
+        """
+        Get the states in the grammars equivalent minimal DFA.
+
+        Runtime: O(n) - linear to the number of states.
+        Type: None -> set
+        """
+        return self._states.copy()
+
+    def alphabet(self):
+        """
+        Get the alphabet of characters recognized by the grammars DFA.
+
+        Runtime: O(n) - linear to the number of alphabet characters.
+        Type: None -> set
+        """
+        return self._alphas.copy()
+
+    def transitions(self):
+        """
+        Get the state transitions defining the grammars DFA.
+
+        Runtime: O(n) - linear to the number of state transitions.
+        Type: None -> set
+        """
+        return self._deltas.copy()
+
+    def start(self):
+        """
+        Get the start state of the grammars DFA.
+
+        Runtime: O(1) - constant
+        Type: None -> string
+        """
+        return self._start
+
+    def accepting(self):
+        """
+        Get all accepting states of the grammars DFA.
+
+        Runtime: O(n) - linear to the number of final states.
+        Type: None -> set
+        """
+        return self._finals.copy()
+
+    def _scan(self, expr):
+        """
+        Convert an external representation of a token (regular expression) to
+        an internal one. Ensures all characters and escape sequences are valid.
+
+        Character conversions:
           meta -> internal representation (integer enum)
           escaped meta -> character
           escaped escape -> character
           escape sequence -> internal representation
 
-        Runs in time linear to the input expression O(n).
-        Input expr: string -> output expr: list or raise ValueError
+        Runtime: O(n) - linear to size of the input expr
+        Type: string -> list | raise ValueError
         """
         output = []
         escape = False
         for char in expr:
             if escape:
-                if char in self.escapable:
+                if char in self._escapable:
                     escape = False
-                    output.append(self.escapable[char])
+                    output.append(self._escapable[char])
                 else:
                     raise ValueError('Error: invalid escape seq: \\' + char)
             else:
                 if char == '\\':
                     escape = True
-                elif char in self.operators:
-                    output.append(self.operators[char])
-                elif char in self.characters:
+                elif char in self._operators:
+                    output.append(self._operators[char])
+                elif char in self._characters:
                     output.append(char)
                 else:
                     raise ValueError('Error: unrecognized character: ' + char)
@@ -145,34 +260,56 @@ class RegularGrammar(object):
             raise ValueError('Error: empty escape sequence')
         return output
 
-    def _shunt(self, expression):
+    def _expand(self, expr):
         """
-        Converts infix notation expression into a postfix (reverse poslish
-        notation; RPN) expression, therefore removing the need for
-        parenthesis and allowing for the output expression to easily be
-        evaluated with an iterative stack based method.
-        Algorithm @https://en.wikipedia.org/wiki/Shunting-yard_algorithm
-        Runs in time linear to the input expression O(n).
-        """
-        stack, queue = [], []  # operators, output (RPN expression)
+        Expand the internal representation of the expression so that
+        concatentation is explicit throughout.
 
-        for token in expression:
-            if token in self.characters:
+        Runtime: O(n) - linear to input expr
+        Type: list -> list
+        """
+        if len(expr) == 0:
+            return expr
+
+        output = []
+        for idx in range(1, len(expr)):
+            output.append(expr[idx-1])
+            if expr[idx-1] in self._postfix and \
+               expr[idx] in self._prefix:
+                output.append(self._Concat)
+        output.append(expr[-1])
+        return output
+
+    def _shunt(self, expr):
+        """
+        Convert the input expression to be entirely in postfix notation (RPN;
+        Reverse Polish Notation) allowing all parenthesis to be dropped.
+        Adapted from Dijkstra's Shunting yard algorithm which can be viewed
+        @https://en.wikipedia.org/wiki/Shunting-yard_algorithm.
+
+        Runtime: O(n) - linear to input expression
+        Type: list -> list | raise ValueError
+        """
+        stack, queue = [], []  # operators, output expression
+
+        for token in expr:
+            if token in self._characters:
                 queue.append(token)
-            elif token is self.Epsilon:
+            elif token is self._Epsilon:
                 queue.append(token)
-            elif token == self.Left:
-                stack.append(self.Left)
-            elif token == self.Right:
-                while len(stack) > 0 and stack[-1] != self.Left:
+            elif token == self._Left:
+                stack.append(self._Left)
+            elif token == self._Right:
+                while len(stack) > 0 and stack[-1] != self._Left:
                     queue.append(stack.pop())
                 if len(stack) == 0:
                     raise ValueError('Error: unbalanced parenthesis')
                 stack.pop()
-            elif token in self.shunt:
-                while len(stack) > 0 and stack[-1] != self.Left and\
-                      self.shunt[token][0] <= self.shunt[stack[-1]][0]\
-                      and self.shunt[token][1]:  # left-associative?
+            elif token in self._precedence:
+                while len(stack) > 0 and stack[-1] != self._Left and\
+                      self._precedence[token][0] <= \
+                      self._precedence[stack[-1]][0]\
+                      and self._precedence[token][1]:  # left-associative?
                     queue.append(stack.pop())
                 stack.append(token)
             else:
@@ -180,7 +317,7 @@ class RegularGrammar(object):
 
         while len(stack) > 0:
             token = stack.pop()
-            if token == self.Left or token == self.Right:
+            if token == self._Left or token == self._Right:
                 raise ValueError('Error: unbalanced parenthesis')
             queue.append(token)
 
@@ -188,57 +325,63 @@ class RegularGrammar(object):
 
     def _state(self):
         """
-        Generate a new universally unique state id.
+        Generate a new universally unique state name/label.
+
+        Runtime: O(1) - constant
+        Type: None -> string
         """
         return str(uuid4())
 
-    def _eNFA(self, expression):
+    def _NFA(self, expr):
         """
-        Converts a regular expression in RPN to an NFA with epsilon productions
-        (eNFA) which can handle: union |, kleene star *, concatenation .,
-        epsilon \e, literals, and syntax extensions + and ?. Adapted to a
-        iterative stacked based evaluation algorithm (standard RPN evaluation
-        algorithm) from thompson construction as described in section 4.1 in 'A
-        taxonomy of finite automata construction algorithms' by Bruce Watson,
+        Attempt to convert an internal representation of a regular expression
+        in RPN to an epsilon NFA. Operators handled: union |, kleene star *,
+        concatenation ., epsilon \e, literals, and syntax extensions kleene
+        plus + and choice ?. Adapted to a iterative stacked based evaluation
+        algorithm (standard RPN evaluation algorithm) from thompson
+        construction as described in section 4.1 in 'A taxonomy of finite
+        automata construction algorithms' by Bruce Watson,
         located @http://alexandria.tue.nl/extra1/wskrap/publichtml/9313452.pdf
-        Runs in time linear to the input expression O(n).
+
+        Runtime: O(n) - linear to input expression
+        Type: list -> set x set x set x set x string x string
         """
-        Q = set()  # set of states
-        V = set()  # set of input symbols (alphabet)
+        Q = set()  # states
+        V = set()  # input symbols (alphabet)
         T = set()  # transition relation: T in P(Q x V x Q)
         E = set()  # e-transition relation: E in P(Q x Q)
         S = None   # start state S in Q
         F = None   # accepting state F in Q
 
         stk = []  # NFA machine stk
-        for token in expression:
-            if token in self.shunt:
-                if token == self.Concat:
+        for token in expr:
+            if token in self._precedence:
+                if token == self._Concat:
                     if len(stk) < 2:
                         raise ValueError('Error: not enough args to op .')
                     p, F = stk.pop()
                     S, q = stk.pop()
                     E.update([(q, p)])
-                elif token == self.Union:
+                elif token == self._Union:
                     if len(stk) < 2:
                         raise ValueError('Error: not enough args to op |')
                     p, q = stk.pop()
                     r, t = stk.pop()
                     S, F = self._state(), self._state()
                     E.update([(S, p), (S, r), (q, F), (t, F)])
-                elif token == self.Star:
+                elif token == self._Star:
                     if len(stk) < 1:
                         raise ValueError('Error: not enough args to op *')
                     p, q = stk.pop()
                     S, F = self._state(), self._state()
                     E.update([(S, p), (q, p), (q, F), (S, F)])
-                elif token == self.Plus:
+                elif token == self._Plus:
                     if len(stk) < 1:
                         raise ValueError('Error: not enough args to op +')
                     p, q = stk.pop()
                     S, F = self._state(), self._state()
                     E.update([(S, p), (q, p), (q, F)])
-                elif token == self.Question:
+                elif token == self._Question:
                     if len(stk) < 1:
                         raise ValueError('Error: not enough args to op ?')
                     p, q = stk.pop()
@@ -246,11 +389,11 @@ class RegularGrammar(object):
                     E.update([(S, p), (q, F), (S, F)])
                 else:
                     raise ValueError('Error: operator not implemented')
-            elif token in self.characters:
+            elif token in self._characters:
                 S, F = self._state(), self._state()
                 V.update([token])
                 T.update([(S, token, F)])
-            elif token == self.Epsilon:
+            elif token == self._Epsilon:
                 S, F = self._state(), self._state()
                 E.update([(S, F)])
             else:
@@ -261,14 +404,18 @@ class RegularGrammar(object):
         if len(stk) != 1:
             raise ValueError('Error: invalid expression')
         S, F = stk.pop()
-        return [frozenset(elem) for elem in [Q, V, T, E, [S], [F]]]
+        return frozenset(Q), frozenset(V), frozenset(T), frozenset(E), S, F
 
-    def _e_closure(self, q, E, cache=dict()):
+    def _e_closure(self, q, E, cache):
         """
-        { q' | q ->*e q' } from a given start state q given a set of epsilon
-        transitions in the form: (in, out), find all reachable state using only
-        epsilon transitions, handling cycles appropriately. Optionally a cache
-        can be passed for memoization; map NFA state -> set of NFA states
+        Find the epsilon closure of state q and epsilon transitions E. A cache
+        is utilized to speed things up for repeated invocations. Stated in set
+        notation: { q' | q ->*e q' }, from a given start state q find all
+        states q' which are reachable using only epsilon transitions, handling
+        cycles appropriately.
+
+        Runtime: O(n) - linear in the number of epsilon transitions
+        Type: string x set x dict[frozenset]set -> set
         """
         if q in cache:
             return cache[q]
@@ -290,19 +437,24 @@ class RegularGrammar(object):
 
     def _DFA(self, eNFA):
         """
-        Converts the eNFA to DFA using subset construction and e closure
-        conversion. We only consider states reachable from the start state,
-        so the resulting DFA is minimized with reguard to reachable states.
+        Convert the epsilon NFA to a DFA using subset construction and
+        e-closure conversion. Only states wich are reachable from the start
+        state are considered. This results in a minimized DFA with reguard to
+        reachable states, but not with reguard to nondistinguishable states.
+
+        Runtime: O(2^n) - exponential in the number of states
+        Type: set x set x set x set x string x string
+                -> set x set x set x string x set
         """
         Q, V, T, E, S, F = eNFA
 
         cache = {}
-        Sp = set([frozenset(self._e_closure(s, E, cache)) for s in S])
-        Qp, Fp, Tp, explore = set(), set(), set(), Sp.copy()
+        Sp = frozenset(self._e_closure(S, E, cache))
+        Qp, Fp, Tp, explore = set(), set(), set(), set([Sp.copy()])
         while len(explore) > 0:
             q = explore.pop()  # DFA state; set of NFA states
             Qp.update([q])
-            if len(q & F) > 0:
+            if len(q & frozenset([F])) > 0:
                 Fp.update([q])
             for a in V:
                 nqs = {t[2] for t in T for s in q if t[0] == s and t[1] == a}
@@ -317,11 +469,67 @@ class RegularGrammar(object):
                     explore.update([qp])
                 Tp.update([(q, a, qp)])
 
-        return [frozenset(Qp), V, frozenset(Tp), frozenset(Sp), frozenset(Fp)]
+        return frozenset(Qp), V, frozenset(Tp), Sp, frozenset(Fp)
+
+    def _alpha(self, dfa):
+        """
+        Perform an alpha rename on all DFA states to simplify the
+        representation which the end user will consume.
+
+        Runtime: O(n) - linear in the number of states and transitions
+        Type: set x set x set x string x set -> set x set x set x string x set
+        """
+        Q, V, T, S, F = dfa
+        rename = {q: self._state() for q in Q}
+        Qp = frozenset(rename.values())
+        Fp = frozenset({rename[f] for f in F})
+        Sp = rename[S]
+        Tp = frozenset({(rename[t[0]], t[1], rename[t[2]]) for t in T})
+
+        return Qp, V, Tp, Sp, Fp
+
+    def _total(self, dfa):
+        """
+        Make the DFA's delta function total, if not already, by adding a
+        sink/error state. All unspecified state transitions are then specified
+        by adding a transition to the new sink/error state.
+
+        Runtime: O(n) - linear in the number of states and transitions
+        Type: set x set x set x string x set -> set x set x set x string x set
+        """
+        Q, V, T, S, F = dfa
+
+        M = {q: {} for q in Q}
+        for t in T:
+            M[t[0]][t[1]] = t[2]
+
+        fix = False
+        q_err = self._state()
+        for q_trans in M.values():
+            if len(q_trans) != len(V):
+                Q = Q | frozenset([q_err])
+                M[q_err] = {}
+                fix = True
+                break
+
+        if fix:
+            Tp = set()
+            for q in M.keys():
+                for c in V:
+                    if M[q].get(c, None) is None:
+                        Tp.add((q, c, q_err))
+            T |= frozenset(Tp)
+
+        return Q, V, T, S, F
 
     def _Hopcroft(self, dfa):
         """
-        Minimizes the DFA using hopcrafts algorithm to merge equivalent states.
+        Minimize the DFA with reguard to nondistinguishable states using
+        hopcrafts algorithm, which merges states together based on partition
+        refinement.
+
+        Runtime: O(ns log n) - linear log (n=number states; s=alphabet size)
+        Type: set x set x set x set x set -> set x set x set x set x set
         """
         Q, V, T, S, F = dfa
 
@@ -362,452 +570,883 @@ class RegularGrammar(object):
                 if t[2] in part:
                     s2 = part
             Tp.add((s1, t[1], s2))
-        Sp = frozenset({part for part in P if len(part & S) > 0})
+
+        Sp = None
+        for part in P:
+            if len(part & frozenset([S])) > 0:
+                Sp = part
+                break
         Fp = frozenset({part for part in P if len(part & F) > 0})
 
-        return (frozenset(P), V, frozenset(Tp), Sp, Fp)
-
-    def make(self):
-        """
-        Converts all tokens representing regular expressions (regular grammars)
-        to NFAs with epsilon transitions, which are then converted into
-        equivalent DFAs and finally minimized to a unique DFA capable of
-        parsing any input in O(n) time to produce a possible match against any
-        token type specified to the tokenizer.
-        """
-        start = self._state()
-        expr = ''
-        scanner = [set(), set(), set(), set(), set([start]), set()]
-        tokenizers = {}
-        for (name, regexp) in self.regexps.items():
-            # build up individual tokenizer
-            expression = self._shunt(self._convert(regexp))
-            nfa = self._eNFA(expression)
-            (Q, V, T, S, F) = self._Hopcroft(self._DFA(nfa))
-            tokenizers[name] = {
-                'expr': regexp,
-                'Q': Q,
-                'V': V,
-                'T': T,
-                'S': S,
-                'F': F,
-            }
-
-            # construct part of the scanner with tokenizer
-            scanner[0] |= nfa[0]  # Q
-            scanner[1] |= nfa[1]  # V
-            scanner[2] |= nfa[2]  # T
-            scanner[3] |= nfa[3] | set([(start, list(nfa[4])[0])])  # E
-            scanner[5] |= nfa[5]  # F
-            expr += '(' + regexp + ')|'
-
-        (Q, V, T, S, F) = self._Hopcroft(self._DFA(tuple(scanner)))
-        return {
-          'name': self.name,
-          'tokenizers': tokenizers,
-          'scanner': {
-            'expr': expr[:-1],  # correct expression
-            'Q': Q,
-            'V': V,
-            'T': T,
-            'S': S,
-            'F': F
-          }
-        }
+        return frozenset(P), V, frozenset(Tp), Sp, Fp
 
 
 if __name__ == '__main__':
-    from itertools import permutations
 
     TESTS = [
         {
-            'name': 'Core Functionality',
-            'tokens': {
-                'testAlpha': 'a',
-                'testConcat': 'a.b',
-                'testAlt': 'a|b',
-                'testKleene': 'a*',
-                'testMaybe': 'a?',
-                'testPlus': 'a+',
-                'testGroup': '(a|b)*',
-                'testAssoc': 'a|b*'
+            'name': 'Single Alpha',
+            'valid': True,
+            'expressions': {
+                'alpha': 'a'
             },
-            'tokenizers': {
-                'testAlpha': {
-                    'expr': 'a',
-                    'Q': frozenset(['S', 'A']),
-                    'V': frozenset(['a']),
-                    'T': frozenset([('S', 'a', 'A')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['A'])
-                 },
-                'testConcat': {
-                    'expr': 'a.b',
-                    'Q': frozenset(['S', 'A', 'B']),
-                    'V': frozenset(['a', 'b']),
-                    'T': frozenset([('S', 'a', 'A'), ('A', 'b', 'B')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['B'])
-                 },
-                'testAlt': {
-                    'expr': 'a|b',
-                    'Q': frozenset(['S', 'AB']),
-                    'V': frozenset(['a', 'b']),
-                    'T': frozenset([('S', 'a', 'AB'), ('S', 'b', 'AB')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['AB'])
-                 },
-                'testKleene': {
-                    'expr': 'a*',
-                    'Q': frozenset(['A']),
-                    'V': frozenset(['a']),
-                    'T': frozenset([('A', 'a', 'A')]),
-                    'S': frozenset(['A']),
-                    'F': frozenset(['A'])
-                 },
-                'testMaybe': {
-                    'expr': 'a?',
-                    'Q': frozenset(['S', 'A']),
-                    'V': frozenset(['a']),
-                    'T': frozenset([('S', 'a', 'A')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['S', 'A'])
-                 },
-                'testPlus': {
-                    'expr': 'a+',
-                    'Q': frozenset(['S', 'A']),
-                    'V': frozenset(['a']),
-                    'T': frozenset([('S', 'a', 'A'), ('A', 'a', 'A')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['A'])
-                 },
-                'testGroup': {
-                    'expr': '(a|b)*',
-                    'Q': frozenset(['AB*']),
-                    'V': frozenset(['a', 'b']),
-                    'T': frozenset([('AB*', 'a', 'AB*'), ('AB*', 'b', 'AB*')]),
-                    'S': frozenset(['AB*']),
-                    'F': frozenset(['AB*'])
-                },
-                'testAssoc': {
-                    'expr': 'a|b*',
-                    'Q': frozenset(['S', 'A', 'B']),
-                    'V': frozenset(['a', 'b']),
-                    'T': frozenset([
-                        ('S', 'a', 'A'),
-                        ('S', 'b', 'B'),
-                        ('B', 'b', 'B')
-                    ]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['S', 'A', 'B'])
-                }
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'Err']),
+                'V': frozenset(['a']),
+                'T': frozenset([
+                    ('S', 'a', 'A'),
+                    ('A', 'a', 'Err'),
+                    ('Err', 'a', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['A'])
+            }
+        },
+        {
+            'name': 'Explicit Concatenation',
+            'valid': True,
+            'expressions': {
+                'concat': 'a.b'
             },
-            'scanner': {
-                'expr': '(a)|(a.b)|(a|b)|(a*)|(a?)|(a+)|(a|b)*|(a|b*)',
-                'Q': frozenset(['S']),
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'B', 'Err']),
                 'V': frozenset(['a', 'b']),
                 'T': frozenset([
-                    ('S', 'a', 'S'),
-                    ('S', 'b', 'S')
+                    ('S', 'a', 'A'),
+                    ('S', 'b', 'Err'),
+                    ('A', 'b', 'B'),
+                    ('A', 'a', 'Err'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err')
                 ]),
-                'S': frozenset(['S']),
+                'S': 'S',
+                'F': frozenset(['B'])
+            }
+        },
+        {
+            'name': 'Alternation',
+            'valid': True,
+            'expressions': {
+                'alt': 'a|b'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'AB', 'Err']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('S', 'a', 'AB'),
+                    ('S', 'b', 'AB'),
+                    ('AB', 'a', 'Err'),
+                    ('AB', 'b', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['AB'])
+            }
+        },
+        {
+            'name': 'Kleene Star',
+            'valid': True,
+            'expressions': {
+                'star': 'a*'
+            },
+            'DFA': {
+                'Q': frozenset(['A']),
+                'V': frozenset(['a']),
+                'T': frozenset([('A', 'a', 'A')]),
+                'S': 'A',
+                'F': frozenset(['A'])
+            }
+        },
+        {
+            'name': 'Kleene Plus',
+            'valid': True,
+            'expressions': {
+                'plus': 'a+'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'A']),
+                'V': frozenset(['a']),
+                'T': frozenset([
+                    ('S', 'a', 'A'),
+                    ('A', 'a', 'A')
+                ]),
+                'S': 'S',
+                'F': frozenset(['A'])
+            }
+        },
+        {
+            'name': 'Choice',
+            'valid': True,
+            'expressions': {
+                'maybe': 'a?'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'Err']),
+                'V': frozenset(['a']),
+                'T': frozenset([
+                    ('S', 'a', 'A'),
+                    ('A', 'a', 'Err'),
+                    ('Err', 'a', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['S', 'A'])
+            }
+        },
+        {
+            'name': 'Grouping',
+            'valid': True,
+            'expressions': {
+                'group': '(a|b)*'
+            },
+            'DFA': {
+                'Q': frozenset(['AB*']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('AB*', 'a', 'AB*'),
+                    ('AB*', 'b', 'AB*')
+                ]),
+                'S': 'AB*',
+                'F': frozenset(['AB*'])
+            }
+        },
+        {
+            'name': 'Association',
+            'valid': True,
+            'expressions': {
+                'assoc': 'a|b*'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'B', 'Err']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('S', 'a', 'A'),
+                    ('S', 'b', 'B'),
+                    ('B', 'b', 'B'),
+                    ('B', 'a', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err'),
+                    ('A', 'a', 'Err'),
+                    ('A', 'b', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['S', 'A', 'B'])
+            }
+        },
+        {
+            'name': 'Concat Alpha',
+            'valid': True,
+            'expressions': {
+                'concat': '\.'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'F', 'Err']),
+                'V': frozenset(['.']),
+                'T': frozenset([
+                    ('S', '.', 'F'),
+                    ('F', '.', 'Err'),
+                    ('Err', '.', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['F'])
+            }
+        },
+        {
+            'name': 'Alternation Alpha',
+            'valid': True,
+            'expressions': {
+                'alt': '\|'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'F', 'Err']),
+                'V': frozenset(['|']),
+                'T': frozenset([
+                    ('S', '|', 'F'),
+                    ('F', '|', 'Err'),
+                    ('Err', '|', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['F'])
+            }
+        },
+        {
+            'name': 'Kleene Star Alpha',
+            'valid': True,
+            'expressions': {
+                'star': '\*'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'F', 'Err']),
+                'V': frozenset(['*']),
+                'T': frozenset([
+                    ('S', '*', 'F'),
+                    ('F', '*', 'Err'),
+                    ('Err', '*', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['F'])
+            }
+        },
+        {
+            'name': 'Choice Alpha',
+            'valid': True,
+            'expressions': {
+                'question': '\?'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'F', 'Err']),
+                'V': frozenset(['?']),
+                'T': frozenset([
+                    ('S', '?', 'F'),
+                    ('F', '?', 'Err'),
+                    ('Err', '?', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['F'])
+            }
+        },
+        {
+            'name': 'Kleene Plus Alpha',
+            'valid': True,
+            'expressions': {
+                'plus': '\+'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'F', 'Err']),
+                'V': frozenset(['+']),
+                'T': frozenset([
+                    ('S', '+', 'F'),
+                    ('F', '+', 'Err'),
+                    ('Err', '+', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['F'])
+            }
+        },
+        {
+            'name': 'Epsilon',
+            'valid': True,
+            'expressions': {
+                'epsilon': '\e'
+            },
+            'DFA': {
+                'Q': frozenset(['S']),
+                'V': frozenset([]),
+                'T': frozenset([]),
+                'S': 'S',
                 'F': frozenset(['S'])
             }
         },
         {
-            'name': 'Escape Sequences',
-            'tokens': {
-                'testConcat': '\.',
-                'testAlt': '\|',
-                'testKleene': '\*',
-                'testMaybe': '\?',
-                'testPlus': '\+',
-                'testEpsilon': '\e',
-                'testBackslash': '\\\\',
-                'testGroupStart': '\(',
-                'testGroupEnd': '\)'
+            'name': 'Backslash Alpha',
+            'valid': True,
+            'expressions': {
+                'slash': '\\\\'
             },
-            'tokenizers': {
-                'testConcat': {
-                    'expr': '\.',
-                    'Q': frozenset(['S', 'F']),
-                    'V': frozenset(['.']),
-                    'T': frozenset([('S', '.', 'F')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['F'])
-                },
-                'testAlt': {
-                    'expr': '\|',
-                    'Q': frozenset(['S', 'F']),
-                    'V': frozenset(['|']),
-                    'T': frozenset([('S', '|', 'F')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['F'])
-                },
-                'testKleene': {
-                    'expr': '\*',
-                    'Q': frozenset(['S', 'F']),
-                    'V': frozenset(['*']),
-                    'T': frozenset([('S', '*', 'F')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['F'])
-                },
-                'testMaybe': {
-                    'expr': '\?',
-                    'Q': frozenset(['S', 'F']),
-                    'V': frozenset(['?']),
-                    'T': frozenset([('S', '?', 'F')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['F'])
-                },
-                'testPlus': {
-                    'expr': '\+',
-                    'Q': frozenset(['S', 'F']),
-                    'V': frozenset(['+']),
-                    'T': frozenset([('S', '+', 'F')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['F'])
-                },
-                'testEpsilon': {
-                    'expr': '\e',
-                    'Q': frozenset(['S']),
-                    'V': frozenset([]),
-                    'T': frozenset([]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['S'])
-                },
-                'testBackslash': {
-                    'expr': '\\\\',
-                    'Q': frozenset(['S', 'F']),
-                    'V': frozenset(['\\']),
-                    'T': frozenset([('S', '\\', 'F')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['F'])
-                },
-                'testGroupStart': {
-                    'expr': '\(',
-                    'Q': frozenset(['S', 'F']),
-                    'V': frozenset(['(']),
-                    'T': frozenset([('S', '(', 'F')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['F'])
-                },
-                'testGroupEnd': {
-                    'expr': '\)',
-                    'Q': frozenset(['S', 'F']),
-                    'V': frozenset([')']),
-                    'T': frozenset([('S', ')', 'F')]),
-                    'S': frozenset(['S']),
-                    'F': frozenset(['F'])
-                }
-            },
-            'scanner': {
-                'expr': '(\.)|(\|)|(\*)|(\?)|(\+)|(\e)|(\\\\)|(\()|(\))',
-                'Q': frozenset(['S', 'F']),
-                'V': frozenset(['.', '|', '*', '?', '+', '\\', '(', ')']),
+            'DFA': {
+                'Q': frozenset(['S', 'F', 'Err']),
+                'V': frozenset(['\\']),
                 'T': frozenset([
-                    ('S', '.', 'F'),
-                    ('S', '|', 'F'),
-                    ('S', '*', 'F'),
-                    ('S', '?', 'F'),
-                    ('S', '+', 'F'),
                     ('S', '\\', 'F'),
-                    ('S', '(', 'F'),
-                    ('S', ')', 'F')
+                    ('F', '\\', 'Err'),
+                    ('Err', '\\', 'Err')
                 ]),
-                'S': frozenset(['S']),
-                'F': frozenset(['S', 'F'])
+                'S': 'S',
+                'F': frozenset(['F'])
             }
         },
         {
-            'name': 'Random Complexity',  # TODO: expand with more tokens
-            'tokens': {
-                'test0': 'a*.(b|c.d)*',
-                'test1': '(a|\e).b*'
+            'name': 'Left Parenthesis Alpha',
+            'valid': True,
+            'expressions': {
+                'lparen': '\('
             },
-            'tokenizers': {
-                'test0': {
-                    'expr': 'a*.(b|c.d)*',
-                    'Q': frozenset(['AC', 'B', 'DE']),
-                    'V': frozenset(['a', 'b', 'c', 'd']),
-                    'T': frozenset([
-                        ('AC', 'a', 'AC'),
-                        ('AC', 'b', 'DE'),
-                        ('AC', 'c', 'B'),
-                        ('B', 'd', 'DE'),
-                        ('DE', 'b', 'DE'),
-                        ('DE', 'c', 'B')
-                    ]),
-                    'S': frozenset(['AC']),
-                    'F': frozenset(['AC', 'DE']),
-                },
-                'test1': {
-                    'expr': '(a|\e).b*',
-                    'Q': frozenset(['A', 'B']),
-                    'V': frozenset(['a', 'b']),
-                    'T': frozenset([
-                        ('A', 'a', 'B'),
-                        ('A', 'b', 'B'),
-                        ('B', 'b', 'B')
-                    ]),
-                    'S': frozenset(['A']),
-                    'F': frozenset(['A', 'B'])
-                }
+            'DFA': {
+                'Q': frozenset(['S', 'F', 'Err']),
+                'V': frozenset(['(']),
+                'T': frozenset([
+                    ('S', '(', 'F'),
+                    ('F', '(', 'Err'),
+                    ('Err', '(', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['F'])
+            }
+        },
+        {
+            'name': 'Right Parenthesis Alpha',
+            'valid': True,
+            'expressions': {
+                'rparen': '\)'
             },
-            'scanner': {
-                'expr': '(a*.(b|c.d)*)|((a|\e).b*)',
-                'Q': frozenset(['A', 'B', 'C']),
-                'V': frozenset(['a', 'b', 'c', 'd']),
+            'DFA': {
+                'Q': frozenset(['S', 'F', 'Err']),
+                'V': frozenset([')']),
+                'T': frozenset([
+                    ('S', ')', 'F'),
+                    ('F', ')', 'Err'),
+                    ('Err', ')', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['F'])
+            }
+        },
+        {
+            'name': 'Implicit Concatenation 1',
+            'valid': True,
+            'expressions': {
+                'concat': 'ab'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'B', 'Err']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('S', 'a', 'A'),
+                    ('S', 'b', 'Err'),
+                    ('A', 'b', 'B'),
+                    ('A', 'a', 'Err'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['B'])
+            }
+        },
+        {
+            'name': 'Implicit Concatenation 2',
+            'valid': True,
+            'expressions': {
+                'concat': 'a(b)'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'B', 'Err']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('S', 'a', 'A'),
+                    ('S', 'b', 'Err'),
+                    ('A', 'b', 'B'),
+                    ('A', 'a', 'Err'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['B'])
+            }
+        },
+        {
+            'name': 'Implicit Concatenation 3',
+            'valid': True,
+            'expressions': {
+                'concat': '(a)(b)'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'B', 'Err']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('S', 'a', 'A'),
+                    ('S', 'b', 'Err'),
+                    ('A', 'b', 'B'),
+                    ('A', 'a', 'Err'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['B'])
+            }
+        },
+        {
+            'name': 'Implicit Concatenation 4',
+            'valid': True,
+            'expressions': {
+                'concat': 'a*(b)'
+            },
+            'DFA': {
+                'Q': frozenset(['A', 'B', 'Err']),
+                'V': frozenset(['a', 'b']),
                 'T': frozenset([
                     ('A', 'a', 'A'),
-                    ('A', 'b', 'C'),
-                    ('A', 'c', 'B'),
-                    ('B', 'd', 'C'),
-                    ('C', 'b', 'C'),
-                    ('C', 'c', 'B')
+                    ('A', 'b', 'B'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err')
                 ]),
-                'S': frozenset(['A']),
-                'F': frozenset(['A', 'C'])
+                'S': 'A',
+                'F': frozenset(['B'])
             }
-        }
-        #  { TODO
-        #      'name': 'Real World Examples',
-        #      'tokens': {
-        #          'integer': '',
-        #          'float': '',
-        #          'boolean': '',
-        #          'string': '',
-        #          'character': '',
-        #          'identifier': '',
-        #          'white-space': '',
-        #          'line-comment': '',
-        #          'block-comment': ''
-        #      },
-        #      'tokenizers': {
-        #          'integer': {
-        #              'expr': '',
-        #              'Q': frozenset([]),
-        #              'V': frozenset([]),
-        #              'T': frozenset([]),
-        #              'S': frozenset([]),
-        #              'F': frozenset([])
-        #          },
-        #          'float': {
-        #          },
-        #          'boolean': {
-        #          },
-        #          'string': {
-        #          },
-        #          'character': {
-        #          },
-        #          'identifier': {
-        #          },
-        #          'white-space': {
-        #          },
-        #          'line-comment': {
-        #          },
-        #          'block-comment': {
-        #          }
-        #      },
-        #      'scanner': {
-        #      }
-        #  }
+        },
+        {
+            'name': 'Implicit Concatenation 5',
+            'valid': True,
+            'expressions': {
+                'concat': 'a+(b)'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'B', 'Err']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('S', 'a', 'A'),
+                    ('S', 'b', 'Err'),
+                    ('A', 'a', 'A'),
+                    ('A', 'b', 'B'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['B'])
+            }
+        },
+        {
+            'name': 'Implicit Concatenation 6',
+            'valid': True,
+            'expressions': {
+                'concat': 'a?(b)'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'B', 'Err']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('S', 'a', 'A'),
+                    ('S', 'b', 'B'),
+                    ('A', 'b', 'B'),
+                    ('A', 'a', 'Err'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['B'])
+            }
+        },
+        {
+            'name': 'Implicit Concatenation 7',
+            'valid': True,
+            'expressions': {
+                'concat': 'a*b'
+            },
+            'DFA': {
+                'Q': frozenset(['A', 'B', 'Err']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('A', 'a', 'A'),
+                    ('A', 'b', 'B'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err')
+                ]),
+                'S': 'A',
+                'F': frozenset(['B'])
+            }
+        },
+        {
+            'name': 'Implicit Concatenation 8',
+            'valid': True,
+            'expressions': {
+                'concat': 'a+b'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'B', 'Err']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('S', 'a', 'A'),
+                    ('S', 'b', 'Err'),
+                    ('A', 'a', 'A'),
+                    ('A', 'b', 'B'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['B'])
+            }
+        },
+        {
+            'name': 'Implicit Concatenation 9',
+            'valid': True,
+            'expressions': {
+                'concat': 'a?b'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'B', 'Err']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('S', 'b', 'B'),
+                    ('S', 'a', 'A'),
+                    ('A', 'b', 'B'),
+                    ('A', 'a', 'Err'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['B'])
+            }
+        },
+        {
+            'name': 'Implicit Concatenation 10 - Mixed',
+            'valid': True,
+            'expressions': {
+                'concat': 'a.bc.de'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'B', 'C', 'D', 'E', 'Err']),
+                'V': frozenset(['a', 'b', 'c', 'd', 'e']),
+                'T': frozenset([
+                    ('S', 'a', 'A'),
+                    ('S', 'b', 'Err'),
+                    ('S', 'c', 'Err'),
+                    ('S', 'd', 'Err'),
+                    ('S', 'e', 'Err'),
+                    ('A', 'b', 'B'),
+                    ('A', 'a', 'Err'),
+                    ('A', 'c', 'Err'),
+                    ('A', 'd', 'Err'),
+                    ('A', 'e', 'Err'),
+                    ('B', 'c', 'C'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('B', 'd', 'Err'),
+                    ('B', 'e', 'Err'),
+                    ('C', 'd', 'D'),
+                    ('C', 'a', 'Err'),
+                    ('C', 'b', 'Err'),
+                    ('C', 'c', 'Err'),
+                    ('C', 'e', 'Err'),
+                    ('D', 'e', 'E'),
+                    ('D', 'a', 'Err'),
+                    ('D', 'b', 'Err'),
+                    ('D', 'c', 'Err'),
+                    ('D', 'd', 'Err'),
+                    ('E', 'a', 'Err'),
+                    ('E', 'b', 'Err'),
+                    ('E', 'c', 'Err'),
+                    ('E', 'd', 'Err'),
+                    ('E', 'e', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err'),
+                    ('Err', 'c', 'Err'),
+                    ('Err', 'd', 'Err'),
+                    ('Err', 'e', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['E'])
+            }
+        },
+        {
+            'name': 'Randomness 1',
+            'valid': True,
+            'expressions': {
+                'random': 'a*(b|cd)*'
+            },
+            'DFA': {
+                'Q': frozenset(['AC', 'B', 'DE', 'Err']),
+                'V': frozenset(['a', 'b', 'c', 'd']),
+                'T': frozenset([
+                    ('AC', 'a', 'AC'),
+                    ('AC', 'b', 'DE'),
+                    ('AC', 'c', 'B'),
+                    ('AC', 'd', 'Err'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('B', 'c', 'Err'),
+                    ('B', 'd', 'DE'),
+                    ('DE', 'a', 'Err'),
+                    ('DE', 'b', 'DE'),
+                    ('DE', 'c', 'B'),
+                    ('DE', 'd', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err'),
+                    ('Err', 'c', 'Err'),
+                    ('Err', 'd', 'Err')
+                ]),
+                'S': 'AC',
+                'F': frozenset(['AC', 'DE']),
+            }
+        },
+        {
+            'name': 'Randomness 2',
+            'valid': True,
+            'expressions': {
+                'random': '(a|\e)b*'
+            },
+            'DFA': {
+                'Q': frozenset(['A', 'B', 'Err']),
+                'V': frozenset(['a', 'b']),
+                'T': frozenset([
+                    ('A', 'a', 'B'),
+                    ('A', 'b', 'B'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'B'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err')
+                ]),
+                'S': 'A',
+                'F': frozenset(['A', 'B'])
+            }
+        },
+        {
+            'name': 'Randomness 3',
+            'valid': True,
+            'expressions': {
+                'random': '(a*b)|(a.bcd.e)'
+            },
+            'DFA': {
+                'Q': frozenset(['S', 'A', 'A*', 'B', 'C', 'D', 'F', 'Err']),
+                'V': frozenset(['a', 'b', 'c', 'd', 'e']),
+                'T': frozenset([
+                    ('S', 'a', 'A'),
+                    ('S', 'b', 'F'),
+                    ('S', 'c', 'Err'),
+                    ('S', 'd', 'Err'),
+                    ('S', 'e', 'Err'),
+                    ('A', 'a', 'A*'),
+                    ('A', 'b', 'B'),
+                    ('A', 'c', 'Err'),
+                    ('A', 'd', 'Err'),
+                    ('A', 'e', 'Err'),
+                    ('A*', 'a', 'A*'),
+                    ('A*', 'b', 'F'),
+                    ('A*', 'c', 'Err'),
+                    ('A*', 'd', 'Err'),
+                    ('A*', 'e', 'Err'),
+                    ('B', 'a', 'Err'),
+                    ('B', 'b', 'Err'),
+                    ('B', 'c', 'C'),
+                    ('B', 'd', 'Err'),
+                    ('B', 'e', 'Err'),
+                    ('C', 'a', 'Err'),
+                    ('C', 'b', 'Err'),
+                    ('C', 'c', 'Err'),
+                    ('C', 'd', 'D'),
+                    ('C', 'e', 'Err'),
+                    ('D', 'a', 'Err'),
+                    ('D', 'b', 'Err'),
+                    ('D', 'c', 'Err'),
+                    ('D', 'd', 'Err'),
+                    ('D', 'e', 'F'),
+                    ('F', 'a', 'Err'),
+                    ('F', 'b', 'Err'),
+                    ('F', 'c', 'Err'),
+                    ('F', 'd', 'Err'),
+                    ('F', 'e', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err'),
+                    ('Err', 'c', 'Err'),
+                    ('Err', 'd', 'Err'),
+                    ('Err', 'e', 'Err')
+                ]),
+                'S': 'S',
+                'F': frozenset(['F', 'B'])
+            }
+        },
+        {
+            'name': 'Unbalanced Left Paren',
+            'valid': False,
+            'expressions': {
+                'invalid': '(foo|bar',
+            },
+            'DFA': {}
+        },
+        {
+            'name': 'Unbalanced Right Paren',
+            'valid': False,
+            'expressions': {
+                'invalid': 'foo|bar)',
+            },
+            'DFA': {}
+        },
+        {
+            'name': 'Invalid Escape Sequence',
+            'valid': False,
+            'expressions': {
+                'invalid': '\j',
+            },
+            'DFA': {}
+        },
+        {
+            'name': 'Empty Escape Sequence',
+            'valid': False,
+            'expressions': {
+                'invalid': '\\',
+            },
+            'DFA': {}
+        },
+        {
+            'name': 'Empty Expression',
+            'valid': False,
+            'expressions': {
+                'invalid': '',
+            },
+            'DFA': {}
+        },
+        {
+            'name': 'Invalid Character',
+            'valid': False,
+            'expressions': {
+                'invalid': '\x99',
+            },
+            'DFA': {}
+        },
+        {
+            'name': ['Invalid Scanner Name'],
+            'valid': False,
+            'expressions': {
+                'invalid': 'foo',
+            },
+            'DFA': {}
+        },
+        {
+            'name': 'Invalid Scanner Tokens',
+            'valid': False,
+            'expressions': ["invalid"],
+            'DFA': {}
+        },
+        {
+            'name': 'Invalid Scanner Token Key',
+            'valid': False,
+            'expressions': {
+                True: 'invalid',
+            },
+            'DFA': {}
+        },
+        {
+            'name': 'Invalid Scanner Token Value',
+            'valid': False,
+            'expressions': {
+                'invalid': True,
+            },
+            'DFA': {}
+        },
+        {
+            'name': 'Invalid Expression * Arity',
+            'valid': False,
+            'expressions': {
+                'invalid': '*',
+            },
+            'DFA': {}
+        },
+        {
+            'name': 'Invalid Expression + Arity',
+            'valid': False,
+            'expressions': {
+                'invalid': '+',
+            },
+            'DFA': {}
+        },
+        {
+            'name': 'Invalid Expression ? Arity',
+            'valid': False,
+            'expressions': {
+                'invalid': '?',
+            },
+            'DFA': {}
+        },
+        {
+            'name': 'Invalid Expression | Arity',
+            'valid': False,
+            'expressions': {
+                'invalid': 'a|',
+            },
+            'DFA': {}
+        },
+        {
+            'name': 'Invalid Expression . Arity',
+            'valid': False,
+            'expressions': {
+                'invalid': 'a.',
+            },
+            'DFA': {}
+        },
     ]
 
-    def isomorphic(dfa, _dfa):
-        """
-        Attempt to find if dfa's are isomorphic by finding a bijection.
-        Assumes both dfa's are the same size. Finds all mappings and then
-        just check if one matches...slow but works.
-        """
-        qs1, qs2 = list(_dfa['Q']), list(dfa['Q'])
+    from itertools import permutations
 
-        mappings = []
-        for perm in list(permutations(qs2, len(qs2))):
-            mappings.append({qs1[i]: perm[i] for i in range(0, len(qs1))})
+    def isomorphic(set1, set2, _map, mfunc):
+        if len(set1) != len(set2):
+            return False
 
-        while len(mappings) != 0:
-            imap = mappings.pop()  # possibly an isomorphic map
-            try:
-                for start in _dfa['S']:
-                    if imap[start] not in dfa['S']:
-                        raise ValueError('Error: Incorrect start set')
+        for elem in set1:
+            if mfunc(_map, elem) not in set2:
+                return False
 
-                for final in _dfa['F']:
-                    if imap[final] not in dfa['F']:
-                        raise ValueError('Error: Incorrect final set')
+        return True
 
-                for tran in _dfa['T']:
-                    if (imap[tran[0]], tran[1], imap[tran[2]]) not in dfa['T']:
-                        raise ValueError('Error: Incorrect transition set')
-            except ValueError:
-                continue
-            return   # found a mapping which didn't give an error
+    def final_map(_map, state):
+        return _map[state]
 
-        raise ValueError('Error: Incorrect dfa produced')
-
-    def cmp_expr(got, expected):
-        # NOTE: _DFA['expr'] =?= DFA['expr'])
-        # ignored for now since it isnt necessary for verification
-        # raise ValueError('Error: Incorrect expression')
-        pass
+    def delta_map(_map, move):
+        return (_map[move[0]], move[1], _map[move[2]])
 
     for test in TESTS:
-        grammar = RegularGrammar(test['name'])
-        for tname, texpression in test['tokens'].items():
-            grammar.token(tname, texpression)
-        result = grammar.make()
+        try:
+            grammar = RegularGrammar(test['name'], test['expressions'])
+        except ValueError as e:
+            if test['valid']:  # test type (input output)
+                raise e        # Unexpected Failure (+-)
+            continue           # Expected Failure   (--)
 
-        if result['name'] != test['name']:
-            raise ValueError('Error: Incorrect reporting of scanner name')
+        if not test['valid']:  # Unexpected Pass    (-+)
+            raise ValueError('Panic: Negative test passed without error')
 
-        if len(result['tokenizers']) != len(test['tokenizers']):
-            raise ValueError('Error: Incorrect number of tokenizers produced')
+        # Failure checking for:  Expected Pass      (++)
 
-        for (tname, DFA) in test['tokenizers'].items():
-            _DFA = result['tokenizers'].get(tname, None)
+        if grammar.name() != test['name']:
+            raise ValueError('Error: Incorrect DFA name returned')
 
-            if _DFA is None:
-                raise ValueError('Error: No scanner produced for token')
+        expressions = grammar.expressions()
 
-            if _DFA['expr'] != DFA['expr']:
-                raise ValueError('Error: Incorrect expression')
+        if len(expressions) != len(test['expressions']):
+            raise ValueError('Error: Incorrect expression count in grammar')
 
-            if _DFA['V'] != DFA['V']:
-                raise ValueError('Error: Incorrect alphabet')
+        for name, pattern in test['expressions'].items():
+            _pattern = expressions.get(name, None)
+            if _pattern is None or _pattern != pattern:
+                raise ValueError('Error: Incorrect token name/pattern created')
 
-            if len(_DFA['Q']) != len(DFA['Q']):
-                raise ValueError('Error: Incorrect number of states')
+        _DFA = test['DFA']
 
-            if len(_DFA['T']) != len(DFA['T']):
-                raise ValueError('Error: Incorrect number of transitions')
+        if grammar.alphabet() != _DFA['V']:
+            raise ValueError('Error: Incorrect alphabet produced')
 
-            if len(_DFA['S']) != len(DFA['S']):
-                raise ValueError('Error: Incorrect number of start states')
+        if len(grammar.states()) != len(_DFA['Q']):
+            raise ValueError('Error: Incorrect number of states produced')
 
-            if len(_DFA['F']) != len(DFA['F']):
-                raise ValueError('Error: Incorrect number of end states')
+        if len(grammar.accepting()) != len(_DFA['F']):
+            raise ValueError('Error: Incorrect number of finish states')
 
-            isomorphic(DFA, _DFA)
+        if len(grammar.transitions()) != len(_DFA['T']):
+            raise ValueError('Error: Incorrect number of transitions produced')
 
-        _DFA = result['scanner']
-        DFA = test['scanner']
+        # Check if DFA's are isomorphic by attempting to find a bijection
+        # between them since they both already look very 'similar'.
+        Q1 = list(grammar.states())
+        Q2 = list(_DFA['Q'])
 
-        cmp_expr(_DFA, DFA)
+        _map = {}
+        found = False
+        for permutation in permutations(Q2, len(Q2)):
+            for i in range(0, len(Q1)):
+                _map[Q1[i]] = permutation[i]
 
-        if _DFA['V'] != DFA['V']:
-            raise ValueError('Error: Incorrect alphabet')
+            if _map[grammar.start()] == _DFA['S'] and\
+               isomorphic(grammar.accepting(), _DFA['F'], _map, final_map) and\
+               isomorphic(grammar.transitions(), _DFA['T'], _map, delta_map):
+                found = True
+                break
 
-        if len(_DFA['Q']) != len(DFA['Q']):
-            raise ValueError('Error: Incorrect number of states')
-
-        if len(_DFA['T']) != len(DFA['T']):
-            raise ValueError('Error: Incorrect number of transitions')
-
-        if len(_DFA['S']) != len(DFA['S']):
-            raise ValueError('Error: Incorrect number of start states')
-
-        if len(_DFA['F']) != len(DFA['F']):
-            raise ValueError('Error: Incorrect number of end states')
-
-        isomorphic(_DFA, DFA)
+        if not found:
+            raise ValueError('Error: Non-isomorphic DFA produced')
