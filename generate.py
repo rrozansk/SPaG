@@ -8,53 +8,73 @@ Given below is an example for an ini like configuration file language.
 """
 import src.scanner as scanner
 import src.parser as parser
-import src.generators.c as generator  # NOTE: import specific generator
 
-# ******************************* SCANNER ********************************
-SCANNER = scanner.RegularGrammar("scan")
+# import generators
+import src.generators.c.C as C
+import src.generators.go as Go
+import src.generators.python as Python
 
-SCANNER.token("int",      "(-|+)?[1-9][0-9]*")
-SCANNER.token("float",    "(-|+)?([1-9][0-9]*)?\.[0-9]+")
-SCANNER.token("bool",     "true|false")
-SCANNER.token("char",     "'([a-z]|[A-Z]|[0-9])'")
-SCANNER.token("id",       "([a-z]|[A-Z])*")
-SCANNER.token("string",   "\".*\"")
-SCANNER.token("space",    "(\s|\t|\n|\r|\f|\v)*")  # not in parser; discard
-SCANNER.token("comment",  "(#|;).*\n")             # not in parser; discard
-SCANNER.token("lbracket", "[")
-SCANNER.token("rbracket", "]")
-SCANNER.token("lcurly",   "{")
-SCANNER.token("rcurly",   "}")
-SCANNER.token("comma",    ",")
-SCANNER.token("dividor",  ":|=")
+generators = {
+  "c":      C.C,
+  "go":     Go.Go,
+  "python": Python.Python
+}
 
-# ******************************* PARSER *********************************
-PARSER = parser.ContextFreeGrammar("parse")
+# ********************************** SCANNER **********************************
+S_NAME = "scan"
 
-PARSER.production("<Ini>",       "<Section> <Ini'>")
-PARSER.production("<Ini'>",      "<Section> <Ini'> |")
-PARSER.production("<Section>",   "<Header> <Settings>")
-PARSER.production("<Header>",    "lbracket id rbracket")
-PARSER.production("<Settings>",  "<Setting> <Settings'>")
-PARSER.production("<Settings'>", "<Setting> <Settings'> |")
-PARSER.production("<Setting>",   "id dividor <Value>")
-PARSER.production("<Value>",     "int | float | bool | char | string | lcurly <Array> rcurly")
-PARSER.production("<Array>",     "<Ints> | <Floats> | <Bools> | <Chars> | <Strings>")
-PARSER.production("<Ints>",      "int <Ints'>")
-PARSER.production("<Ints'>",     "comma int <Ints'>|")
-PARSER.production("<Floats>",    "float <Floats'>")
-PARSER.production("<Floats'>",   "comma float <Floats'>|")
-PARSER.production("<Bools>",     "bool <Bools'>")
-PARSER.production("<Bools'>",    "comma bool <Bools'>|")
-PARSER.production("<Chars>",     "char <Chars'>")
-PARSER.production("<Chars'>",    "comma char <Chars'>|")
-PARSER.production("<Strings>",   "string <Strings'>")
-PARSER.production("<Strings'>",  "comma string <Strings'>|")
+TOKENS = {
+    "int":      "(-|\+)?(1|2|3|4|5|6|7|8|9)(0|1|2|3|4|5|6|7|8|9)*",
+    "float":    "(-|\+)?((1|2|3|4|5|6|7|8|9)(0|1|2|3|4|5|6|7|8|9)*)?\.(0|1|2|3|4|5|6|7|8|9)+",
+    "bool":     "true|false",
+    "char":     "'(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|w|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|W|Z|0|1|2|3|4|5|6|7|8|9)'",
+    "id":       "(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|w|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|W|Z)*",
+    # "string":   "\"\_*\"",
+    "space":    "( |\t|\n|\r|\f|\v)*",
+    # "comment":  "(#|;)\_*\n",
+    "lbracket": "[",
+    "rbracket": "]",
+    "lcurly":   "{",
+    "rcurly":   "}",
+    "comma":    ",",
+    "dividor":  ":|="
+}
 
-PARSER.start("<Ini>")
+SCANNER = scanner.RegularGrammar(S_NAME, TOKENS)
 
-# ****************************** GENERATOR *******************************
-GENERATOR = generator.Generator()
+# ********************************** PARSER ***********************************
+P_NAME = "parse"
+
+PRODUCTIONS = {
+    "<Ini>":       "<Section> <Ini'>",
+    "<Ini'>":      "<Section> <Ini'> |",
+    "<Section>":   "<Header> <Settings>",
+    "<Header>":    "lbracket id rbracket",
+    "<Settings>":  "<Setting> <Settings'>",
+    "<Settings'>": "<Setting> <Settings'> |",
+    "<Setting>":   "id dividor <Value>",
+    "<Value>":     "int | float | bool | char | string | lcurly <Array> rcurly",
+    "<Array>":     "<Ints> | <Floats> | <Bools> | <Chars> | <Strings>",
+    "<Ints>":      "int <Ints'>",
+    "<Ints'>":     "comma int <Ints'>|",
+    "<Floats>":    "float <Floats'>",
+    "<Floats'>":   "comma float <Floats'>|",
+    "<Bools>":     "bool <Bools'>",
+    "<Bools'>":    "comma bool <Bools'>|",
+    "<Chars>":     "char <Chars'>",
+    "<Chars'>":    "comma char <Chars'>|",
+    "<Strings>":   "string <Strings'>",
+    "<Strings'>":  "comma string <Strings'>|"
+}
+
+START_PRODUCTION = "<Ini>"
+
+PARSER = parser.ContextFreeGrammar(P_NAME, PRODUCTIONS, START_PRODUCTION)
+
+# ********************************* GENERATOR *********************************
+TARGET = "c"
+
+GENERATOR = generators[TARGET]()
 
 GENERATOR.set_scanner(SCANNER)
 GENERATOR.set_parser(PARSER)

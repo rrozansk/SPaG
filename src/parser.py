@@ -70,17 +70,19 @@ class ContextFreeGrammar(object):
 
         self._start = start
 
-        self._productions = []
+        if type(productions) is not dict:
+            raise ValueError('Invalid Input: productions must be a dict')
 
-        for (lhs, rhs) in productions:
-            if type(lhs) is not str:
-                raise ValueError('Invalid Input: lhs must be a string')
+        self._productions = {}
+        for nonterminal, rhs in productions.items():
+            if type(nonterminal) is not str:
+                raise ValueError('Invalid Input: nonterminal must be a string')
 
             if type(rhs) is not str:
-                raise ValueError('Invalid Input: rhs must be a string')
+                raise ValueError('Invalid Input: rules must be a string')
 
-            rule = (lhs, [rules.split() for rules in rhs.split('|')])
-            self._productions.append(rule)
+            rules = [rule.split() for rule in rhs.split('|')]
+            self._productions[nonterminal] = rules
 
         nonterms = self._nonterminals()
         terms = self._terminals(nonterms)
@@ -122,7 +124,7 @@ class ContextFreeGrammar(object):
         Runtime: O(n) - linear to the number of terminals in the grammar.
         Type: None -> set
         """
-        return copy.deepcopy(self._terminals)
+        return self._terminals.copy()
 
     def nonterminals(self):
         """
@@ -131,7 +133,7 @@ class ContextFreeGrammar(object):
         Runtime: O(n) - linear to the number of nonterminals in the grammar.
         Type: None -> set
         """
-        return copy.deepcopy(self._nonterminals)
+        return self._nonterminals.copy()
 
     def first(self):
         """
@@ -185,7 +187,7 @@ class ContextFreeGrammar(object):
         Runtime: O(n) - linear to the number of productions.
         Type: None -> set
         """
-        return frozenset({production for (production, _) in self._productions})
+        return frozenset(self._productions.keys())
 
     def _terminals(self, nonterminals):
         """
@@ -195,7 +197,7 @@ class ContextFreeGrammar(object):
         Type: None -> set
         """
         terminals = set()
-        for (_, productions) in self._productions:
+        for productions in self._productions.values():
             for production in productions:
                 for symbol in production:
                     if symbol not in nonterminals:
@@ -238,7 +240,7 @@ class ContextFreeGrammar(object):
         while True:
             changed = False
 
-            for (nonterminal, productions) in self._productions:
+            for nonterminal, productions in self._productions.items():
                 for production in productions:
                     new = self._first_production(production, first) |\
                           first[nonterminal]
@@ -267,7 +269,7 @@ class ContextFreeGrammar(object):
         while True:
             changed = False
 
-            for (nonterminal, productions) in self._productions:
+            for nonterminal, productions in self._productions.items():
                 for production in productions:
                     for idx in range(0, len(production)):
                         if production[idx] in nonterminals:
@@ -310,10 +312,9 @@ class ContextFreeGrammar(object):
         table = [[n]+[frozenset() for _ in terminals] for n in nonterminals]
         table.insert(0, [' ']+terminals)
 
-        # flatten productions, and fill in table
         productions = []
         rule = 0
-        for (nonterminal, _productions) in self._productions:
+        for nonterminal, _productions in self._productions.items():
             idx_n = nonterminals.index(nonterminal)+1  # acct for column header
             for production in _productions:
                 predict = self._predict(nonterminal, production, first, follow)
@@ -348,10 +349,10 @@ if __name__ == "__main__":
         {
             'name': 'Invalid Grammar: First/First Conflict',
             'valid': True,
-            'productions': [
-                ('<S>', '<E> | <E> a'),
-                ('<E>', 'b |')
-            ],
+            'productions': {
+                '<S>': '<E> | <E> a',
+                '<E>': 'b |'
+            },
             'start': '<S>',
             'terminals': frozenset(['a', 'b']),
             'nonterminals': frozenset(['<S>', '<E>']),
@@ -381,10 +382,10 @@ if __name__ == "__main__":
         {
             'name': 'Invalid Grammar: First/Follow Conflict',
             'valid': True,
-            'productions': [
-                ('<S>', '<A> a b'),
-                ('<A>', 'a |')
-            ],
+            'productions': {
+                '<S>': '<A> a b',
+                '<A>': 'a |'
+            },
             'start': '<S>',
             'terminals': frozenset(['a', 'b']),
             'nonterminals': frozenset(['<S>', '<A>']),
@@ -413,13 +414,13 @@ if __name__ == "__main__":
         {
             'name': 'Invalid Grammar: Left Recursion',
             'valid': True,
-            'productions': [
-                ('<E>', '<E> <A> <T> | <T>'),
-                ('<A>', '+ | -'),
-                ('<T>', '<T> <M> <F> | <F>'),
-                ('<M>', '*'),
-                ('<F>', '( <E> ) | id')
-            ],
+            'productions': {
+                '<E>': '<E> <A> <T> | <T>',
+                '<A>': '+ | -',
+                '<T>': '<T> <M> <F> | <F>',
+                '<M>': '*',
+                '<F>': '( <E> ) | id'
+            },
             'start': '<E>',
             'terminals': frozenset(['(', ')', '+', '*', '-', 'id']),
             'nonterminals': frozenset(['<E>', '<A>', '<T>', '<M>', '<F>']),
@@ -479,15 +480,15 @@ if __name__ == "__main__":
         {
             'name': 'Valid Grammar: With Epsilon',
             'valid': True,
-            'productions': [
-                ('<E>', '<T> <E\'>'),
-                ('<E\'>', '<A> <T> <E\'> |'),
-                ('<A>', '+ | - '),
-                ('<T>', '<F> <T\'>'),
-                ('<T\'>', '<M> <F> <T\'> |'),
-                ('<M>', '*'),
-                ('<F>', '( <E> ) | id')
-            ],
+            'productions': {
+                '<E>': '<T> <E\'>',
+                '<E\'>': '<A> <T> <E\'> |',
+                '<A>': '+ | - ',
+                '<T>': '<F> <T\'>',
+                '<T\'>': '<M> <F> <T\'> |',
+                '<M>': '*',
+                '<F>': '( <E> ) | id'
+            },
             'start': '<E>',
             'terminals': frozenset(['+', '-', '*', '(', ')', 'id']),
             'nonterminals': frozenset(['<E>', '<E\'>', '<A>', '<T>', '<T\'>',
@@ -552,12 +553,11 @@ if __name__ == "__main__":
         {
             'name': 'Valid Grammar: No Epsilon',
             'valid': True,
-            'productions': [
-                ('<S>', '<A> a <A> b'),
-                ('<S>', '<B> b <B> a'),
-                ('<A>', ''),
-                ('<B>', '')
-            ],
+            'productions': {
+                '<S>': '<A> a <A> b | <B> b <B> a',
+                '<A>': '',
+                '<B>': ''
+            },
             'start': '<S>',
             'terminals': frozenset(['a', 'b']),
             'nonterminals': frozenset(['<S>', '<A>', '<B>']),
@@ -590,19 +590,19 @@ if __name__ == "__main__":
         {
             'name': 'Valid Grammar: Simple language',
             'valid': True,
-            'productions': [
-                ('<STMT>', 'if <EXPR> then <STMT>\
+            'productions': {
+                '<STMT>': 'if <EXPR> then <STMT>\
                             | while <EXPR> do <STMT>\
-                            | <EXPR>'),
-                ('<EXPR>', '<TERM> -> id\
+                            | <EXPR>',
+                '<EXPR>': '<TERM> -> id\
                             | zero? <TERM>\
                             | not <EXPR>\
                             | ++ id\
-                            | -- id'),
-                ('<TERM>', 'id | constant'),
-                ('<BLOCK>', '<STMT> | { <STMTS> }'),
-                ('<STMTS>', '<STMT> <STMTS> |')
-            ],
+                            | -- id',
+                '<TERM>': 'id | constant',
+                '<BLOCK>': '<STMT> | { <STMTS> }',
+                '<STMTS>': '<STMT> <STMTS> |'
+            },
             'start': '<STMTS>',
             'terminals': frozenset(['if', 'then', 'while', 'do', '->', 'zero?',
                                     'not', '++', '--', 'id', 'constant', '{',
@@ -692,9 +692,9 @@ if __name__ == "__main__":
         {
             'name': False,
             'valid': False,
-            'productions': [
-                ('Invalid Name Type', '<E> | <E> a'),
-            ],
+            'productions': {
+                'Invalid Name Type': '<E> | <E> a'
+            },
             'start': '<S>',
             'terminals': None,
             'nonterminals': None,
@@ -707,9 +707,9 @@ if __name__ == "__main__":
         {
             'name': 'Invalid Start Type',
             'valid': False,
-            'productions': [
-                ('<S>', '<E> | <E> a'),
-            ],
+            'productions': {
+                '<S>': '<E> | <E> a'
+            },
             'start': False,
             'terminals': None,
             'nonterminals': None,
@@ -722,9 +722,9 @@ if __name__ == "__main__":
         {
             'name': 'Invalid Production Rules',
             'valid': False,
-            'productions': [
-                (None, '<E> | <E> a'),
-            ],
+            'productions': {
+                None: '<E> | <E> a'
+            },
             'start': False,
             'terminals': None,
             'nonterminals': None,
@@ -737,9 +737,9 @@ if __name__ == "__main__":
         {
             'name': 'Invalid Nonterminal',
             'valid': False,
-            'productions': [
-                ('<S>', None),
-            ],
+            'productions': {
+                '<S>': None
+            },
             'start': False,
             'terminals': None,
             'nonterminals': None,
@@ -751,21 +751,14 @@ if __name__ == "__main__":
         }
     ]
 
-    def cmp_deep_seq(seq1, seq2):
-        """Compare two arbitrary sequences for deep equality."""
-        if len(seq1) != len(seq2):
-            return False
-        for idx in range(0, len(seq1)):
-            if not isinstance(seq1[idx], type(seq2[idx])):
-                return False
-            _type = type(seq1[idx])
-            if _type is list or _type is tuple:
-                if not cmp_deep_seq(seq1[idx], seq2[idx]):
-                    return False
-            else:
-                if seq1[idx] != seq2[idx]:
-                    return False
-        return True
+    def make_rule_key(rule):
+        return rule[1] + ''.join(rule[2])
+
+    def row_header(row):
+        return row[0]
+
+    def conflict_key(conflict):
+        return conflict[0]+conflict[1]
 
     for test in TESTS:
         try:
@@ -796,11 +789,17 @@ if __name__ == "__main__":
             raise ValueError('Invalid nonterminal set produced')
 
         first = grammar.first()
+        if len(first) != len(test['first']):
+            raise ValueError('Invalid first set size produced')
+
         for elem in test['first']:
             if first.get(elem, None) != test['first'][elem]:
                 raise ValueError('Invalid first set produced')
 
         follow = grammar.follow()
+        if len(follow) != len(test['follow']):
+            raise ValueError('Invalid follow set size produced')
+
         for elem in test['follow']:
             if follow.get(elem, None) != test['follow'][elem]:
                 raise ValueError('Invalid follow set produced')
@@ -809,10 +808,25 @@ if __name__ == "__main__":
         if len(rules) != len(test['rules']):
             raise ValueError('Invalid number of table rules produced')
 
-        # same ordering as test['rules']
-        test['rules'].sort(key=lambda rule: rule[0])
-        if not cmp_deep_seq(rules, test['rules']):
-            raise ValueError('Invalid rule produced')
+        rules.sort(key=make_rule_key)
+        test['rules'].sort(key=make_rule_key)
+
+        _map = {}
+        for idx in range(0, len(rules)):
+            i, iname, iproduction = rules[idx]
+            j, jname, jproduction = test['rules'][idx]
+
+            if iname != jname:
+                raise ValueError('Invalid production rule name produced')
+
+            if len(iproduction) != len(jproduction):
+                raise ValueError('Invalid production rule produced')
+
+            for idx in range(0, len(iproduction)):
+                if iproduction[idx] != jproduction[idx]:
+                    raise ValueError('Invalid production rule produced')
+
+            _map[i] = j
 
         table = grammar.table()
         if len(table) != len(test['table']):
@@ -823,22 +837,48 @@ if __name__ == "__main__":
                 raise ValueError('Invalid number of table columns produced')
 
         # sort by nonterminal header
-        table.sort(key=lambda row: row[0])
-        test['table'].sort(key=lambda row: row[0])
+        table.sort(key=row_header)
+        test['table'].sort(key=row_header)
 
         # transpose
         table = [list(row) for row in zip(*table)]
         test['table'] = [list(row) for row in zip(*test['table'])]
 
         # sort by terminal header
-        table.sort(key=lambda row: row[0])
-        test['table'].sort(key=lambda row: row[0])
+        table.sort(key=row_header)
+        test['table'].sort(key=row_header)
 
-        if not cmp_deep_seq(table, test['table']):
-            raise ValueError('Invalid table value produced')
+        for r in range(0, len(table)):
+            for c in range(0, len(table[0])):
+                iterm = table[r][c]
+                jterm = test['table'][r][c]
+                if type(iterm) != type(jterm):
+                    raise ValueError('Invalid table value type produced')
+
+                if type(iterm) is str and iterm != jterm:
+                    raise ValueError('Invalid table header value produced')
+                if type(iterm) is int and iterm != jterm:
+                    raise ValueError('Invalid table header value produced')
+                if type(iterm) is frozenset:
+                    if frozenset({_map[term] for term in iterm}) != jterm:
+                        raise ValueError('Invalid table value produced')
 
         conflicts = grammar.conflicts()
-        conflicts.sort(key=lambda conflict: conflict[0]+conflict[1])
-        test['conflicts'].sort(key=lambda conflict: conflict[0]+conflict[1])
-        if not cmp_deep_seq(conflicts, test['conflicts']):
-            raise ValueError('Invalid conflicts produced')
+        if len(conflicts) != len(test['conflicts']):
+            raise ValueError('Invalid number of conflicts produced')
+
+        conflicts.sort(key=conflict_key)
+        test['conflicts'].sort(key=conflict_key)
+
+        for idx in range(0, len(conflicts)):
+            iterm, ichar, iconflict = conflicts[idx]
+            jterm, jchar, jconflict = test['conflicts'][idx]
+
+            if iterm != jterm:
+                raise ValueError('Invalid conflicts nonterminal produced')
+
+            if ichar != jchar:
+                raise ValueError('Invalid conflicts transition produced')
+
+            if frozenset({_map[item] for item in iconflict}) != jconflict:
+                raise ValueError('Invalid conflicts produced')

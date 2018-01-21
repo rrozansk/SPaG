@@ -6,7 +6,7 @@ import datetime
 from .. import generator as generator
 
 
-class Generator(generator.Generator):
+class C(generator.Generator):
     """
     A simple object for compiling scanner's and/or parser's to c.
     """
@@ -46,8 +46,6 @@ class Generator(generator.Generator):
         Generate the c header file (.h).
         """
         time = datetime.datetime.utcnow().isoformat("T") + "Z"
-        scan_func = self._sanatize(self._scanner["name"])
-        parse_func = self._sanatize(self._parser["name"])
 
         header = "" +\
                  "/*\n" +\
@@ -60,44 +58,41 @@ class Generator(generator.Generator):
                  " */\n"
 
         if self._scanner is not None:
-            header += "\n/*\n" +\
-                      " * Token's ...\n" +\
-                      " */\n" +\
+            scan_func = self._sanatize(self._scanner.name())
+            header += "\n" +\
+                      "// Token's ...\n" +\
                       "typedef struct token token_t;\n" +\
-                      "\n/*\n" +\
                       "\n" +\
-                      "\\\\ ..." +\
+                      "// Returns the string representation of the token.\n" +\
                       "char *value(token token_t);\n" +\
                       "\n" +\
-                      "\\\\ ..." +\
+                      "// Return the type of the token.\n" +\
                       "int type(token token_t);\n" +\
                       "\n" +\
-                      "\\\\ ..." +\
+                      "// Return the starting line the token was read on.\n" +\
                       "int line(token token_t);\n" +\
                       "\n" +\
-                      "\\\\ ..." +\
+                      "// Return the starting column the token was read on.\n" +\
                       "int column(token token_t);\n" +\
                       "\n" +\
-                      " * A scanner which recognizes the following tokens:\n"
-            for _, tokenizer in self._scanner["tokenizers"].items():
-                # TODO: include type
-                header += " *   - " + tokenizer["expr"] + "\n"
-            header += " *\n" +\
-                      " */\n" +\
+                      "/*\n" +\
+                      " * A scanner ...\n" +\
+                      " *\n" +\
+                      " * Recognized tokens:\n"
+            for name, pattern in self._scanner.expressions().items():
+                header += " *  - " + name + " ::= " + pattern + "\n"
+            header += " */\n" +\
                       "void " + scan_func + "(FILE *f, token_t *token);\n"
 
-        # TODO: explain about maximal munch, linear time, constant space, etc.
-        # note that if no scanner then you must include the file of the scanner
-        # with the name created by this library which also includes a token
-        # type with methods above (on tokens)
         if self._parser is not None:
+            parse_func = self._sanatize(self._parser.name())
             header += "\n/*\n"
             header += " *            ::BNF GRAMMMAR::\n"
             header += " *\n"
-            for (idx, nonterm, rule) in self._parser["rules"]:
+            for (idx, nonterm, rule) in self._parser.rules():
                 header += " *  " + nonterm + " -> " + " ".join(rule) + "\n"
             header += " * \n"
-            header += " * Start production -> " + self._parser["start"] + "\n"
+            header += " * Start production -> " + self._parser.start() + "\n"
             header += " */\n"
             header += "void " + parse_func + "(FILE *f);\n"
 
@@ -108,8 +103,6 @@ class Generator(generator.Generator):
         Generate the c source file (.c).
         """
         time = datetime.datetime.utcnow().isoformat("T") + "Z"
-        scan_func = self._sanatize(self._scanner["name"])
-        parse_func = self._sanatize(self._parser["name"])
 
         source = ""
         source += "/*\n"
@@ -123,6 +116,7 @@ class Generator(generator.Generator):
         source += "#include <stdio.h>\n"
 
         if self._scanner is not None:
+            scan_func = self._sanatize(self._scanner.name())
             source += "\n"
             source += "typedef struct token {\n"
             source += "  int line;\n"
@@ -133,12 +127,13 @@ class Generator(generator.Generator):
             source += "  char *value;\n"
             source += "} token_t;\n"
             source += "\n"
-            source += "// scanner source generation not yet implemented\n"
+            source += "// Scanner source generation not yet implemented.\n"
             source += "int " + scan_func + "(FILE *f, token_t *token) {\n"
             source += "  return 0; // fail\n"
             source += "}\n"  # TODO graph encoded as GOTOs
 
         if self._parser is not None:
+            parse_func = self._sanatize(self._parser.name())
             source += "\n"
             source += "// parser source generation not yet implemented\n"
             source += "void " + parse_func + "(FILE *f) {\n"
