@@ -344,14 +344,19 @@ class RegularGrammar(object):
         located @http://alexandria.tue.nl/extra1/wskrap/publichtml/9313452.pdf
 
         Runtime: O(n) - linear to input expression
-        Type: list -> set x set x set x set x string x string
+        Type: list -> set x set x set x dict x string x string
         """
-        Q = set()  # states
-        V = set()  # input symbols (alphabet)
-        T = set()  # transition relation: T in P(Q x V x Q)
-        E = set()  # e-transition relation: E in P(Q x Q)
-        S = None   # start state S in Q
-        F = None   # accepting state F in Q
+        Q = set()   # states
+        V = set()   # input symbols (alphabet)
+        T = set()   # transition relation: T in P(Q x V x Q)
+        E = dict()  # e-transition relation: E in P(Q x Q)
+        S = None    # start state S in Q
+        F = None    # accepting state F in Q
+
+        def e_update(s, f):
+            transitions = E.get(s, set())
+            transitions.add(f)
+            E[s] = transitions
 
         stk = []  # NFA machine stk
         for token in expr:
@@ -361,41 +366,51 @@ class RegularGrammar(object):
                         raise ValueError('Error: not enough args to op .')
                     p, F = stk.pop()
                     S, q = stk.pop()
-                    E.update([(q, p)])
+                    e_update(q, p)
                 elif token == self._Union:
                     if len(stk) < 2:
                         raise ValueError('Error: not enough args to op |')
                     p, q = stk.pop()
                     r, t = stk.pop()
                     S, F = self._state(), self._state()
-                    E.update([(S, p), (S, r), (q, F), (t, F)])
+                    e_update(S, p)
+                    e_update(S, r)
+                    e_update(q, F)
+                    e_update(t, F)
                 elif token == self._Star:
                     if len(stk) < 1:
                         raise ValueError('Error: not enough args to op *')
                     p, q = stk.pop()
                     S, F = self._state(), self._state()
-                    E.update([(S, p), (q, p), (q, F), (S, F)])
+                    e_update(S, p)
+                    e_update(q, p)
+                    e_update(q, F)
+                    e_update(S, F)
                 elif token == self._Plus:
                     if len(stk) < 1:
                         raise ValueError('Error: not enough args to op +')
                     p, q = stk.pop()
                     S, F = self._state(), self._state()
-                    E.update([(S, p), (q, p), (q, F)])
+                    e_update(S, p)
+                    e_update(q, p)
+                    e_update(q, F)
                 elif token == self._Question:
                     if len(stk) < 1:
                         raise ValueError('Error: not enough args to op ?')
                     p, q = stk.pop()
                     S, F = self._state(), self._state()
-                    E.update([(S, p), (q, F), (S, F)])
+                    e_update(S, p)
+                    e_update(S, F)
+                    e_update(q, F)
                 else:
                     raise ValueError('Error: operator not implemented')
             elif token in self._characters:
                 S, F = self._state(), self._state()
-                V.update([token])
-                T.update([(S, token, F)])
+                V.add(token)
+                T.add((S, token, F))
             elif token == self._Epsilon:
                 S, F = self._state(), self._state()
-                E.update([(S, F)])
+                e_update(S, F)
             else:
                 raise ValueError('Error: invalid input')
             Q.update([S, F])
@@ -404,7 +419,7 @@ class RegularGrammar(object):
         if len(stk) != 1:
             raise ValueError('Error: invalid expression')
         S, F = stk.pop()
-        return frozenset(Q), frozenset(V), frozenset(T), frozenset(E), S, F
+        return Q, V, T, E, S, F
 
     def _e_closure(self, q, E, cache):
         """
@@ -415,24 +430,20 @@ class RegularGrammar(object):
         cycles appropriately.
 
         Runtime: O(n) - linear in the number of epsilon transitions
-        Type: string x set x dict[frozenset]set -> set
+        Type: string x dict[string]set x dict[string]set -> set
         """
         if q in cache:
             return cache[q]
 
-        closure, explore = set(), set([q])
+        cache[q] = closure = set()
+        explore = set([q])
         while len(explore) > 0:
-            qp = explore.pop()
-            if qp in closure:
-                continue
+            q = explore.pop()
+            if q not in closure:
+                closure.add(q)
+                # perform a single step: { q' | q ->e q' }
+                explore.update(E.get(q, set()))
 
-            closure.update([qp])
-            if qp in cache:
-                closure.update(cache[qp])
-            else:  # perform a single step: { q' | q ->e q' }
-                explore.update({t[1] for t in E if t[0] == qp})
-
-        cache[q] = closure
         return closure
 
     def _DFA(self, eNFA):
@@ -453,40 +464,23 @@ class RegularGrammar(object):
         Qp, Fp, Tp, explore = set(), set(), set(), set([Sp.copy()])
         while len(explore) > 0:
             q = explore.pop()  # DFA state; set of NFA states
-            Qp.update([q])
+            Qp.add(q)
             if len(q & frozenset([F])) > 0:
-                Fp.update([q])
+                Fp.add(q)
             for a in V:
-                nqs = {t[2] for t in T for s in q if t[0] == s and t[1] == a}
-                if len(nqs) == 0:
-                    continue
-                qps = [self._e_closure(nq, E, cache) for nq in nqs]
                 qp = set()
-                for _q in qps:
-                    qp.update(_q)
+                for t in T:
+                    for s in q:
+                        if t[0] == s and t[1] == a:
+                            for _q in self._e_closure(t[2], E, cache):
+                                qp.add(_q)
                 qp = frozenset(qp)
+
                 if qp not in Qp:
-                    explore.update([qp])
-                Tp.update([(q, a, qp)])
+                    explore.add(qp)
+                Tp.add((q, a, qp))
 
         return frozenset(Qp), V, frozenset(Tp), Sp, frozenset(Fp)
-
-    def _alpha(self, dfa):
-        """
-        Perform an alpha rename on all DFA states to simplify the
-        representation which the end user will consume.
-
-        Runtime: O(n) - linear in the number of states and transitions
-        Type: set x set x set x string x set -> set x set x set x string x set
-        """
-        Q, V, T, S, F = dfa
-        rename = {q: self._state() for q in Q}
-        Qp = frozenset(rename.values())
-        Fp = frozenset({rename[f] for f in F})
-        Sp = rename[S]
-        Tp = frozenset({(rename[t[0]], t[1], rename[t[2]]) for t in T})
-
-        return Qp, V, Tp, Sp, Fp
 
     def _total(self, dfa):
         """
@@ -580,6 +574,23 @@ class RegularGrammar(object):
 
         return frozenset(P), V, frozenset(Tp), Sp, Fp
 
+    def _alpha(self, dfa):
+        """
+        Perform an alpha rename on all DFA states to simplify the
+        representation which the end user will consume.
+
+        Runtime: O(n) - linear in the number of states and transitions
+        Type: set x set x set x string x set -> set x set x set x string x set
+        """
+        Q, V, T, S, F = dfa
+        rename = {q: self._state() for q in Q}
+        Qp = set(rename.values())
+        Fp = {rename[f] for f in F}
+        Sp = rename[S]
+        Tp = {(rename[t[0]], t[1], rename[t[2]]) for t in T}
+
+        return Qp, V, Tp, Sp, Fp
+
 
 if __name__ == '__main__':
 
@@ -591,15 +602,15 @@ if __name__ == '__main__':
                 'alpha': 'a'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'Err']),
-                'V': frozenset(['a']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'Err']),
+                'V': set(['a']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('A', 'a', 'Err'),
                     ('Err', 'a', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['A'])
+                'F': set(['A'])
             }
         },
         {
@@ -609,9 +620,9 @@ if __name__ == '__main__':
                 'concat': 'a.b'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'B', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
                     ('A', 'b', 'B'),
@@ -622,7 +633,7 @@ if __name__ == '__main__':
                     ('Err', 'b', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['B'])
+                'F': set(['B'])
             }
         },
         {
@@ -632,9 +643,9 @@ if __name__ == '__main__':
                 'alt': 'a|b'
             },
             'DFA': {
-                'Q': frozenset(['S', 'AB', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['S', 'AB', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('S', 'a', 'AB'),
                     ('S', 'b', 'AB'),
                     ('AB', 'a', 'Err'),
@@ -643,7 +654,7 @@ if __name__ == '__main__':
                     ('Err', 'b', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['AB'])
+                'F': set(['AB'])
             }
         },
         {
@@ -653,11 +664,11 @@ if __name__ == '__main__':
                 'star': 'a*'
             },
             'DFA': {
-                'Q': frozenset(['A']),
-                'V': frozenset(['a']),
-                'T': frozenset([('A', 'a', 'A')]),
+                'Q': set(['A']),
+                'V': set(['a']),
+                'T': set([('A', 'a', 'A')]),
                 'S': 'A',
-                'F': frozenset(['A'])
+                'F': set(['A'])
             }
         },
         {
@@ -667,14 +678,14 @@ if __name__ == '__main__':
                 'plus': 'a+'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A']),
-                'V': frozenset(['a']),
-                'T': frozenset([
+                'Q': set(['S', 'A']),
+                'V': set(['a']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('A', 'a', 'A')
                 ]),
                 'S': 'S',
-                'F': frozenset(['A'])
+                'F': set(['A'])
             }
         },
         {
@@ -684,15 +695,15 @@ if __name__ == '__main__':
                 'maybe': 'a?'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'Err']),
-                'V': frozenset(['a']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'Err']),
+                'V': set(['a']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('A', 'a', 'Err'),
                     ('Err', 'a', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['S', 'A'])
+                'F': set(['S', 'A'])
             }
         },
         {
@@ -702,14 +713,14 @@ if __name__ == '__main__':
                 'group': '(a|b)*'
             },
             'DFA': {
-                'Q': frozenset(['AB*']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['AB*']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('AB*', 'a', 'AB*'),
                     ('AB*', 'b', 'AB*')
                 ]),
                 'S': 'AB*',
-                'F': frozenset(['AB*'])
+                'F': set(['AB*'])
             }
         },
         {
@@ -719,9 +730,9 @@ if __name__ == '__main__':
                 'assoc': 'a|b*'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'B', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'B'),
                     ('B', 'b', 'B'),
@@ -732,7 +743,7 @@ if __name__ == '__main__':
                     ('A', 'b', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['S', 'A', 'B'])
+                'F': set(['S', 'A', 'B'])
             }
         },
         {
@@ -742,15 +753,15 @@ if __name__ == '__main__':
                 'concat': '\.'
             },
             'DFA': {
-                'Q': frozenset(['S', 'F', 'Err']),
-                'V': frozenset(['.']),
-                'T': frozenset([
+                'Q': set(['S', 'F', 'Err']),
+                'V': set(['.']),
+                'T': set([
                     ('S', '.', 'F'),
                     ('F', '.', 'Err'),
                     ('Err', '.', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['F'])
+                'F': set(['F'])
             }
         },
         {
@@ -760,15 +771,15 @@ if __name__ == '__main__':
                 'alt': '\|'
             },
             'DFA': {
-                'Q': frozenset(['S', 'F', 'Err']),
-                'V': frozenset(['|']),
-                'T': frozenset([
+                'Q': set(['S', 'F', 'Err']),
+                'V': set(['|']),
+                'T': set([
                     ('S', '|', 'F'),
                     ('F', '|', 'Err'),
                     ('Err', '|', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['F'])
+                'F': set(['F'])
             }
         },
         {
@@ -778,15 +789,15 @@ if __name__ == '__main__':
                 'star': '\*'
             },
             'DFA': {
-                'Q': frozenset(['S', 'F', 'Err']),
-                'V': frozenset(['*']),
-                'T': frozenset([
+                'Q': set(['S', 'F', 'Err']),
+                'V': set(['*']),
+                'T': set([
                     ('S', '*', 'F'),
                     ('F', '*', 'Err'),
                     ('Err', '*', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['F'])
+                'F': set(['F'])
             }
         },
         {
@@ -796,15 +807,15 @@ if __name__ == '__main__':
                 'question': '\?'
             },
             'DFA': {
-                'Q': frozenset(['S', 'F', 'Err']),
-                'V': frozenset(['?']),
-                'T': frozenset([
+                'Q': set(['S', 'F', 'Err']),
+                'V': set(['?']),
+                'T': set([
                     ('S', '?', 'F'),
                     ('F', '?', 'Err'),
                     ('Err', '?', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['F'])
+                'F': set(['F'])
             }
         },
         {
@@ -814,15 +825,15 @@ if __name__ == '__main__':
                 'plus': '\+'
             },
             'DFA': {
-                'Q': frozenset(['S', 'F', 'Err']),
-                'V': frozenset(['+']),
-                'T': frozenset([
+                'Q': set(['S', 'F', 'Err']),
+                'V': set(['+']),
+                'T': set([
                     ('S', '+', 'F'),
                     ('F', '+', 'Err'),
                     ('Err', '+', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['F'])
+                'F': set(['F'])
             }
         },
         {
@@ -832,11 +843,11 @@ if __name__ == '__main__':
                 'epsilon': '\e'
             },
             'DFA': {
-                'Q': frozenset(['S']),
-                'V': frozenset([]),
-                'T': frozenset([]),
+                'Q': set(['S']),
+                'V': set([]),
+                'T': set([]),
                 'S': 'S',
-                'F': frozenset(['S'])
+                'F': set(['S'])
             }
         },
         {
@@ -846,15 +857,15 @@ if __name__ == '__main__':
                 'slash': '\\\\'
             },
             'DFA': {
-                'Q': frozenset(['S', 'F', 'Err']),
-                'V': frozenset(['\\']),
-                'T': frozenset([
+                'Q': set(['S', 'F', 'Err']),
+                'V': set(['\\']),
+                'T': set([
                     ('S', '\\', 'F'),
                     ('F', '\\', 'Err'),
                     ('Err', '\\', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['F'])
+                'F': set(['F'])
             }
         },
         {
@@ -864,15 +875,15 @@ if __name__ == '__main__':
                 'lparen': '\('
             },
             'DFA': {
-                'Q': frozenset(['S', 'F', 'Err']),
-                'V': frozenset(['(']),
-                'T': frozenset([
+                'Q': set(['S', 'F', 'Err']),
+                'V': set(['(']),
+                'T': set([
                     ('S', '(', 'F'),
                     ('F', '(', 'Err'),
                     ('Err', '(', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['F'])
+                'F': set(['F'])
             }
         },
         {
@@ -882,15 +893,15 @@ if __name__ == '__main__':
                 'rparen': '\)'
             },
             'DFA': {
-                'Q': frozenset(['S', 'F', 'Err']),
-                'V': frozenset([')']),
-                'T': frozenset([
+                'Q': set(['S', 'F', 'Err']),
+                'V': set([')']),
+                'T': set([
                     ('S', ')', 'F'),
                     ('F', ')', 'Err'),
                     ('Err', ')', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['F'])
+                'F': set(['F'])
             }
         },
         {
@@ -900,9 +911,9 @@ if __name__ == '__main__':
                 'concat': 'ab'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'B', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
                     ('A', 'b', 'B'),
@@ -913,7 +924,7 @@ if __name__ == '__main__':
                     ('Err', 'b', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['B'])
+                'F': set(['B'])
             }
         },
         {
@@ -923,9 +934,9 @@ if __name__ == '__main__':
                 'concat': 'a(b)'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'B', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
                     ('A', 'b', 'B'),
@@ -936,7 +947,7 @@ if __name__ == '__main__':
                     ('Err', 'b', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['B'])
+                'F': set(['B'])
             }
         },
         {
@@ -946,9 +957,9 @@ if __name__ == '__main__':
                 'concat': '(a)(b)'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'B', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
                     ('A', 'b', 'B'),
@@ -959,7 +970,7 @@ if __name__ == '__main__':
                     ('Err', 'b', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['B'])
+                'F': set(['B'])
             }
         },
         {
@@ -969,9 +980,9 @@ if __name__ == '__main__':
                 'concat': 'a*(b)'
             },
             'DFA': {
-                'Q': frozenset(['A', 'B', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['A', 'B', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('A', 'a', 'A'),
                     ('A', 'b', 'B'),
                     ('B', 'a', 'Err'),
@@ -980,7 +991,7 @@ if __name__ == '__main__':
                     ('Err', 'b', 'Err')
                 ]),
                 'S': 'A',
-                'F': frozenset(['B'])
+                'F': set(['B'])
             }
         },
         {
@@ -990,9 +1001,9 @@ if __name__ == '__main__':
                 'concat': 'a+(b)'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'B', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
                     ('A', 'a', 'A'),
@@ -1003,7 +1014,7 @@ if __name__ == '__main__':
                     ('Err', 'b', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['B'])
+                'F': set(['B'])
             }
         },
         {
@@ -1013,9 +1024,9 @@ if __name__ == '__main__':
                 'concat': 'a?(b)'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'B', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'B'),
                     ('A', 'b', 'B'),
@@ -1026,7 +1037,7 @@ if __name__ == '__main__':
                     ('Err', 'b', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['B'])
+                'F': set(['B'])
             }
         },
         {
@@ -1036,9 +1047,9 @@ if __name__ == '__main__':
                 'concat': 'a*b'
             },
             'DFA': {
-                'Q': frozenset(['A', 'B', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['A', 'B', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('A', 'a', 'A'),
                     ('A', 'b', 'B'),
                     ('B', 'a', 'Err'),
@@ -1047,7 +1058,7 @@ if __name__ == '__main__':
                     ('Err', 'b', 'Err')
                 ]),
                 'S': 'A',
-                'F': frozenset(['B'])
+                'F': set(['B'])
             }
         },
         {
@@ -1057,9 +1068,9 @@ if __name__ == '__main__':
                 'concat': 'a+b'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'B', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
                     ('A', 'a', 'A'),
@@ -1070,7 +1081,7 @@ if __name__ == '__main__':
                     ('Err', 'b', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['B'])
+                'F': set(['B'])
             }
         },
         {
@@ -1080,9 +1091,9 @@ if __name__ == '__main__':
                 'concat': 'a?b'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'B', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('S', 'b', 'B'),
                     ('S', 'a', 'A'),
                     ('A', 'b', 'B'),
@@ -1093,7 +1104,7 @@ if __name__ == '__main__':
                     ('Err', 'b', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['B'])
+                'F': set(['B'])
             }
         },
         {
@@ -1103,9 +1114,9 @@ if __name__ == '__main__':
                 'concat': 'a.bc.de'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'B', 'C', 'D', 'E', 'Err']),
-                'V': frozenset(['a', 'b', 'c', 'd', 'e']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'B', 'C', 'D', 'E', 'Err']),
+                'V': set(['a', 'b', 'c', 'd', 'e']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
                     ('S', 'c', 'Err'),
@@ -1143,7 +1154,7 @@ if __name__ == '__main__':
                     ('Err', 'e', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['E'])
+                'F': set(['E'])
             }
         },
         {
@@ -1153,9 +1164,9 @@ if __name__ == '__main__':
                 'random': 'a*(b|cd)*'
             },
             'DFA': {
-                'Q': frozenset(['AC', 'B', 'DE', 'Err']),
-                'V': frozenset(['a', 'b', 'c', 'd']),
-                'T': frozenset([
+                'Q': set(['AC', 'B', 'DE', 'Err']),
+                'V': set(['a', 'b', 'c', 'd']),
+                'T': set([
                     ('AC', 'a', 'AC'),
                     ('AC', 'b', 'DE'),
                     ('AC', 'c', 'B'),
@@ -1174,7 +1185,7 @@ if __name__ == '__main__':
                     ('Err', 'd', 'Err')
                 ]),
                 'S': 'AC',
-                'F': frozenset(['AC', 'DE']),
+                'F': set(['AC', 'DE']),
             }
         },
         {
@@ -1184,9 +1195,9 @@ if __name__ == '__main__':
                 'random': '(a|\e)b*'
             },
             'DFA': {
-                'Q': frozenset(['A', 'B', 'Err']),
-                'V': frozenset(['a', 'b']),
-                'T': frozenset([
+                'Q': set(['A', 'B', 'Err']),
+                'V': set(['a', 'b']),
+                'T': set([
                     ('A', 'a', 'B'),
                     ('A', 'b', 'B'),
                     ('B', 'a', 'Err'),
@@ -1195,7 +1206,7 @@ if __name__ == '__main__':
                     ('Err', 'b', 'Err')
                 ]),
                 'S': 'A',
-                'F': frozenset(['A', 'B'])
+                'F': set(['A', 'B'])
             }
         },
         {
@@ -1205,9 +1216,9 @@ if __name__ == '__main__':
                 'random': '(a*b)|(a.bcd.e)'
             },
             'DFA': {
-                'Q': frozenset(['S', 'A', 'A*', 'B', 'C', 'D', 'F', 'Err']),
-                'V': frozenset(['a', 'b', 'c', 'd', 'e']),
-                'T': frozenset([
+                'Q': set(['S', 'A', 'A*', 'B', 'C', 'D', 'F', 'Err']),
+                'V': set(['a', 'b', 'c', 'd', 'e']),
+                'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'F'),
                     ('S', 'c', 'Err'),
@@ -1250,7 +1261,7 @@ if __name__ == '__main__':
                     ('Err', 'e', 'Err')
                 ]),
                 'S': 'S',
-                'F': frozenset(['F', 'B'])
+                'F': set(['F', 'B'])
             }
         },
         {
