@@ -354,9 +354,8 @@ class RegularGrammar(object):
         F = None    # accepting state F in Q
 
         def e_update(s, f):
-            transitions = E.get(s, set())
+            transitions = E[s] = E.get(s, set())
             transitions.add(f)
-            E[s] = transitions
 
         stk = []  # NFA machine stk
         for token in expr:
@@ -461,24 +460,22 @@ class RegularGrammar(object):
 
         cache = {}
         Sp = frozenset(self._e_closure(S, E, cache))
-        Qp, Fp, Tp, explore = set(), set(), set(), set([Sp.copy()])
+        Qp, Fp, Tp, explore = set(), set(), set(), set([Sp])
         while len(explore) > 0:
             q = explore.pop()  # DFA state; set of NFA states
-            Qp.add(q)
-            if len(q & frozenset([F])) > 0:
-                Fp.add(q)
-            for a in V:
-                qp = set()
+            if q not in Qp:
+                Qp.add(q)
+                if F in q:
+                    Fp.add(q)
+                qps = {}
                 for t in T:
-                    for s in q:
-                        if t[0] == s and t[1] == a:
-                            for _q in self._e_closure(t[2], E, cache):
-                                qp.add(_q)
-                qp = frozenset(qp)
-
-                if qp not in Qp:
+                    if t[0] in q:
+                        qp = qps[t[1]] = qps.get(t[1], set())
+                        qp.update(self._e_closure(t[2], E, cache))
+                for a, qp in qps.items():
+                    qp = frozenset(qp)
                     explore.add(qp)
-                Tp.add((q, a, qp))
+                    Tp.add((q, a, qp))
 
         return frozenset(Qp), V, frozenset(Tp), Sp, frozenset(Fp)
 
@@ -493,22 +490,16 @@ class RegularGrammar(object):
         """
         Q, V, T, S, F = dfa
 
-        M = {q: {} for q in Q}
-        for t in T:
-            M[t[0]][t[1]] = t[2]
+        if len(T) != len(Q) * len(V):
+            q_err = self._state()
+            Q = Q | frozenset([q_err])
 
-        fix = False
-        q_err = self._state()
-        for q_trans in M.values():
-            if len(q_trans) != len(V):
-                Q = Q | frozenset([q_err])
-                M[q_err] = {}
-                fix = True
-                break
+            M = {q: {} for q in Q}
+            for t in T:
+                M[t[0]][t[1]] = t[2]
 
-        if fix:
             Tp = set()
-            for q in M.keys():
+            for q in Q:
                 for c in V:
                     if M[q].get(c, None) is None:
                         Tp.add((q, c, q_err))
@@ -527,10 +518,7 @@ class RegularGrammar(object):
         """
         Q, V, T, S, F = dfa
 
-        P = set([F, Q - F])   # partitions -> set of DFA state
-        if frozenset() in P:  # if Q - F was empty
-            P.remove(frozenset())
-
+        P = set([F, Q - F]) - set([frozenset()])  # if Q - F was empty
         W = set([F])
         while len(W) > 0:
             A = W.pop()
@@ -541,7 +529,7 @@ class RegularGrammar(object):
                     s1 = X & Y
                     s2 = Y - X
                     if len(s1) > 0 and len(s2) > 0:
-                        updates.append((Y, [s1, s2]))
+                        updates.append((Y, [s1, s2]))  # split partition Y
                         if Y in W:
                             W.remove(Y)
                             W.update([s1, s2])
@@ -567,9 +555,10 @@ class RegularGrammar(object):
 
         Sp = None
         for part in P:
-            if len(part & frozenset([S])) > 0:
+            if S in part:
                 Sp = part
                 break
+
         Fp = frozenset({part for part in P if len(part & F) > 0})
 
         return frozenset(P), V, frozenset(Tp), Sp, Fp
