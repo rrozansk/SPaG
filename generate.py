@@ -1,84 +1,96 @@
 """
-generate.py is a simple python file which attempts to generate a scanner and
-parser for the information given below. The scanner accepts any number of
-tokens as regular expressions with some type and the Parser accepts only LL1
-languages. For more detailed information on data input, capabilities, and
-limitation see the README or have a look at src/{scanner, parser}.py.
-Given below is an example for an ini like configuration file language.
+A python CLI program to drive the scanner/parser generation.
 """
 import src.scanner as scanner
 import src.parser as parser
 
-# import generators
-import src.generators.c.C as C
+import src.generators.c as C
 import src.generators.go as Go
 import src.generators.python as Python
 
-generators = {
+import argparse
+
+GENERATORS = {
   "c":      C.C,
   "go":     Go.Go,
   "python": Python.Python
 }
 
-# ********************************** SCANNER **********************************
-S_NAME = "scan"
+CLI = argparse.ArgumentParser(description='simple cli (command line interface)\
+                                           program to generate lexer(s) and/or\
+                                           parser(s) for a given output\
+                                           language')
 
-TOKENS = {
-    "int":      "(-|\+)?(1|2|3|4|5|6|7|8|9)(0|1|2|3|4|5|6|7|8|9)*",
-    "float":    "(-|\+)?((1|2|3|4|5|6|7|8|9)(0|1|2|3|4|5|6|7|8|9)*)?\.(0|1|2|3|4|5|6|7|8|9)+",
-    "bool":     "true|false",
-    "char":     "'(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|w|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|W|Z|0|1|2|3|4|5|6|7|8|9)'",
-    "id":       "(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|w|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|W|Z)*",
-    # "string":   "\"\_*\"",
-    "space":    "( |\t|\n|\r|\f|\v)*",
-    # "comment":  "(#|;)\_*\n",
-    "lbracket": "[",
-    "rbracket": "]",
-    "lcurly":   "{",
-    "rcurly":   "}",
-    "comma":    ",",
-    "dividor":  ":|="
-}
+CLI.add_argument('-v', '--version', action='version',
+                 version='Lexer/Parser Generator v1.0',
+                 help='version information')
+CLI.add_argument('-s', '--scanner', action='store', type=file,
+                 help='file containing scanner name and type/token pairs')
+CLI.add_argument('-p', '--parser', action='store', type=file,
+                 help='file containing parser name and LL(1) BNF grammar')
+CLI.add_argument('-o', '--output', action='store', required=True, type=str,
+                 choices=GENERATORS.keys(),
+                 help='code generation target language')
+CLI.add_argument('-f', '--filename', action='store', required=True, type=str,
+                 help='base filename (w/o extns) to use for generated output')
 
-SCANNER = scanner.RegularGrammar(S_NAME, TOKENS)
+ARGS = vars(CLI.parse_args())
 
-# ********************************** PARSER ***********************************
-P_NAME = "parse"
+GENERATOR = GENERATORS[ARGS['output']]()
 
-PRODUCTIONS = {
-    "<Ini>":       "<Section> <Ini'>",
-    "<Ini'>":      "<Section> <Ini'> |",
-    "<Section>":   "<Header> <Settings>",
-    "<Header>":    "lbracket id rbracket",
-    "<Settings>":  "<Setting> <Settings'>",
-    "<Settings'>": "<Setting> <Settings'> |",
-    "<Setting>":   "id dividor <Value>",
-    "<Value>":     "int | float | bool | char | string | lcurly <Array> rcurly",
-    "<Array>":     "<Ints> | <Floats> | <Bools> | <Chars> | <Strings>",
-    "<Ints>":      "int <Ints'>",
-    "<Ints'>":     "comma int <Ints'>|",
-    "<Floats>":    "float <Floats'>",
-    "<Floats'>":   "comma float <Floats'>|",
-    "<Bools>":     "bool <Bools'>",
-    "<Bools'>":    "comma bool <Bools'>|",
-    "<Chars>":     "char <Chars'>",
-    "<Chars'>":    "comma char <Chars'>|",
-    "<Strings>":   "string <Strings'>",
-    "<Strings'>":  "comma string <Strings'>|"
-}
+if ARGS['scanner'] is not None:
+    NAME = None
+    TOKENS = {}
+    for line in ARGS['scanner']:
+        items = line.split(None, 1)
+        if len(items) == 0:
+            continue
 
-START_PRODUCTION = "<Ini>"
+        if NAME is None:
+            if len(items) != 1:
+                raise ValueError('Error: Invalid file format - scanner name')
+            NAME = items[0]
+            continue
 
-PARSER = parser.ContextFreeGrammar(P_NAME, PRODUCTIONS, START_PRODUCTION)
+        if len(items) != 2:
+            raise ValueError('Error: Invalid file format - scanner token')
 
-# ********************************* GENERATOR *********************************
-TARGET = "c"
+        TOKENS[items[0]] = items[1].rstrip()
+    try:
+        SCANNER = scanner.RegularGrammar(NAME, TOKENS)
+        GENERATOR.set_scanner(SCANNER)
+    except ValueError as e:
+        print 'Scanner creation failed\n', e
 
-GENERATOR = generators[TARGET]()
+if ARGS['parser'] is not None:
+    NAME = None
+    START = None
+    PRODUCTIONS = {}
+    for line in ARGS['parser']:
+        items = line.split(None, 1)
+        if len(items) == 0:
+            continue
 
-GENERATOR.set_scanner(SCANNER)
-GENERATOR.set_parser(PARSER)
+        if NAME is None:
+            if len(items) != 1:
+                raise ValueError('Error: Invalid file format - parser name')
+            NAME = items[0]
+            continue
 
-FILENAME = "example"
+        if START is None:
+            if len(items) != 1:
+                raise ValueError('Error: Invalid file format - parser start')
+            START = items[0]
+            continue
 
-GENERATOR.output(FILENAME)
+        if len(items) != 2:
+            raise ValueError('Error: Invalid file format - parser production')
+
+        PRODUCTIONS[items[0]] = items[1].rstrip()
+    try:
+        PARSER = parser.ContextFreeGrammar(NAME, PRODUCTIONS, START)
+        GENERATOR.set_parser(PARSER)
+    except ValueError as e:
+        print 'Parser creation failed\n', e
+
+GENERATOR.output(ARGS['filename'])
