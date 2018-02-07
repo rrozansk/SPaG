@@ -1,30 +1,39 @@
-# Grammar-Generator
+# Scanner-Parser-Generator
 
-[![LICENSE](https://img.shields.io/badge/LICENSE-MIT-green.svg)](https://github.com/rrozansk/Grammar-Generator/blob/master/LICENSE.txt) [![RELEASES](https://img.shields.io/badge/Releases-current-yellow.svg)](https://github.com/rrozansk/Grammar-Generator/releases)
+[![LICENSE](https://img.shields.io/badge/LICENSE-MIT-green.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/LICENSE.txt) [![RELEASES](https://img.shields.io/badge/Releases-current-yellow.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/releases)
 
-A scanner/parser generator written in python with easy extensibility to target any language.
+An extensible Python framework capable of producing scanners and/or parsers from regular expressions (regular grammars) and LL(1) BNF languages (a subset of context free grammars) and outputting the results as valid programs in different languages. Included is a Python CLI program which accepts user input to help drive the compilation/generation process.
 
-The scanner (a.k.a. tokenizer or lexer) is a set of regular expressions combined with a type.
-It is importatnt to note that generated output for scanners obey maximal munch of input.
-They are also encoded using the directly coded approach which ensures an extremely fast runtime.
-In fact, the resulting scanners run in time linear to the input O(n) for ALL input!
+## Components
 
-The parser is a set of BNF production rules for an LL1 language.
+The framework is modular in design and made up of only three components: scanner, parser, and program generators. The program generator is the extensible portion, allowing new targeted languages to be easily added. Below describes in detail what each component sets out to do, how it accomplished those intended goals, and the accepted input.
 
-Currently only generation to c code is targeted, but go and python are planned as well.
-If your language of interest is not currently supported it is possible to write your own generator following the the c generator in src/generators/c.py as a template.
+### Scanner
 
-Finally, it is possible to generate a scanner and parser individually or together.
-If a scanner is generated a token type and interface will also generated in addition to the scanner.
-If a parser is generated only it will be generated and will use the same scanner/token interface which would have been generated, but is now expected to be provided by the user.
+The scanner attempts to transform a collection of named patterns (regular expression/token type pairs) into a unique minimal DFA accepting any input specified while also containing an errors sink state for all invalid input. The transformation begins by first checking the expression for validity while internalizing it. Next, the use of an augmented version of Dijkstra's shunting yard algorithm tranforms the expression into prefix notation. From here Thompsons algorithm is utilized to produce an NFA with epsilon productions. The NFA is then directly converted into a minimal DFA with respect to reachable states using e-closure conversions which are cahced. Finally, the minimal DFA is made total, if not already, so it can be further minimized with respect to indistinguishable states using Hopcroft's algorithm.
 
-## Prerequisites
+[Accepted input coming soon...]
+
+### Parser
+
+The parser attempts to transform a collection of BNF production rules into a parse table. While any BNF is accepted only LL(1) grammars will produce a valid parse table containing no conflicts. Furthermore, the grammar must have no left recursion or ambiguity while also being left factored. The first step in constructing the resulting table is determining the terminal and nonterminal sets, which is very trivial. From here, the sets are used to construct the first and follow sets which identify what characters can be expected when parsing corresponding production rules. Subsequently, the first and follow sets are used to construct the predict sets which are in turn used in the table construction. Finally, the table is verified by checking for conflicts.
+
+[Accepted input coming soon...]
+
+### Generators
+
+[Coming soon...]
+
+## Quick Start Guide
+
+### Prerequisites
   - python 2.7
 
-## Getting Started
+### Getting Started
 ```sh
-$ git clone https://github.com/rrozansk/Grammar-Generator.git
-$ cd Grammar_Generator
-$ vim generate.py    # edit tokens, grammar and import the wanted language generator
-$ python generate.py
+$ git clone https://github.com/rrozansk/Scanner-Parser-Generator.git
+$ cd Scanner-Parser-Generator/
+$ vim scanner.txt   # edit scanner name and type/pattern token pairs
+$ vim parser.txt    # edit grammar name, start production, and LL(1) BNF grammar
+$ python generate.py --help
 ```
