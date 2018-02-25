@@ -168,7 +168,7 @@ class ContextFreeGrammar(object):
         Runtime: O(n) - linear to the number of nonterminals.
         Type: None -> set
         """
-        return [[e.copy if type(e) is set else e for e in r] for r in self._tbl]
+        return [[e.copy() if type(e) is set else e for e in r] for r in self._tbl]
 
     def conflicts(self):
         """
@@ -186,7 +186,7 @@ class ContextFreeGrammar(object):
         Runtime: O(n) - linear to the number of productions.
         Type: None -> set
         """
-        return frozenset(self._prods.keys())
+        return set(self._prods.keys())
 
     def _terminals(self, nonterminals):
         """
@@ -201,7 +201,7 @@ class ContextFreeGrammar(object):
                 for symbol in production:
                     if symbol not in nonterminals:
                         terminals.add(symbol)
-        return frozenset(terminals)
+        return terminals
 
     def _first_production(self, production, first):
         """
@@ -210,11 +210,12 @@ class ContextFreeGrammar(object):
         Runtime: O(n) - linear to the number of production rules.
         Type: None -> set
         """
-        _first = frozenset([self.EPS])
+        _first = set([self.EPS])
         for idx in range(0, len(production)):
-            _first |= first[production[idx]]
+            _first.update(first[production[idx]])
             if self.EPS not in first[production[idx]]:
-                return _first - frozenset([self.EPS])
+                _first.discard(self.EPS)
+                break
         return _first
 
     def _first(self, terminals, nonterminals):
@@ -229,11 +230,11 @@ class ContextFreeGrammar(object):
 
         # foreach elem A of TERMS do _first[A] = {A}
         for terminal in terminals:
-            first[terminal] = frozenset([terminal])
+            first[terminal] = set([terminal])
 
         # foreach elem A of NONTERMS do _first[A] = {}
         for nonterminal in nonterminals:
-            first[nonterminal] = frozenset()
+            first[nonterminal] = set()
 
         # loop until nothing new happens updating the _first sets
         while True:
@@ -241,8 +242,8 @@ class ContextFreeGrammar(object):
 
             for nonterminal, productions in self._prods.items():
                 for production in productions:
-                    new = self._first_production(production, first) |\
-                          first[nonterminal]
+                    new = self._first_production(production, first)
+                    new.update(first[nonterminal])
                     if new != first[nonterminal]:
                         first[nonterminal] = new
                         changed = True
@@ -259,10 +260,10 @@ class ContextFreeGrammar(object):
         Type: None -> set
         """
         # foreach elem A of NONTERMS do Follow[A] = {}
-        follow = {nonterminal: frozenset() for nonterminal in nonterminals}
+        follow = {nonterminal: set() for nonterminal in nonterminals}
 
         # put $ (end of input marker) in Follow(<Start>)
-        follow[self._start] = frozenset([self.EOI])
+        follow[self._start] = set([self.EOI])
 
         # loop until nothing new happens updating the Follow sets
         while True:
@@ -272,11 +273,11 @@ class ContextFreeGrammar(object):
                 for production in productions:
                     for idx in range(0, len(production)):
                         if production[idx] in nonterminals:
-                            new = self._first_production(production[idx+1:], first) |\
-                                  follow[production[idx]]
+                            new = self._first_production(production[idx+1:], first)
+                            new.update(follow[production[idx]])
                             if self.EPS in new:
-                                new = follow[nonterminal] |\
-                                      (new - frozenset([self.EPS]))
+                                new.discard(self.EPS)
+                                new.update(follow[nonterminal])
 
                             if new != follow[production[idx]]:
                                 follow[production[idx]] = new
@@ -295,7 +296,8 @@ class ContextFreeGrammar(object):
         """
         predict = self._first_production(production, first)
         if self.EPS in predict:
-            predict = (predict - frozenset([self.EPS])) | follow[nonterminal]
+            predict.discard(self.EPS)
+            predict.update(follow[nonterminal])
         return predict
 
     def _table(self, terminals, nonterminals, first, follow):
@@ -306,9 +308,9 @@ class ContextFreeGrammar(object):
         Type: None -> set
         """
         # build the table with row and column headers
-        terminals = list(terminals | frozenset([self.EOI]))
+        terminals = list(terminals | set([self.EOI]))
         nonterminals = list(nonterminals)
-        table = [[n]+[frozenset() for _ in terminals] for n in nonterminals]
+        table = [[n]+[set() for _ in terminals] for n in nonterminals]
         table.insert(0, [' ']+terminals)
 
         productions = []
@@ -319,7 +321,7 @@ class ContextFreeGrammar(object):
                 predict = self._predict(nonterminal, production, first, follow)
                 for terminal in predict:
                     idx_t = terminals.index(terminal)+1  # acct for row header
-                    table[idx_n][idx_t] |= frozenset([rule])
+                    table[idx_n][idx_t].add(rule)
                 productions.append((rule, nonterminal, production))
                 rule += 1
 
@@ -1025,8 +1027,7 @@ if __name__ == "__main__":
                 iterm = table[r][c]
                 jterm = test['table'][r][c]
                 if type(iterm) != type(jterm):
-                    if not (type(iterm) == frozenset and type(jterm) == set):
-                        raise ValueError('Invalid table value type produced')
+                    raise ValueError('Invalid table value type produced')
 
                 if type(iterm) is str and iterm != jterm:
                     raise ValueError('Invalid table header value produced')
