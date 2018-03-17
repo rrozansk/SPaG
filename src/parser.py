@@ -138,7 +138,7 @@ class ContextFreeGrammar(object):
         """
         Get the first set of the grammar.
 
-        Runtime: O(nm) - linear to the number of terminals and nonterminals.
+        Runtime: O(n+m) - linear to the number of terminals and nonterminals.
         Type: None -> set
         """
         return {k:v.copy() for k,v in self._first.items()}
@@ -165,7 +165,7 @@ class ContextFreeGrammar(object):
         """
         Get the parse table of the grammar.
 
-        Runtime: O(n) - linear to the number of nonterminals.
+        Runtime: O(nm) - linear to the number of nonterminals x terminals.
         Type: None -> set
         """
         return [[e.copy() if type(e) is set else e for e in r] for r in self._tbl]
@@ -192,16 +192,13 @@ class ContextFreeGrammar(object):
         """
         Report all literal symbols which appear in the grammar.
 
-        Runtime: O(?) - ?
+        Runtime: O(n) - linear to the number symbols in the grammar.
         Type: None -> set
         """
         terminals = set()
         for productions in self._prods.values():
-            for production in productions:
-                for symbol in production:
-                    if symbol not in nonterminals:
-                        terminals.add(symbol)
-        return terminals
+            terminals.update(*productions)
+        return terminals - nonterminals
 
     def _first_production(self, production, first):
         """
@@ -211,9 +208,9 @@ class ContextFreeGrammar(object):
         Type: None -> set
         """
         _first = set([self.EPS])
-        for idx in range(0, len(production)):
-            _first.update(first[production[idx]])
-            if self.EPS not in first[production[idx]]:
+        for symbol in production:
+            _first.update(first[symbol])
+            if self.EPS not in first[symbol]:
                 _first.discard(self.EPS)
                 break
         return _first
@@ -308,20 +305,23 @@ class ContextFreeGrammar(object):
         Type: None -> set
         """
         # build the table with row and column headers
-        terminals = list(terminals | set([self.EOI]))
+        terminals = list(terminals)+[self.EOI]
         nonterminals = list(nonterminals)
         table = [[n]+[set() for _ in terminals] for n in nonterminals]
         table.insert(0, [' ']+terminals)
 
+        # acct for row/column headers
+        tlookup = {t:c for c,t in enumerate(terminals, 1)}
+        nlookup = {n:c for c,n in enumerate(nonterminals, 1)}
+
         productions = []
         rule = 0
         for nonterminal, _productions in self._prods.items():
-            idx_n = nonterminals.index(nonterminal)+1  # acct for column header
+            idx_n = nlookup[nonterminal]
             for production in _productions:
                 predict = self._predict(nonterminal, production, first, follow)
                 for terminal in predict:
-                    idx_t = terminals.index(terminal)+1  # acct for row header
-                    table[idx_n][idx_t].add(rule)
+                    table[idx_n][tlookup[terminal]].add(rule)
                 productions.append((rule, nonterminal, production))
                 rule += 1
 
