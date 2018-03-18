@@ -14,22 +14,30 @@
  Regular expressions must be specified following these guidelines:
     - only printable ascii characters (33-126) and spaces are supported
     - supported operators:
-        | (union -> choice -> either or)
-        ? (question -> choice -> 1 or none)
-        . (concatenation -> combine)
-        * (kleene star -> repitition >= 0)
-        + (plus -> repitition >= 1)
+        |                (union -> choice -> either or)
+        ?                (question -> choice -> 1 or none)
+        .                (concatenation -> combine)
+        *                (kleene star -> repitition >= 0)
+        +                (plus -> repitition >= 1)
+        [ab]             (character class -> choice -> any specified char)
+        [a..c] or [c..a] (character range -> choice -> any char between the two)
+        [^ab] or [^a..c] (character negation -> choice -> all but the specified)
+          NOTE: '^' is required to come first after the bracket for negation.
+                If alone ([^]) it is translated as a simple class (just '^').
+                It is still legal for character ranges as well ([^..b] and
+                negated as [^^..b]). Also note that classes and ranges can
+                be combined between the same set of brackets ([abc..z]), even
+                multiple times if need be. Finally, for literal right brackets
+                an escape is needed if mentioned ([\]]), but for all other
+                characters no escapes are needed as everything is treated as a
+                literal except possibly a '^' or '..' sequence. [^\e] is entire
+                alphabet.
     - concat can be either implicit or explicit
     - grouping/disambiguation is allowed using parenthesis ()
     - supported escape sequences:
         operator literals -> \?, \*, \., \+, \|
-        grouping literals -> \(, \)
+        grouping literals -> \(, \), \[, \]
         epsilon           -> \e
-
-        **COMING SOON**
-    - character classes [abc]
-    - character ranges [a..c]
-    - character class/range negation (^)
 
  Testing is implemented in a table driven fashion using the black box method.
  The test may be run at the command line with the following invocation:
@@ -63,17 +71,33 @@ class RegularGrammar(object):
     _Plus = 3
     _Question = 4
     _Epsilon = 5
-    _Left = 6
-    _Right = 7
+    _Left_Paren = 6
+    _Right_Paren = 7
+    _Left_Bracket = 8
+    _Right_Bracket = 9
 
     _operators = {
         '*': _Star,
         '|': _Union,
         '+': _Plus,
         '?': _Question,
-        '(': _Left,
-        ')': _Right,
+        '(': _Left_Paren,
+        ')': _Right_Paren,
+        '[': _Left_Bracket,
+        ']': _Right_Bracket,
         '.': _Concat
+    }
+
+    _literals = {
+        _Star: '*',
+        _Union: '|',
+        _Plus: '+',
+        _Question: '?',
+        _Left_Paren: '(',
+        _Right_Paren: ')',
+        _Left_Bracket: '[',
+        _Right_Bracket: ']',
+        _Concat: '.'
     }
 
     _escapable = {
@@ -89,17 +113,19 @@ class RegularGrammar(object):
         '?': '?',
         '(': '(',
         ')': ')',
+        '[': '[',
+        ']': ']',
         '.': '.',
         '\\': '\\',
         'e': _Epsilon
     }
 
-    _postfix = set([_Right, _Star, _Plus, _Question]) | _characters
-    _prefix = set([_Left]) | _characters
+    _postfix = set([_Right_Paren, _Star, _Plus, _Question]) | _characters
+    _prefix = set([_Left_Paren]) | _characters
 
     _precedence = {  # higher is better
-        _Left:     (3, None),
-        _Right:    (3, None),
+        _Left_Paren:     (3, None),
+        _Right_Paren:    (3, None),
         _Star:     (2, False),  # right-associative
         _Plus:     (2, False),  # right-associative
         _Question: (2, False),  # right-associative
@@ -150,7 +176,8 @@ class RegularGrammar(object):
         _pattern = _pattern[1:]
 
         expr = self._scan(_pattern)
-        expr = self._expand(expr)
+        expr = self._expand_char_class_range(expr)
+        expr = self._expand_concat(expr)
         expr = self._shunt(expr)
 
         nfa = self._NFA(expr)
@@ -266,7 +293,66 @@ class RegularGrammar(object):
             raise ValueError('Error: empty escape sequence')
         return output
 
-    def _expand(self, expr):
+    def _expand_char_class_range(self, expr):
+        """
+        Expand the internal representation of the expression so that
+        character classes and ranges are eliminated.
+
+        Runtime: O(n) - linear to input expr
+        Type: list -> list
+        """
+        output = []
+        literal = False
+        literals = set()
+        negation = False
+        i, j = 0, len(expr)
+        while i < j:
+            char = expr[i]
+            if literal:
+                # test character class/range ending
+                if char == self._Right_Bracket:
+                    if len(literals) > 0:
+                        if negation:
+                            literals = self._characters - literals
+                        chars = [self._Left_Paren]
+                        for char in literals:
+                            chars.append(char)
+                            chars.append(self._Union)
+                        chars[-1] = self._Right_Paren
+                        output.extend(chars)
+                    literal = False
+                    literals = set()
+                # test for possible range since '^' may complicate things
+                elif i+1 < j and self._literals.get(expr[i+1], expr[i+1]) == '.' and \
+                     i+2 < j and self._literals.get(expr[i+2], expr[i+2]) == '.':
+                    if i+3 > j or expr[i+3] == self._Right_Bracket:
+                        raise ValueError('Error: Invalid character range')
+                    boundry1 = self._literals.get(expr[i], expr[i])
+                    boundry2 = self._literals.get(expr[i+3], expr[i+3])
+                    if boundry1 < boundry2:
+                        literals.update(map(chr, range(ord(boundry1), ord(boundry2)+1)))
+                    else:  # boundry1 >= boundry2
+                        literals.update(map(chr, range(ord(boundry2), ord(boundry1)+1)))
+                    i += 3
+                # test for possible negation (requirements):
+                #   1. '^' occurs as the first character
+                #   2. followed by character class or range
+                elif char == '^' and len(literals) == 0 and \
+                     i+1 < j and expr[i+1] != self._Right_Bracket:
+                    negation = True
+                # default to character class
+                else:
+                    literals.add(self._literals.get(expr[i], expr[i]))
+            elif char == self._Left_Bracket:
+                literal = True
+            else:
+                output.append(char)
+            i += 1
+        if literal:
+            raise ValueError('Error: character class/range end not specified')
+        return output
+
+    def _expand_concat(self, expr):
         """
         Expand the internal representation of the expression so that
         concatentation is explicit throughout.
@@ -303,16 +389,16 @@ class RegularGrammar(object):
                 queue.append(token)
             elif token is self._Epsilon:
                 queue.append(token)
-            elif token == self._Left:
-                stack.append(self._Left)
-            elif token == self._Right:
-                while len(stack) > 0 and stack[-1] != self._Left:
+            elif token == self._Left_Paren:
+                stack.append(self._Left_Paren)
+            elif token == self._Right_Paren:
+                while len(stack) > 0 and stack[-1] != self._Left_Paren:
                     queue.append(stack.pop())
                 if len(stack) == 0:
                     raise ValueError('Error: unbalanced parenthesis')
                 stack.pop()
             elif token in self._precedence:
-                while len(stack) > 0 and stack[-1] != self._Left and\
+                while len(stack) > 0 and stack[-1] != self._Left_Paren and\
                       self._precedence[token][0] <= \
                       self._precedence[stack[-1]][0]\
                       and self._precedence[token][1]:  # left-associative?
@@ -323,7 +409,7 @@ class RegularGrammar(object):
 
         while len(stack) > 0:
             token = stack.pop()
-            if token == self._Left or token == self._Right:
+            if token == self._Left_Paren or token == self._Right_Paren:
                 raise ValueError('Error: unbalanced parenthesis')
             queue.append(token)
 
@@ -742,90 +828,54 @@ if __name__ == '__main__':
             }
         },
         {
-            'name': 'Concat Alpha',
+            'name': 'Operator Alpha Literals',
             'valid': True,
             'expressions': {
-                'concat': '\.'
+                'concat': '\.',
+                'alt': '\|',
+                'star': '\*',
+                'question': '\?',
+                'plus': '\+',
+                'slash': '\\\\',
+                'lparen': '\(',
+                'rparen': '\)',
+                'lbracket': '\[',
+                'rbracket': '\]'
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
-                'V': set(['.']),
+                'V': set(['.', '|', '*', '?', '+', '\\', '(', ')', '[', ']']),
                 'T': set([
                     ('S', '.', 'F'),
                     ('F', '.', 'Err'),
-                    ('Err', '.', 'Err')
-                ]),
-                'S': 'S',
-                'F': set(['F'])
-            }
-        },
-        {
-            'name': 'Alternation Alpha',
-            'valid': True,
-            'expressions': {
-                'alt': '\|'
-            },
-            'DFA': {
-                'Q': set(['S', 'F', 'Err']),
-                'V': set(['|']),
-                'T': set([
+                    ('Err', '.', 'Err'),
                     ('S', '|', 'F'),
                     ('F', '|', 'Err'),
-                    ('Err', '|', 'Err')
-                ]),
-                'S': 'S',
-                'F': set(['F'])
-            }
-        },
-        {
-            'name': 'Kleene Star Alpha',
-            'valid': True,
-            'expressions': {
-                'star': '\*'
-            },
-            'DFA': {
-                'Q': set(['S', 'F', 'Err']),
-                'V': set(['*']),
-                'T': set([
+                    ('Err', '|', 'Err'),
                     ('S', '*', 'F'),
                     ('F', '*', 'Err'),
-                    ('Err', '*', 'Err')
-                ]),
-                'S': 'S',
-                'F': set(['F'])
-            }
-        },
-        {
-            'name': 'Choice Alpha',
-            'valid': True,
-            'expressions': {
-                'question': '\?'
-            },
-            'DFA': {
-                'Q': set(['S', 'F', 'Err']),
-                'V': set(['?']),
-                'T': set([
+                    ('Err', '*', 'Err'),
                     ('S', '?', 'F'),
                     ('F', '?', 'Err'),
-                    ('Err', '?', 'Err')
-                ]),
-                'S': 'S',
-                'F': set(['F'])
-            }
-        },
-        {
-            'name': 'Kleene Plus Alpha',
-            'valid': True,
-            'expressions': {
-                'plus': '\+'
-            },
-            'DFA': {
-                'Q': set(['S', 'F', 'Err']),
-                'V': set(['+']),
-                'T': set([
+                    ('Err', '?', 'Err'),
                     ('S', '+', 'F'),
                     ('F', '+', 'Err'),
-                    ('Err', '+', 'Err')
+                    ('Err', '+', 'Err'),
+                    ('S', '\\', 'F'),
+                    ('F', '\\', 'Err'),
+                    ('Err', '\\', 'Err'),
+                    ('S', '(', 'F'),
+                    ('F', '(', 'Err'),
+                    ('Err', '(', 'Err'),
+                    ('S', ')', 'F'),
+                    ('F', ')', 'Err'),
+                    ('Err', ')', 'Err'),
+                    ('S', '[', 'F'),
+                    ('F', '[', 'Err'),
+                    ('Err', '[', 'Err'),
+                    ('S', ']', 'F'),
+                    ('F', ']', 'Err'),
+                    ('Err', ']', 'Err')
                 ]),
                 'S': 'S',
                 'F': set(['F'])
@@ -843,60 +893,6 @@ if __name__ == '__main__':
                 'T': set([]),
                 'S': 'S',
                 'F': set(['S'])
-            }
-        },
-        {
-            'name': 'Backslash Alpha',
-            'valid': True,
-            'expressions': {
-                'slash': '\\\\'
-            },
-            'DFA': {
-                'Q': set(['S', 'F', 'Err']),
-                'V': set(['\\']),
-                'T': set([
-                    ('S', '\\', 'F'),
-                    ('F', '\\', 'Err'),
-                    ('Err', '\\', 'Err')
-                ]),
-                'S': 'S',
-                'F': set(['F'])
-            }
-        },
-        {
-            'name': 'Left Parenthesis Alpha',
-            'valid': True,
-            'expressions': {
-                'lparen': '\('
-            },
-            'DFA': {
-                'Q': set(['S', 'F', 'Err']),
-                'V': set(['(']),
-                'T': set([
-                    ('S', '(', 'F'),
-                    ('F', '(', 'Err'),
-                    ('Err', '(', 'Err')
-                ]),
-                'S': 'S',
-                'F': set(['F'])
-            }
-        },
-        {
-            'name': 'Right Parenthesis Alpha',
-            'valid': True,
-            'expressions': {
-                'rparen': '\)'
-            },
-            'DFA': {
-                'Q': set(['S', 'F', 'Err']),
-                'V': set([')']),
-                'T': set([
-                    ('S', ')', 'F'),
-                    ('F', ')', 'Err'),
-                    ('Err', ')', 'Err')
-                ]),
-                'S': 'S',
-                'F': set(['F'])
             }
         },
         {
@@ -1315,10 +1311,255 @@ if __name__ == '__main__':
             }
         },
         {
+            'name': 'Forward Character Range',
+            'valid': True,
+            'expressions': {
+                'range': '[a..c]',
+            },
+            'DFA': {
+                'Q': set(['S', 'F', 'Err']),
+                'V': set(['a', 'b', 'c']),
+                'T': set([
+                    ('S', 'a', 'F'),
+                    ('S', 'b', 'F'),
+                    ('S', 'c', 'F'),
+                    ('F', 'a', 'Err'),
+                    ('F', 'b', 'Err'),
+                    ('F', 'c', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err'),
+                    ('Err', 'c', 'Err')
+                ]),
+                'S': 'S',
+                'F': set(['F'])
+            }
+        },
+        {
+            'name': 'Backward Character Range',
+            'valid': True,
+            'expressions': {
+                'range': '[c..a]',
+            },
+            'DFA': {
+                'Q': set(['S', 'F', 'Err']),
+                'V': set(['a', 'b', 'c']),
+                'T': set([
+                    ('S', 'a', 'F'),
+                    ('S', 'b', 'F'),
+                    ('S', 'c', 'F'),
+                    ('F', 'a', 'Err'),
+                    ('F', 'b', 'Err'),
+                    ('F', 'c', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err'),
+                    ('Err', 'c', 'Err')
+                ]),
+                'S': 'S',
+                'F': set(['F'])
+            }
+        },
+        {
+            'name': 'Literal Negation Character Range',
+            'valid': True,
+            'expressions': {
+                'range': '[^..a]',
+            },
+            'DFA': {
+                'Q': set(['S', 'F', 'Err']),
+                'V': set(['^', '_', '`', 'a']),
+                'T': set([
+                    ('S', '^', 'F'),
+                    ('S', '_', 'F'),
+                    ('S', '`', 'F'),
+                    ('S', 'a', 'F'),
+                    ('F', '^', 'Err'),
+                    ('F', '_', 'Err'),
+                    ('F', '`', 'Err'),
+                    ('F', 'a', 'Err'),
+                    ('Err', '^', 'Err'),
+                    ('Err', '_', 'Err'),
+                    ('Err', '`', 'Err'),
+                    ('Err', 'a', 'Err')
+                ]),
+                'S': 'S',
+                'F': set(['F'])
+            }
+        },
+        {
+            'name': 'Negated Character Range',
+            'valid': True,
+            'expressions': {
+                'range': '[^!..~]*',
+            },
+            'DFA': {
+                'Q': set(['S']),
+                'V': set([' ', '\t', '\n', '\r', '\f', '\v']),
+                'T': set([
+                    ('S', ' ', 'S'),
+                    ('S', '\t', 'S'),
+                    ('S', '\n', 'S'),
+                    ('S', '\r', 'S'),
+                    ('S', '\f', 'S'),
+                    ('S', '\v', 'S')
+                ]),
+                'S': 'S',
+                'F': set(['S'])
+            }
+        },
+        {
+            'name': 'Empty Character Range/Class',
+            'valid': True,
+            'expressions': {
+                'class/range': '[]\e',
+            },
+            'DFA': {
+                'Q': set(['S']),
+                'V': set([]),
+                'T': set([]),
+                'S': 'S',
+                'F': set(['S'])
+            }
+        },
+        {
+            'name': 'Character Class',
+            'valid': True,
+            'expressions': {
+                'class': '[abc]',
+            },
+            'DFA': {
+                'Q': set(['S', 'F', 'Err']),
+                'V': set(['a', 'b', 'c']),
+                'T': set([
+                    ('S', 'a', 'F'),
+                    ('S', 'b', 'F'),
+                    ('S', 'c', 'F'),
+                    ('F', 'a', 'Err'),
+                    ('F', 'b', 'Err'),
+                    ('F', 'c', 'Err'),
+                    ('Err', 'a', 'Err'),
+                    ('Err', 'b', 'Err'),
+                    ('Err', 'c', 'Err')
+                ]),
+                'S': 'S',
+                'F': set(['F'])
+            }
+        },
+        {
+            'name': 'Character Class with Copies',
+            'valid': True,
+            'expressions': {
+                'class': '[aaa]',
+            },
+            'DFA': {
+                'Q': set(['S', 'F', 'Err']),
+                'V': set(['a']),
+                'T': set([
+                    ('S', 'a', 'F'),
+                    ('F', 'a', 'Err'),
+                    ('Err', 'a', 'Err')
+                ]),
+                'S': 'S',
+                'F': set(['F'])
+            }
+        },
+        {
+            'name': 'Character Class with Literal Right Bracket',
+            'valid': True,
+            'expressions': {
+                'class': '[\]]*',
+            },
+            'DFA': {
+                'Q': set(['S']),
+                'V': set([']']),
+                'T': set([
+                    ('S', ']', 'S')
+                ]),
+                'S': 'S',
+                'F': set(['S'])
+            }
+        },
+        {
+            'name': 'Literal Negation Character Class',
+            'valid': True,
+            'expressions': {
+                'class': '[^]*',
+            },
+            'DFA': {
+                'Q': set(['S']),
+                'V': set(['^']),
+                'T': set([
+                    ('S', '^', 'S')
+                ]),
+                'S': 'S',
+                'F': set(['S'])
+            }
+        },
+        {
+            'name': 'Negated Character Class',
+            'valid': True,
+            'expressions': {
+                'class': '[^!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~]*',
+            },
+            'DFA': {
+                'Q': set(['S']),
+                'V': set([' ', '\t', '\n', '\r', '\f', '\v']),
+                'T': set([
+                    ('S', ' ', 'S'),
+                    ('S', '\t', 'S'),
+                    ('S', '\n', 'S'),
+                    ('S', '\r', 'S'),
+                    ('S', '\f', 'S'),
+                    ('S', '\v', 'S')
+                ]),
+                'S': 'S',
+                'F': set(['S'])
+            }
+        },
+        {
+            'name': 'Character Class Range Combo',
+            'valid': True,
+            'expressions': {
+                'class': '[abc..e]*',
+            },
+            'DFA': {
+                'Q': set(['S']),
+                'V': set(['a', 'b', 'c', 'd', 'e']),
+                'T': set([
+                    ('S', 'a', 'S'),
+                    ('S', 'b', 'S'),
+                    ('S', 'c', 'S'),
+                    ('S', 'd', 'S'),
+                    ('S', 'e', 'S')
+                ]),
+                'S': 'S',
+                'F': set(['S'])
+            }
+        },
+        {
+            'name': 'Character Range Class Combo',
+            'valid': True,
+            'expressions': {
+                'class': '[a..cde]*',
+            },
+            'DFA': {
+                'Q': set(['S']),
+                'V': set(['a', 'b', 'c', 'd', 'e']),
+                'T': set([
+                    ('S', 'a', 'S'),
+                    ('S', 'b', 'S'),
+                    ('S', 'c', 'S'),
+                    ('S', 'd', 'S'),
+                    ('S', 'e', 'S')
+                ]),
+                'S': 'S',
+                'F': set(['S'])
+            }
+        },
+        {
             'name': 'Integer',
             'valid': True,
             'expressions': {
-                'int': "0|((-|\+)?(1|2|3|4|5|6|7|8|9)(0|1|2|3|4|5|6|7|8|9)*)",
+                'int': "0|((-|\+)?[1..9][0..9]*)",
             },
             'DFA': {
                 'Q': set(['S', 'Zero', 'Sign', 'Int', 'Err']),
@@ -1615,6 +1856,14 @@ if __name__ == '__main__':
             },
             'DFA': {}
         },
+        {
+            'name': 'Invalid Expression Character Range',
+            'valid': False,
+            'expressions': {
+                'invalid': '[a..]',
+            },
+            'DFA': {}
+        }
     ]
 
 
