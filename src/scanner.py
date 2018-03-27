@@ -4244,15 +4244,11 @@ if __name__ == '__main__':
 
         # Check if DFA's are isomorphic by attempting to find a bijection
         # between them since they both already look very 'similar'.
-        Q1 = list(grammar.states())
-        Q2 = list(_DFA['Q'])
+        Q1 = grammar.states()
+        Q2 = _DFA['Q']
 
-        _map = {}
         found = False
-        for permutation in permutations(Q2, len(Q2)):
-            for i in range(0, len(Q1)):
-                _map[Q1[i]] = permutation[i]
-
+        for _map in (dict(zip(Q1, perm)) for perm in permutations(Q2, len(Q2))):
             if _map[grammar.start()] == _DFA['S'] and\
                isomorphic(grammar.accepting(), _DFA['F'], _map, final_map) and\
                isomorphic(grammar.transitions(), _DFA['T'], _map, delta_map):
