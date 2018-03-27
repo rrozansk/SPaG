@@ -685,7 +685,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'Err']),
-                'V': set(['a']),
+                'V': set('a'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('A', 'a', 'Err'),
@@ -703,7 +703,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
@@ -726,7 +726,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'AB', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('S', 'a', 'AB'),
                     ('S', 'b', 'AB'),
@@ -747,7 +747,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['A']),
-                'V': set(['a']),
+                'V': set('a'),
                 'T': set([('A', 'a', 'A')]),
                 'S': 'A',
                 'F': set(['A'])
@@ -761,7 +761,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A']),
-                'V': set(['a']),
+                'V': set('a'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('A', 'a', 'A')
@@ -778,7 +778,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'Err']),
-                'V': set(['a']),
+                'V': set('a'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('A', 'a', 'Err'),
@@ -796,7 +796,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['AB*']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('AB*', 'a', 'AB*'),
                     ('AB*', 'b', 'AB*')
@@ -813,7 +813,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'B'),
@@ -845,7 +845,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
-                'V': set(['.', '|', '*', '?', '+', '\\', '(', ')', '[', ']']),
+                'V': set('.|*?+\\()[]'),
                 'T': set([
                     ('S', '.', 'F'),
                     ('F', '.', 'Err'),
@@ -890,8 +890,8 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S']),
-                'V': set([]),
-                'T': set([]),
+                'V': set(),
+                'T': set(),
                 'S': 'S',
                 'F': set(['S'])
             }
@@ -904,7 +904,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
@@ -927,7 +927,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
@@ -950,7 +950,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
@@ -973,7 +973,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['A', 'B', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('A', 'a', 'A'),
                     ('A', 'b', 'B'),
@@ -994,7 +994,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
@@ -1017,7 +1017,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'B'),
@@ -1040,7 +1040,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['A', 'B', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('A', 'a', 'A'),
                     ('A', 'b', 'B'),
@@ -1061,7 +1061,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
@@ -1084,7 +1084,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('S', 'b', 'B'),
                     ('S', 'a', 'A'),
@@ -1107,7 +1107,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'C', 'D', 'E', 'Err']),
-                'V': set(['a', 'b', 'c', 'd', 'e']),
+                'V': set('abcde'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'Err'),
@@ -1157,7 +1157,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['AC', 'B', 'DE', 'Err']),
-                'V': set(['a', 'b', 'c', 'd']),
+                'V': set('abcd'),
                 'T': set([
                     ('AC', 'a', 'AC'),
                     ('AC', 'b', 'DE'),
@@ -1188,7 +1188,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['A', 'B', 'Err']),
-                'V': set(['a', 'b']),
+                'V': set('ab'),
                 'T': set([
                     ('A', 'a', 'B'),
                     ('A', 'b', 'B'),
@@ -1209,7 +1209,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'A', 'A*', 'B', 'C', 'D', 'F', 'Err']),
-                'V': set(['a', 'b', 'c', 'd', 'e']),
+                'V': set('abcde'),
                 'T': set([
                     ('S', 'a', 'A'),
                     ('S', 'b', 'F'),
@@ -1264,7 +1264,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'F', 'FO', 'FOO', 'B', 'BA', 'BAR', 'Err']),
-                'V': set(['f', 'o', 'b', 'a', 'r']),
+                'V': set('fobar'),
                 'T': set([
                     ('S', 'f', 'F'),
                     ('S', 'o', 'Err'),
@@ -1319,7 +1319,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
-                'V': set(['a', 'b', 'c']),
+                'V': set('abc'),
                 'T': set([
                     ('S', 'a', 'F'),
                     ('S', 'b', 'F'),
@@ -1343,7 +1343,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
-                'V': set(['a', 'b', 'c']),
+                'V': set('abc'),
                 'T': set([
                     ('S', 'a', 'F'),
                     ('S', 'b', 'F'),
@@ -1367,7 +1367,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
-                'V': set(['^', '_', '`', 'a']),
+                'V': set('^_`a'),
                 'T': set([
                     ('S', '^', 'F'),
                     ('S', '_', 'F'),
@@ -1394,7 +1394,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S']),
-                'V': set([' ', '\t', '\n', '\r', '\f', '\v']),
+                'V': set(' \t\n\r\f\v'),
                 'T': set([
                     ('S', ' ', 'S'),
                     ('S', '\t', 'S'),
@@ -1415,8 +1415,8 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S']),
-                'V': set([]),
-                'T': set([]),
+                'V': set(),
+                'T': set(),
                 'S': 'S',
                 'F': set(['S'])
             }
@@ -1429,7 +1429,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
-                'V': set(['a', 'b', 'c']),
+                'V': set('abc'),
                 'T': set([
                     ('S', 'a', 'F'),
                     ('S', 'b', 'F'),
@@ -1453,7 +1453,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
-                'V': set(['a']),
+                'V': set('a'),
                 'T': set([
                     ('S', 'a', 'F'),
                     ('F', 'a', 'Err'),
@@ -1471,7 +1471,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S']),
-                'V': set([']']),
+                'V': set(']'),
                 'T': set([
                     ('S', ']', 'S')
                 ]),
@@ -1487,7 +1487,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S']),
-                'V': set(['^']),
+                'V': set('^'),
                 'T': set([
                     ('S', '^', 'S')
                 ]),
@@ -1503,7 +1503,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S']),
-                'V': set([' ', '\t', '\n', '\r', '\f', '\v']),
+                'V': set(' \t\n\r\f\v'),
                 'T': set([
                     ('S', ' ', 'S'),
                     ('S', '\t', 'S'),
@@ -1524,7 +1524,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S']),
-                'V': set(['a', 'b', 'c', 'd', 'e']),
+                'V': set('abcde'),
                 'T': set([
                     ('S', 'a', 'S'),
                     ('S', 'b', 'S'),
@@ -1544,7 +1544,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S']),
-                'V': set(['a', 'b', 'c', 'd', 'e']),
+                'V': set('abcde'),
                 'T': set([
                     ('S', 'a', 'S'),
                     ('S', 'b', 'S'),
@@ -1564,7 +1564,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'Zero', 'Sign', 'Int', 'Err']),
-                'V': set(['+', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']),
+                'V': set('+-0123456789'),
                 'T': set([
                     ('S', '+', 'Sign'),
                     ('S', '-', 'Sign'),
@@ -1640,8 +1640,7 @@ if __name__ == '__main__':
             'DFA': {
                 'Q': set(['S', 'WholePart', 'ExpPart', 'FractionPart',
                           'eSignum', 'Sigfrac', 'Sigexp', 'Signum', 'Err']),
-                'V': set(['+', '-', '.', '0', '1', '2', '3', '4', '5', '6',
-                          '7', '8', '9', 'e', 'E']),
+                'V': set('+-.0123456789eE'),
                 'T': set([
                       ('WholePart', '2', 'WholePart'),
                       ('FractionPart', '5', 'FractionPart'),
@@ -1791,7 +1790,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S']),
-                'V': set([' ', '\t', '\n', '\r', '\f', '\v']),
+                'V': set(' \t\n\r\f\v'),
                 'T': set([
                     ('S', ' ', 'S'),
                     ('S', '\t', 'S'),
@@ -1812,7 +1811,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', 'T', 'R', 'F', 'A', 'L', 'US', 'E', 'Err']),
-                'V': set(['t', 'r', 'u', 'e', 'f', 'a', 'l', 's']),
+                'V': set('truefals'),
                 'T': set([
                     ('S', 't', 'T'),
                     ('S', 'r', 'Err'),
