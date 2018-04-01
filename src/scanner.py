@@ -574,7 +574,7 @@ class RegularGrammar(object):
                     explore.add(qp)
                     Tp.add((q, a, qp))
 
-        return frozenset(Qp), V, frozenset(Tp), Sp, frozenset(Fp)
+        return frozenset(Qp), V, Tp, Sp, frozenset(Fp)
 
     def _total(self, dfa):
         """
@@ -615,26 +615,24 @@ class RegularGrammar(object):
         W = set([F])
         while len(W) > 0:
             A = W.pop()
-            for c in V:
-                X = frozenset({q for q in states if T[symbols[c]][states[q]] in A})
-                updates = []
+            for vIdx in symbols.values():
+                X = frozenset({q for q,qIdx in states.items() if T[vIdx][qIdx] in A})
+                _P = set()
                 for Y in P:
                     s1 = X & Y
                     s2 = Y - X
                     if len(s1) > 0 and len(s2) > 0:
-                        updates.append((Y, [s1, s2]))  # split partition Y
+                        _P.update([s1, s2])
                         if Y in W:
                             W.remove(Y)
                             W.update([s1, s2])
+                        elif len(s1) <= len(s2):
+                            W.update([s1])
                         else:
-                            if len(s1) <= len(s2):
-                                W.update([s1])
-                            else:
-                                W.update([s2])
-
-                for (Y, [s1, s2]) in updates:
-                    P.remove(Y)
-                    P.update([s1, s2])
+                            W.update([s2])
+                    else:
+                        _P.add(Y)
+                P = _P
 
         _states = dict(zip(P, range(len(P))))
         Tp = [[None for state in P] for symbol in V]
