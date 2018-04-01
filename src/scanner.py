@@ -587,22 +587,18 @@ class RegularGrammar(object):
         """
         Q, V, T, S, F = dfa
 
+        q_err = self._state()
+
         if len(T) != len(Q) * len(V):
-            q_err = self._state()
             Q = Q | frozenset([q_err])
 
-            M = {q: {} for q in Q}
-            for t in T:
-                M[t[0]][t[1]] = t[2]
+        states, symbols = dict(zip(Q, range(len(Q)))), dict(zip(V, range(len(V))))
+        table = [[q_err for _ in states] for _ in symbols]
+        for (state, symbol, dest) in T:
+            table[symbols[symbol]][states[state]] = dest
+        Tp = (states, symbols, table)
 
-            Tp = set()
-            for q in Q:
-                for c in V:
-                    if M[q].get(c, None) is None:
-                        Tp.add((q, c, q_err))
-            T |= frozenset(Tp)
-
-        return Q, V, T, S, F
+        return Q, V, Tp, S, F
 
     def _Hopcroft(self, dfa):
         """
@@ -613,14 +609,14 @@ class RegularGrammar(object):
         Runtime: O(ns log n) - linear log (n=number states; s=alphabet size)
         Type: set x set x set x set x set -> set x set x set x set x set
         """
-        Q, V, T, S, F = dfa
+        Q, V, (states, symbols, T), S, F = dfa
 
         P = set([F, Q - F]) - set([frozenset()])  # if Q - F was empty
         W = set([F])
         while len(W) > 0:
             A = W.pop()
             for c in V:
-                X = frozenset({t[0] for t in T if t[1] == c and t[2] in A})
+                X = frozenset({q for q in states if T[symbols[c]][states[q]] in A})
                 updates = []
                 for Y in P:
                     s1 = X & Y
@@ -640,15 +636,18 @@ class RegularGrammar(object):
                     P.remove(Y)
                     P.update([s1, s2])
 
-        Tp = set()
-        for t in T:
-            s1, s2 = None, None
-            for part in P:
-                if t[0] in part:
-                    s1 = part
-                if t[2] in part:
-                    s2 = part
-            Tp.add((s1, t[1], s2))
+        _states = dict(zip(P, range(len(P))))
+        Tp = [[None for state in P] for symbol in V]
+        for source in states:
+            for symbol in V:
+                dest = T[symbols[symbol]][states[source]]
+                s1, s2 = None, None
+                for part in P:
+                    if source in part:
+                        s1 = part
+                    if dest in part:
+                        s2 = part
+                Tp[symbols[symbol]][_states[s1]] = s2
 
         Sp = None
         for part in P:
@@ -658,7 +657,7 @@ class RegularGrammar(object):
 
         Fp = frozenset({part for part in P if len(part & F) > 0})
 
-        return frozenset(P), V, frozenset(Tp), Sp, Fp
+        return frozenset(P), V, (_states, symbols, Tp), Sp, Fp
 
     def _alpha(self, dfa):
         """
@@ -671,14 +670,11 @@ class RegularGrammar(object):
         Q, V, T, S, F = dfa
         rename = {q: self._state() for q in Q}
         Qp = set(rename.values())
+        states = {rename[state]:idx for state,idx in T[0].items()}
+        table = [[rename[col] for col in row] for row in T[2]]
+        Tp = (states, T[1], table)
         Fp = {rename[f] for f in F}
         Sp = rename[S]
-
-        states, symbols = dict(zip(Qp, range(len(Qp)))), dict(zip(V, range(len(V))))
-        tbl = [[None for _ in states] for _ in symbols]
-        for (state, symbol, dest) in T:
-            tbl[symbols[symbol]][states[rename[state]]] = rename[dest]
-        Tp = (states, symbols, tbl)
 
         return Qp, V, Tp, Sp, Fp
 
