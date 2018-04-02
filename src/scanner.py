@@ -49,6 +49,8 @@
  and negative tests cases are extensively tested.
 """
 from uuid import uuid4
+from string import printable
+from copy import deepcopy
 
 
 class RegularGrammar(object):
@@ -57,48 +59,16 @@ class RegularGrammar(object):
     can be programatically transformed/compiled into a minmal DFA.
     """
 
-    _digits = set('0123456789')
-    _spaces = set(' \t\v\f\r\n')
-    _uppers = set('abcdefghijklmnopqrstuvwxyz')
-    _lowers = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-    _punctuation = set('!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~')
+    _Epsilon = 0
 
-    _characters = _digits | _spaces | _uppers | _lowers | _punctuation
+    # Internal representation -> operator literals
+    _literals = dict(enumerate('*|.+?()[]', 1))
 
-    _Star = 0
-    _Union = 1
-    _Concat = 2
-    _Plus = 3
-    _Question = 4
-    _Epsilon = 5
-    _Left_Paren = 6
-    _Right_Paren = 7
-    _Left_Bracket = 8
-    _Right_Bracket = 9
+    # Operator literals -> internal representation
+    _operators = {v:k for k,v in _literals.items()}
 
-    _operators = {
-        '*': _Star,
-        '|': _Union,
-        '+': _Plus,
-        '?': _Question,
-        '(': _Left_Paren,
-        ')': _Right_Paren,
-        '[': _Left_Bracket,
-        ']': _Right_Bracket,
-        '.': _Concat
-    }
-
-    _literals = {
-        _Star: '*',
-        _Union: '|',
-        _Plus: '+',
-        _Question: '?',
-        _Left_Paren: '(',
-        _Right_Paren: ')',
-        _Left_Bracket: '[',
-        _Right_Bracket: ']',
-        _Concat: '.'
-    }
+    # uppercase, lowercase, digits, punctuation, whitespace
+    _characters = set(printable)
 
     _escapable = {
         's': ' ',
@@ -120,22 +90,23 @@ class RegularGrammar(object):
         'e': _Epsilon
     }
 
-    _postfix = set([_Right_Paren, _Star, _Plus, _Question]) | _characters
-    _prefix = set([_Left_Paren]) | _characters
+    _postfix = set([_operators[')'], _operators['*'], _operators['+'], \
+                    _operators['?']]) | _characters
+    _prefix  = set([_operators['(']]) | _characters
 
-    _precedence = {  # higher is better
-        _Left_Paren:     (3, None),
-        _Right_Paren:    (3, None),
-        _Star:     (2, False),  # right-associative
-        _Plus:     (2, False),  # right-associative
-        _Question: (2, False),  # right-associative
-        _Concat:   (1, True),   # left-associative
-        _Union:    (0, True),   # left-associative
+    # Operator precedence for the shunting yard algorithm. (higher is better)
+    _precedence = {
+        _operators['(']: (3, None),
+        _operators[')']: (3, None),
+        _operators['*']: (2, False),  # right-associative
+        _operators['+']: (2, False),  # right-associative
+        _operators['?']: (2, False),  # right-associative
+        _operators['.']: (1, True),   # left-associative
+        _operators['|']: (0, True),   # left-associative
     }
 
-    _name = None
-    _expressions = None
-
+    _name   = None
+    _exprs  = None
     _states = None
     _alphas = None
     _deltas = None
@@ -161,7 +132,7 @@ class RegularGrammar(object):
             raise ValueError('Invalid Input: expressions must be a dictionary')
 
         _pattern = ''
-        self._expressions = dict()
+        self._exprs = dict()
 
         for name, pattern in expressions.items():
             if type(name) is not str:
@@ -170,7 +141,7 @@ class RegularGrammar(object):
             if type(pattern) is not str:
                 raise ValueError('Invalid Input: pattern must be a string')
 
-            self._expressions[name] = pattern
+            self._exprs[name] = pattern
             _pattern += '|(' + pattern + ')'
 
         _pattern = _pattern[1:]
@@ -201,7 +172,7 @@ class RegularGrammar(object):
         Runtime: O(1) - constant
         Type: None -> string
         """
-        return self._name
+        return deepcopy(self._name)
 
     def expressions(self):
         """
@@ -210,7 +181,7 @@ class RegularGrammar(object):
         Runtime: O(n) - linear to the number of expressions.
         Type: None -> dict[string]string
         """
-        return self._expressions.copy()
+        return deepcopy(self._exprs)
 
     def states(self):
         """
@@ -219,7 +190,7 @@ class RegularGrammar(object):
         Runtime: O(n) - linear to the number of states.
         Type: None -> set
         """
-        return self._states.copy()
+        return deepcopy(self._states)
 
     def alphabet(self):
         """
@@ -228,7 +199,7 @@ class RegularGrammar(object):
         Runtime: O(n) - linear to the number of alphabet characters.
         Type: None -> set
         """
-        return self._alphas.copy()
+        return deepcopy(self._alphas)
 
     def transitions(self):
         """
@@ -237,11 +208,7 @@ class RegularGrammar(object):
         Runtime: O(n) - linear to the number of state transitions.
         Type: None -> dict, dict, list x list 
         """
-        return (
-                {k:v for k,v in self._deltas[0].items()},
-                {k:v for k,v in self._deltas[1].items()},
-                [[col for col in row] for row in self._deltas[2]]
-               )
+        return deepcopy(self._deltas)
 
     def start(self):
         """
@@ -250,7 +217,7 @@ class RegularGrammar(object):
         Runtime: O(1) - constant
         Type: None -> string
         """
-        return self._start
+        return deepcopy(self._start)
 
     def accepting(self):
         """
@@ -259,7 +226,7 @@ class RegularGrammar(object):
         Runtime: O(n) - linear to the number of final states.
         Type: None -> set
         """
-        return self._finals.copy()
+        return deepcopy(self._finals)
 
     def _scan(self, expr):
         """
@@ -314,23 +281,23 @@ class RegularGrammar(object):
             char = expr[i]
             if literal:
                 # test character class/range ending
-                if char == self._Right_Bracket:
+                if char == self._operators[']']:
                     if len(literals) > 0:
                         if negation:
                             literals = self._characters - literals
                             negation = False
-                        chars = [self._Left_Paren]
+                        chars = [self._operators['(']]
                         for char in literals:
                             chars.append(char)
-                            chars.append(self._Union)
-                        chars[-1] = self._Right_Paren
+                            chars.append(self._operators['|'])
+                        chars[-1] = self._operators[')']
                         output.extend(chars)
                     literal = False
                     literals = set()
                 # test for possible range since '^' may complicate things
                 elif i+1 < j and self._literals.get(expr[i+1], expr[i+1]) == '.' and \
                      i+2 < j and self._literals.get(expr[i+2], expr[i+2]) == '.':
-                    if i+3 > j or expr[i+3] == self._Right_Bracket:
+                    if i+3 > j or expr[i+3] == self._operators[']']:
                         raise ValueError('Error: Invalid character range')
                     boundry1 = self._literals.get(expr[i], expr[i])
                     boundry2 = self._literals.get(expr[i+3], expr[i+3])
@@ -343,12 +310,12 @@ class RegularGrammar(object):
                 #   1. '^' occurs as the first character
                 #   2. followed by character class or range
                 elif char == '^' and len(literals) == 0 and \
-                     i+1 < j and expr[i+1] != self._Right_Bracket:
+                     i+1 < j and expr[i+1] != self._operators[']']:
                     negation = True
                 # default to character class
                 else:
                     literals.add(self._literals.get(expr[i], expr[i]))
-            elif char == self._Left_Bracket:
+            elif char == self._operators['[']:
                 literal = True
             else:
                 output.append(char)
@@ -373,7 +340,7 @@ class RegularGrammar(object):
             output.append(expr[idx-1])
             if expr[idx-1] in self._postfix and \
                expr[idx] in self._prefix:
-                output.append(self._Concat)
+                output.append(self._operators['.'])
         output.append(expr[-1])
         return output
 
@@ -394,16 +361,16 @@ class RegularGrammar(object):
                 queue.append(token)
             elif token is self._Epsilon:
                 queue.append(token)
-            elif token == self._Left_Paren:
-                stack.append(self._Left_Paren)
-            elif token == self._Right_Paren:
-                while len(stack) > 0 and stack[-1] != self._Left_Paren:
+            elif token == self._operators['(']:
+                stack.append(self._operators['('])
+            elif token == self._operators[')']:
+                while len(stack) > 0 and stack[-1] != self._operators['(']:
                     queue.append(stack.pop())
                 if len(stack) == 0:
                     raise ValueError('Error: unbalanced parenthesis')
                 stack.pop()
             elif token in self._precedence:
-                while len(stack) > 0 and stack[-1] != self._Left_Paren and\
+                while len(stack) > 0 and stack[-1] != self._operators['('] and\
                       self._precedence[token][0] <= \
                       self._precedence[stack[-1]][0]\
                       and self._precedence[token][1]:  # left-associative?
@@ -414,7 +381,7 @@ class RegularGrammar(object):
 
         while len(stack) > 0:
             token = stack.pop()
-            if token == self._Left_Paren or token == self._Right_Paren:
+            if token == self._operators['('] or token == self._operators[')']:
                 raise ValueError('Error: unbalanced parenthesis')
             queue.append(token)
 
@@ -457,13 +424,13 @@ class RegularGrammar(object):
         stk = []  # NFA machine stk
         for token in expr:
             if token in self._precedence:
-                if token == self._Concat:
+                if token == self._operators['.']:
                     if len(stk) < 2:
                         raise ValueError('Error: not enough args to op .')
                     p, F = stk.pop()
                     S, q = stk.pop()
                     e_update(q, p)
-                elif token == self._Union:
+                elif token == self._operators['|']:
                     if len(stk) < 2:
                         raise ValueError('Error: not enough args to op |')
                     p, q = stk.pop()
@@ -473,7 +440,7 @@ class RegularGrammar(object):
                     e_update(S, r)
                     e_update(q, F)
                     e_update(t, F)
-                elif token == self._Star:
+                elif token == self._operators['*']:
                     if len(stk) < 1:
                         raise ValueError('Error: not enough args to op *')
                     p, q = stk.pop()
@@ -482,7 +449,7 @@ class RegularGrammar(object):
                     e_update(q, p)
                     e_update(q, F)
                     e_update(S, F)
-                elif token == self._Plus:
+                elif token == self._operators['+']:
                     if len(stk) < 1:
                         raise ValueError('Error: not enough args to op +')
                     p, q = stk.pop()
@@ -490,7 +457,7 @@ class RegularGrammar(object):
                     e_update(S, p)
                     e_update(q, p)
                     e_update(q, F)
-                elif token == self._Question:
+                elif token == self._operators['?']:
                     if len(stk) < 1:
                         raise ValueError('Error: not enough args to op ?')
                     p, q = stk.pop()
@@ -596,9 +563,8 @@ class RegularGrammar(object):
         table = [[q_err for _ in states] for _ in symbols]
         for (state, symbol, dest) in T:
             table[symbols[symbol]][states[state]] = dest
-        Tp = (states, symbols, table)
 
-        return Q, V, Tp, S, F
+        return Q, V, (states, symbols, table), S, F
 
     def _Hopcroft(self, dfa):
         """
@@ -653,9 +619,9 @@ class RegularGrammar(object):
                 Sp = part
                 break
 
-        Fp = frozenset({part for part in P if len(part & F) > 0})
+        Fp = {part for part in P if len(part & F) > 0}
 
-        return frozenset(P), V, (_states, symbols, Tp), Sp, Fp
+        return P, V, (_states, symbols, Tp), Sp, Fp
 
     def _alpha(self, dfa):
         """
@@ -665,16 +631,15 @@ class RegularGrammar(object):
         Runtime: O(n) - linear in the number of states and transitions
         Type: set x set x set x string x set -> set x set x set x string x set
         """
-        Q, V, T, S, F = dfa
+        Q, V, (states, symbols, table), S, F = dfa
         rename = {q: self._state() for q in Q}
         Qp = set(rename.values())
-        states = {rename[state]:idx for state,idx in T[0].items()}
-        table = [[rename[col] for col in row] for row in T[2]]
-        Tp = (states, T[1], table)
+        states = {rename[state]:idx for state,idx in states.items()}
+        table = [[rename[col] for col in row] for row in table]
         Fp = {rename[f] for f in F}
         Sp = rename[S]
 
-        return Qp, V, Tp, Sp, Fp
+        return Qp, V, (states, symbols, table), Sp, Fp
 
 
 if __name__ == '__main__':
