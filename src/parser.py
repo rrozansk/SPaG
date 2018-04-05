@@ -24,6 +24,7 @@
  ValueError is thrown with the appropriate error/failure message. Both positive
  and negative tests cases are extensively tested.
 """
+from copy import deepcopy
 
 
 class ContextFreeGrammar(object):
@@ -102,82 +103,73 @@ class ContextFreeGrammar(object):
         """
         Get the name of the Context Free Grammar.
 
-        Runtime: O(1) - constant.
         Type: None -> string
         """
-        return self._name
+        return deepcopy(self._name)
 
     def start(self):
         """
         Get the start state of the grammar.
 
-        Runtime: O(1) - constant.
         Type: None -> string
         """
-        return self._start
+        return deepcopy(self._start)
 
     def terminals(self):
         """
         Get the terminals of the grammar.
 
-        Runtime: O(n) - linear to the number of terminals in the grammar.
         Type: None -> set
         """
-        return self._terms.copy()
+        return deepcopy(self._terms)
 
     def nonterminals(self):
         """
         Get the nonterminals of the grammar.
 
-        Runtime: O(n) - linear to the number of nonterminals in the grammar.
         Type: None -> set
         """
-        return self._nterms.copy()
+        return deepcopy(self._nterms)
 
     def first(self):
         """
         Get the first set of the grammar.
 
-        Runtime: O(n+m) - linear to the number of terminals and nonterminals.
         Type: None -> set
         """
-        return {k:v.copy() for k,v in self._first.items()}
+        return deepcopy(self._first)
 
     def follow(self):
         """
         Get the follow set of the grammar.
 
-        Runtime: O(n) - linear to the number of nonterminals.
         Type: None -> set
         """
-        return {k:v.copy() for k,v in self._follow.items()}
+        return deepcopy(self._follow)
 
     def rules(self):
         """
         Get the production rules of the grammar.
 
-        Runtime: O(n) - linear to the number of production rules.
         Type: None -> set
         """
-        return [(i, nterm, [e for e in rule]) for i,nterm,rule in self._rules]
+        return deepcopy(self._rules)
 
     def table(self):
         """
         Get the parse table of the grammar.
 
-        Runtime: O(nm) - linear to the number of nonterminals x terminals.
         Type: None -> set
         """
-        return [[e.copy() if type(e) is set else e for e in r] for r in self._tbl]
+        return deepcopy(self._tbl)
 
     def conflicts(self):
         """
         Get the conflicts in the grammar.
 
-        Runtime: O(n) - linear to the number of conflicts in the grammar.
         Type: None -> set
         """
-        return [(nterm, term, c.copy()) for nterm,term,c in self._conflicts]
+        return deepcopy(self._conflicts)
 
     def _nonterminals(self):
         """
@@ -996,9 +988,8 @@ if __name__ == "__main__":
             if len(iproduction) != len(jproduction):
                 raise ValueError('Invalid production rule produced')
 
-            for idx in range(0, len(iproduction)):
-                if iproduction[idx] != jproduction[idx]:
-                    raise ValueError('Invalid production rule produced')
+            if not all(map(lambda i,j: i == j, iproduction, jproduction)):
+                raise ValueError('Invalid production rule produced')
 
             _map[i] = j
 
@@ -1006,9 +997,8 @@ if __name__ == "__main__":
         if len(table) != len(test['table']):
             raise ValueError('Invalid number of table rows produced')
 
-        for r in range(0, len(table)):
-            if len(table[r]) != len(test['table'][r]):
-                raise ValueError('Invalid number of table columns produced')
+        if not all(map(lambda r,_r: len(r) == len(_r), table, test['table'])):
+            raise ValueError('Invalid number of table columns produced')
 
         # sort by nonterminal header
         table.sort(key=row_header)
