@@ -835,10 +835,13 @@ if __name__ == '__main__':
             }
         },
         {
-            'name': 'Implicit Concatenation 1',
+            'name': 'Implicit Concatenation Characters',
             'valid': True,
             'expressions': {
-                'concat': 'ab'
+                'permutation1': 'ab',
+                'permutation2': 'a(b)',
+                'permutation3': '(a)b',
+                'permutation4': '(a)(b)'
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
@@ -853,46 +856,13 @@ if __name__ == '__main__':
             }
         },
         {
-            'name': 'Implicit Concatenation 2',
+            'name': 'Implicit Concatenation Star Operator',
             'valid': True,
             'expressions': {
-                'concat': 'a(b)'
-            },
-            'DFA': {
-                'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'S',   'A',   'B',   'Err'],
-                    ['a', 'A',   'Err', 'Err', 'Err'],
-                    ['b', 'Err', 'B',   'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['B'])
-            }
-        },
-        {
-            'name': 'Implicit Concatenation 3',
-            'valid': True,
-            'expressions': {
-                'concat': '(a)(b)'
-            },
-            'DFA': {
-                'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'S',   'A',   'B',   'Err'],
-                    ['a', 'A',   'Err', 'Err', 'Err'],
-                    ['b', 'Err', 'B',   'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['B'])
-            }
-        },
-        {
-            'name': 'Implicit Concatenation 4',
-            'valid': True,
-            'expressions': {
-                'concat': 'a*(b)'
+                'permutation1': 'a*b',
+                'permutation2': 'a*(b)',
+                'permutation3': '(a)*b',
+                'permutation4': '(a)*(b)'
             },
             'DFA': {
                 'Q': set(['A', 'B', 'Err']),
@@ -907,10 +877,13 @@ if __name__ == '__main__':
             }
         },
         {
-            'name': 'Implicit Concatenation 5',
+            'name': 'Implicit Concatenation Plus Operator',
             'valid': True,
             'expressions': {
-                'concat': 'a+(b)'
+                'permutation1': 'a+b',
+                'permutation2': 'a+(b)',
+                'permutation3': '(a)+b',
+                'permutation4': '(a)+(b)'
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
@@ -925,64 +898,13 @@ if __name__ == '__main__':
             }
         },
         {
-            'name': 'Implicit Concatenation 6',
+            'name': 'Implicit Concatenation Question Operator',
             'valid': True,
             'expressions': {
-                'concat': 'a?(b)'
-            },
-            'DFA': {
-                'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'S', 'A',   'B',   'Err'],
-                    ['a', 'A', 'Err', 'Err', 'Err'],
-                    ['b', 'B', 'B',   'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['B'])
-            }
-        },
-        {
-            'name': 'Implicit Concatenation 7',
-            'valid': True,
-            'expressions': {
-                'concat': 'a*b'
-            },
-            'DFA': {
-                'Q': set(['A', 'B', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'A', 'B',   'Err'],
-                    ['a', 'A', 'Err', 'Err'],
-                    ['b', 'B', 'Err', 'Err']
-                ],
-                'S': 'A',
-                'F': set(['B'])
-            }
-        },
-        {
-            'name': 'Implicit Concatenation 8',
-            'valid': True,
-            'expressions': {
-                'concat': 'a+b'
-            },
-            'DFA': {
-                'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'S',   'A', 'B',   'Err'],
-                    ['a', 'A',   'A', 'Err', 'Err'],
-                    ['b', 'Err', 'B', 'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['B'])
-            }
-        },
-        {
-            'name': 'Implicit Concatenation 9',
-            'valid': True,
-            'expressions': {
-                'concat': 'a?b'
+                'permutation1': 'a?b',
+                'permutation2': 'a?(b)',
+                'permutation3': '(a)?b',
+                'permutation4': '(a)?(b)'
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
