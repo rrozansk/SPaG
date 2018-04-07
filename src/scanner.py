@@ -148,7 +148,6 @@ class RegularGrammar(object):
         """
         Get the name of the Regular Grammar.
 
-        Runtime: O(1) - constant
         Type: None -> string
         """
         return deepcopy(self._name)
@@ -157,7 +156,6 @@ class RegularGrammar(object):
         """
         Get the patterns recognized by the Regular Grammar.
 
-        Runtime: O(n) - linear to the number of expressions.
         Type: None -> dict[string]string
         """
         return deepcopy(self._exprs)
@@ -166,7 +164,6 @@ class RegularGrammar(object):
         """
         Get the states in the grammars equivalent minimal DFA.
 
-        Runtime: O(n) - linear to the number of states.
         Type: None -> set
         """
         return deepcopy(self._states)
@@ -175,7 +172,6 @@ class RegularGrammar(object):
         """
         Get the alphabet of characters recognized by the grammars DFA.
 
-        Runtime: O(n) - linear to the number of alphabet characters.
         Type: None -> set
         """
         return deepcopy(self._alphas)
@@ -184,7 +180,6 @@ class RegularGrammar(object):
         """
         Get the state transitions defining the grammars DFA.
 
-        Runtime: O(n) - linear to the number of state transitions.
         Type: None -> dict, dict, list x list 
         """
         return deepcopy(self._deltas)
@@ -193,7 +188,6 @@ class RegularGrammar(object):
         """
         Get the start state of the grammars DFA.
 
-        Runtime: O(1) - constant
         Type: None -> string
         """
         return deepcopy(self._start)
@@ -202,7 +196,6 @@ class RegularGrammar(object):
         """
         Get all accepting states of the grammars DFA.
 
-        Runtime: O(n) - linear to the number of final states.
         Type: None -> set
         """
         return deepcopy(self._finals)
@@ -215,8 +208,8 @@ class RegularGrammar(object):
         Character conversions:
           meta -> internal representation (integer enum)
           escaped meta -> character
-          escaped escape -> character
-          escape sequence -> internal representation
+          escaped escape -> escape
+          escaped e -> epsilon
 
         Runtime: O(n) - linear to size of the input expr
         Type: string -> list | raise ValueError
@@ -358,7 +351,7 @@ class RegularGrammar(object):
                     queue.append(stack.pop())
                 stack.append(token)
             else:
-                raise ValueError('Error: invalid input')
+                raise ValueError('Error: invalid input in shuting yard')
 
         while len(stack) > 0:
             token = stack.pop()
@@ -453,7 +446,7 @@ class RegularGrammar(object):
                 e_update(S, F)
                 e_update(q, F)
             else:
-                raise ValueError('Error: invalid input')
+                raise ValueError('Error: invalid input in NFA construction')
             Q.update([S, F])
             stk.append((S, F))
 
@@ -587,8 +580,10 @@ class RegularGrammar(object):
                 for part in P:
                     if source in part:
                         s1 = part
+                        if s2: break
                     if dest in part:
                         s2 = part
+                        if s1: break
                 Tp[symbols[symbol]][_states[s1]] = s2
 
         Sp = None
@@ -1338,7 +1333,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', '_', 'F', 'Err']),
-                'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\\\\]^_`{|}~'),
+                'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
                 'T': [
                     [' ',  'S',   '_', 'F',   'Err'],
                     ['#',  '_',   '_', 'Err', 'Err'],
@@ -1454,7 +1449,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['BEGIN', 'SINK', 'FSLASH', 'SIGEND', 'END', 'ERR']),
-                'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\\\\]^_`{|}~'),
+                'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
                 'T': [
                     [' ',  'BEGIN',  'SINK',   'FSLASH', 'SIGEND', 'END',    'ERR'],
                     ['/',  'FSLASH', 'SINK',   'ERR',    'END',    'SINK',   'ERR'],
@@ -1570,7 +1565,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', '_1', '_2', 'F', 'Err']),
-                'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\\\\]^_`{|}~'),
+                'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
                 'T': [
                     [' ',  'S',   '_1', '_2',  'F',   'Err'],
                     ['#',  'Err', '_2', 'Err', 'Err', 'Err'],
@@ -1686,7 +1681,7 @@ if __name__ == '__main__':
             },
             'DFA': {
                 'Q': set(['S', '_', 'F', 'Err']),
-                'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\\\\]^_`{|}~'),
+                'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
                 'T': [
                     [' ',  'S',   '_', 'F',   'Err'],
                     ['#',  'Err', '_', 'Err', 'Err'],
