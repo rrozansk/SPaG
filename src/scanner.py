@@ -59,42 +59,21 @@ class RegularGrammar(object):
     can be programatically transformed/compiled into a minmal DFA.
     """
 
+    # Internal representation of epsilon
     _Epsilon = 0
 
-    # Internal representation -> operator literals
+    # Map internal representation of operators -> literals
     _literals = dict(enumerate('*|.+?()[]', 1))
 
-    # Operator literals -> internal representation
+    # Map operator literals -> internal representation
     _operators = {v:k for k,v in _literals.items()}
 
+    # Set of acceptable input characters (printable ascii) including:
     # uppercase, lowercase, digits, punctuation, whitespace
     _characters = set(printable)
 
-    _escapable = {
-        's': ' ',
-        't': '\t',
-        'r': '\r',
-        'v': '\v',
-        'f': '\f',
-        'n': '\n',
-        '*': '*',
-        '|': '|',
-        '+': '+',
-        '?': '?',
-        '(': '(',
-        ')': ')',
-        '[': '[',
-        ']': ']',
-        '.': '.',
-        '\\': '\\',
-        'e': _Epsilon
-    }
-
-    _postfix = set([_operators[')'], _operators['*'], _operators['+'], \
-                    _operators['?']]) | _characters
-    _prefix  = set([_operators['(']]) | _characters
-
-    # Operator precedence for the shunting yard algorithm. (higher is better)
+    # Operator precedence for the shunting yard algorithm.
+    # (higher binds tighter)
     _precedence = {
         _operators['(']: (3, None),
         _operators[')']: (3, None),
@@ -246,9 +225,11 @@ class RegularGrammar(object):
         escape = False
         for char in expr:
             if escape:
-                if char in self._escapable:
-                    escape = False
-                    output.append(self._escapable[char])
+                escape = False
+                if char == 'e':
+                    output.append(self._Epsilon)
+                elif char in self._operators or char == '\\':
+                    output.append(char)
                 else:
                     raise ValueError('Error: invalid escape seq: \\' + char)
             else:
@@ -332,16 +313,16 @@ class RegularGrammar(object):
         Runtime: O(n) - linear to input expr
         Type: list -> list
         """
-        if len(expr) == 0:
-            return expr
-
         output = []
-        for idx in range(1, len(expr)):
-            output.append(expr[idx-1])
-            if expr[idx-1] in self._postfix and \
-               expr[idx] in self._prefix:
+        for elem in expr:
+            if len(output) > 0 and not \
+               (output[-1] == self._operators['('] or \
+                output[-1] == self._operators['|'] or \
+                output[-1] == self._operators['.']) and \
+               (elem == self._operators['('] or \
+                elem in self._characters):
                 output.append(self._operators['.'])
-        output.append(expr[-1])
+            output.append(elem)
         return output
 
     def _shunt(self, expr):
@@ -423,57 +404,54 @@ class RegularGrammar(object):
 
         stk = []  # NFA machine stk
         for token in expr:
-            if token in self._precedence:
-                if token == self._operators['.']:
-                    if len(stk) < 2:
-                        raise ValueError('Error: not enough args to op .')
-                    p, F = stk.pop()
-                    S, q = stk.pop()
-                    e_update(q, p)
-                elif token == self._operators['|']:
-                    if len(stk) < 2:
-                        raise ValueError('Error: not enough args to op |')
-                    p, q = stk.pop()
-                    r, t = stk.pop()
-                    S, F = self._state(), self._state()
-                    e_update(S, p)
-                    e_update(S, r)
-                    e_update(q, F)
-                    e_update(t, F)
-                elif token == self._operators['*']:
-                    if len(stk) < 1:
-                        raise ValueError('Error: not enough args to op *')
-                    p, q = stk.pop()
-                    S, F = self._state(), self._state()
-                    e_update(S, p)
-                    e_update(q, p)
-                    e_update(q, F)
-                    e_update(S, F)
-                elif token == self._operators['+']:
-                    if len(stk) < 1:
-                        raise ValueError('Error: not enough args to op +')
-                    p, q = stk.pop()
-                    S, F = self._state(), self._state()
-                    e_update(S, p)
-                    e_update(q, p)
-                    e_update(q, F)
-                elif token == self._operators['?']:
-                    if len(stk) < 1:
-                        raise ValueError('Error: not enough args to op ?')
-                    p, q = stk.pop()
-                    S, F = self._state(), self._state()
-                    e_update(S, p)
-                    e_update(S, F)
-                    e_update(q, F)
-                else:
-                    raise ValueError('Error: operator not implemented')
-            elif token in self._characters:
+            if token in self._characters:
                 S, F = self._state(), self._state()
                 V.add(token)
                 T.add((S, token, F))
             elif token == self._Epsilon:
                 S, F = self._state(), self._state()
                 e_update(S, F)
+            elif token == self._operators['.']:
+                if len(stk) < 2:
+                    raise ValueError('Error: not enough args to op .')
+                p, F = stk.pop()
+                S, q = stk.pop()
+                e_update(q, p)
+            elif token == self._operators['|']:
+                if len(stk) < 2:
+                    raise ValueError('Error: not enough args to op |')
+                p, q = stk.pop()
+                r, t = stk.pop()
+                S, F = self._state(), self._state()
+                e_update(S, p)
+                e_update(S, r)
+                e_update(q, F)
+                e_update(t, F)
+            elif token == self._operators['*']:
+                if len(stk) < 1:
+                    raise ValueError('Error: not enough args to op *')
+                p, q = stk.pop()
+                S, F = self._state(), self._state()
+                e_update(S, p)
+                e_update(q, p)
+                e_update(q, F)
+                e_update(S, F)
+            elif token == self._operators['+']:
+                if len(stk) < 1:
+                    raise ValueError('Error: not enough args to op +')
+                p, q = stk.pop()
+                S, F = self._state(), self._state()
+                e_update(S, p)
+                e_update(q, p)
+                e_update(q, F)
+            elif token == self._operators['?']:
+                if len(stk) < 1:
+                    raise ValueError('Error: not enough args to op ?')
+                p, q = stk.pop()
+                S, F = self._state(), self._state()
+                e_update(S, p)
+                e_update(S, F)
+                e_update(q, F)
             else:
                 raise ValueError('Error: invalid input')
             Q.update([S, F])
