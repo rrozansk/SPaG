@@ -207,6 +207,8 @@ class RegularGrammar(object):
 
         Character conversions:
           meta -> internal representation (integer enum)
+          whitespace literal -> whitespace
+          whitespace -> whitespace
           escaped meta -> character
           escaped escape -> escape
           escaped e -> epsilon
@@ -219,21 +221,21 @@ class RegularGrammar(object):
         for char in expr:
             if escape:
                 escape = False
-                if char == 'e':
-                    output.append(self._Epsilon)
-                elif char in self._operators or char == '\\':
-                    output.append(char)
-                else:
-                    raise ValueError('Error: invalid escape seq: \\' + char)
+                if char in self._operators: output.append(char)
+                elif char == 'e': output.append(self._Epsilon)
+                elif char == '\\': output.append('\\')
+                elif char == 's': output.append(' ')
+                elif char == 't': output.append('\t')
+                elif char == 'n': output.append('\n')
+                elif char == 'r': output.append('\r')
+                elif char == 'f': output.append('\f')
+                elif char == 'v': output.append('\v')
+                else: raise ValueError('Error: invalid escape seq: \\' + char)
             else:
-                if char == '\\':
-                    escape = True
-                elif char in self._operators:
-                    output.append(self._operators[char])
-                elif char in self._characters:
-                    output.append(char)
-                else:
-                    raise ValueError('Error: unrecognized character: ' + char)
+                if char == '\\': escape = True
+                elif char in self._operators: output.append(self._operators[char])
+                elif char in self._characters: output.append(char)
+                else: raise ValueError('Error: unrecognized character: ' + char)
         if escape:
             raise ValueError('Error: empty escape sequence')
         return output
