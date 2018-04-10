@@ -258,7 +258,7 @@ class RegularGrammar(object):
             if literal:
                 # test character class/range ending
                 if char == self._operators[']']:
-                    if len(literals) > 0:
+                    if literals:
                         if negation:
                             literals = self._characters - literals
                             negation = False
@@ -285,7 +285,7 @@ class RegularGrammar(object):
                 # test for possible negation (requirements):
                 #   1. '^' occurs as the first character
                 #   2. followed by character class or range
-                elif char == '^' and len(literals) == 0 and \
+                elif char == '^' and not literals and \
                      i+1 < j and expr[i+1] != self._operators[']']:
                     negation = True
                 # default to character class
@@ -310,7 +310,7 @@ class RegularGrammar(object):
         """
         output = []
         for elem in expr:
-            if len(output) > 0 and not \
+            if output and not \
                (output[-1] == self._operators['('] or \
                 output[-1] == self._operators['|'] or \
                 output[-1] == self._operators['.']) and \
@@ -340,13 +340,13 @@ class RegularGrammar(object):
             elif token == self._operators['(']:
                 stack.append(self._operators['('])
             elif token == self._operators[')']:
-                while len(stack) > 0 and stack[-1] != self._operators['(']:
+                while stack and stack[-1] != self._operators['(']:
                     queue.append(stack.pop())
-                if len(stack) == 0:
+                if not stack:
                     raise ValueError('Error: unbalanced parenthesis')
                 stack.pop()
             elif token in self._precedence:
-                while len(stack) > 0 and stack[-1] != self._operators['('] and\
+                while stack and stack[-1] != self._operators['('] and\
                       self._precedence[token][0] <= \
                       self._precedence[stack[-1]][0]\
                       and self._precedence[token][1]:  # left-associative?
@@ -355,7 +355,7 @@ class RegularGrammar(object):
             else:
                 raise ValueError('Error: invalid input in shuting yard')
 
-        while len(stack) > 0:
+        while stack:
             token = stack.pop()
             if token == self._operators['('] or token == self._operators[')']:
                 raise ValueError('Error: unbalanced parenthesis')
@@ -473,7 +473,7 @@ class RegularGrammar(object):
 
         cache[q] = closure = set()
         explore = set([q])
-        while len(explore) > 0:
+        while explore:
             q = explore.pop()
             if q not in closure:
                 closure.add(q)
@@ -498,7 +498,7 @@ class RegularGrammar(object):
         cache = {}
         Sp = frozenset(self._e_closure(S, E, cache))
         Qp, Fp, Tp, explore = set(), set(), set(), set([Sp])
-        while len(explore) > 0:
+        while explore:
             q = explore.pop()  # DFA state; set of NFA states
             if q not in Qp:
                 Qp.add(q)
@@ -552,7 +552,7 @@ class RegularGrammar(object):
 
         P = set([F, Q - F]) - set([frozenset()])  # if Q - F was empty
         W = set([F])
-        while len(W) > 0:
+        while W:
             A = W.pop()
             for vIdx in symbols.values():
                 X = frozenset({q for q,qIdx in states.items() if T[vIdx][qIdx] in A})
@@ -560,7 +560,7 @@ class RegularGrammar(object):
                 for Y in P:
                     s1 = X & Y
                     s2 = Y - X
-                    if len(s1) > 0 and len(s2) > 0:
+                    if s1 and s2:
                         _P.update([s1, s2])
                         if Y in W:
                             W.remove(Y)
@@ -594,7 +594,7 @@ class RegularGrammar(object):
                 Sp = part
                 break
 
-        Fp = {part for part in P if len(part & F) > 0}
+        Fp = {part for part in P if part & F}
 
         return P, V, (_states, symbols, Tp), Sp, Fp
 
@@ -2042,7 +2042,7 @@ if __name__ == '__main__':
 
         state, symbol, T = grammar.transitions()
         if len(T) != len(_DFA['T'])-1 or \
-           (len(T) > 0 and len(T[0]) != len(_DFA['T'][0])-1):
+           (T and len(T[0]) != len(_DFA['T'][0])-1):
             raise ValueError('Error: Incorrect number of transitions produced')
 
         # Check if DFA's are isomorphic by attempting to find a bijection
@@ -2051,7 +2051,7 @@ if __name__ == '__main__':
         S = grammar.start()
 
         _state, _symbol, _T = dict(), dict(), list()
-        if len(T) > 0:
+        if T:
             _state = {s:idx for idx,s in enumerate(_DFA['T'].pop(0)[1:])}
             _symbol = {s:idx for idx,s in enumerate([row.pop(0) for row in _DFA['T']])}
             _T = _DFA['T']
