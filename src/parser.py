@@ -89,7 +89,6 @@ class ContextFreeGrammar(object):
         first = self._first(terms, nonterms)
         follow = self._follow(nonterms, first)
         table, rules = self._table(terms, nonterms, first, follow)
-        conflicts = self._conflicts(table)
 
         self._nterms = nonterms
         self._terms = terms
@@ -97,7 +96,6 @@ class ContextFreeGrammar(object):
         self._follow = follow
         self._tbl = table
         self._rules = rules
-        self._conflicts = conflicts
 
     def name(self):
         """
@@ -162,14 +160,6 @@ class ContextFreeGrammar(object):
         Type: None -> set
         """
         return deepcopy(self._tbl)
-
-    def conflicts(self):
-        """
-        Get the conflicts in the grammar.
-
-        Type: None -> set
-        """
-        return deepcopy(self._conflicts)
 
     def _nonterminals(self):
         """
@@ -319,22 +309,6 @@ class ContextFreeGrammar(object):
 
         return (table, productions)
 
-    def _conflicts(self, table):
-        """
-        Grammar is ll(1) if parse table has (@maximum) a single entry per
-        table slot conflicting for the predicitions.
-
-        Runtime: O(?) - ?
-        Type: None -> set
-        """
-        conflicts = []
-        for row in range(1, len(table)):  # ignore column headers
-            for col in range(1, len(table[row])):  # ignore row header
-                if len(table[row][col]) > 1:
-                    conflict = (table[row][0], table[0][col], table[row][col])
-                    conflicts.append(conflict)
-        return conflicts
-
 
 if __name__ == "__main__":
 
@@ -369,8 +343,7 @@ if __name__ == "__main__":
                 [' ', 'a', 0, 'b'],
                 ['<S>', set([1]), set([0]), set([0, 1])],
                 ['<E>', set([3]), set([3]), set([2])]
-            ],
-            'conflicts': [('<S>', 'b', set([0, 1]))]
+            ]
         },
         {
             'name': 'Invalid Grammar: First/Follow Conflict',
@@ -401,8 +374,7 @@ if __name__ == "__main__":
                 [' ', 'a', 0, 'b'],
                 ['<S>', set([0]), set([]), set([])],
                 ['<A>', set([1, 2]), set([]), set([])]
-            ],
-            'conflicts': [('<A>', 'a', set([1, 2]))]
+            ]
         },
         {
             'name': 'Invalid Grammar: Left Recursion',
@@ -460,12 +432,6 @@ if __name__ == "__main__":
                  set([]), set([])],
                 ['<F>', set([]), set([8]), set([]), set([7]), set([]), set([]),
                  set([])]
-            ],
-            'conflicts': [
-                ('<E>', 'id', set([0, 1])),
-                ('<E>', '(', set([0, 1])),
-                ('<T>', 'id', set([4, 5])),
-                ('<T>', '(', set([4, 5]))
             ]
         },
         {
@@ -480,8 +446,7 @@ if __name__ == "__main__":
             'first': None,
             'follow': None,
             'rules': None,
-            'table': None,
-            'conflicts': None
+            'table': None
         },
         {
             'name': 'Invalid Start Type',
@@ -495,8 +460,7 @@ if __name__ == "__main__":
             'first': None,
             'follow': None,
             'rules': None,
-            'table': None,
-            'conflicts': None
+            'table': None
         },
         {
             'name': 'Invalid Production Rules',
@@ -510,8 +474,7 @@ if __name__ == "__main__":
             'first': None,
             'follow': None,
             'rules': None,
-            'table': None,
-            'conflicts': None
+            'table': None
         },
         {
             'name': 'Invalid Nonterminal',
@@ -525,8 +488,7 @@ if __name__ == "__main__":
             'first': None,
             'follow': None,
             'rules': None,
-            'table': None,
-            'conflicts': None
+            'table': None
         },
         {
             'name': 'Valid Grammar: With Epsilon',
@@ -597,8 +559,7 @@ if __name__ == "__main__":
                  set([])],
                 ['<F>', set([]), set([10]), set([]), set([9]), set([]),
                  set([]), set([])]
-            ],
-            'conflicts': []
+            ]
         },
         {
             'name': 'Valid Grammar: No Epsilon',
@@ -634,8 +595,7 @@ if __name__ == "__main__":
                 ['<S>', set([]), set([0]), set([1])],
                 ['<A>', set([]), set([2]), set([2])],
                 ['<B>', set([]), set([3]), set([3])]
-            ],
-            'conflicts': [],
+            ]
         },
         {
             'name': 'Valid Grammar: Simple language',
@@ -725,8 +685,7 @@ if __name__ == "__main__":
                 ['<TERM>', set([]), set([]), set([9]), set([]), set([]),
                  set([]), set([]), set([]), set([]), set([]), set([]), set([]),
                  set([8]), set([])]
-            ],
-            'conflicts': []
+            ]
         },
         {
             'name': 'Valid Grammar: JSON',
@@ -839,8 +798,7 @@ if __name__ == "__main__":
                       ["<ARRAY'>", set([]), set([]), set([15]), set([14]),
                        set([15]), set([]), set([15]), set([15]), set([15]),
                        set([]), set([15])]
-                     ],
-            'conflicts': []
+                     ]
         },
         {
             'name': 'Valid Grammar: INI',
@@ -912,8 +870,7 @@ if __name__ == "__main__":
                        set([]), set([7]), set([]), set([])],
                       ['<INI>', set([1]), set([]), set([]), set([]),
                        set([0]), set([]), set([]), set([])],
-                     ],
-            'conflicts': []
+                     ]
         }
     ]
 
@@ -922,9 +879,6 @@ if __name__ == "__main__":
 
     def row_header(row):
         return row[0]
-
-    def conflict_key(conflict):
-        return conflict[0]+conflict[1]
 
     for test in TESTS:
         try:
@@ -1019,30 +973,10 @@ if __name__ == "__main__":
                 if type(iterm) != type(jterm):
                     raise ValueError('Invalid table value type produced')
 
-                if type(iterm) is str and iterm != jterm:
+                if type(iterm) is str and iterm != jterm: # row/col header
                     raise ValueError('Invalid table header value produced')
-                if type(iterm) is int and iterm != jterm:
+                if type(iterm) is int and iterm != jterm: # epsilon, end of input headers
                     raise ValueError('Invalid table header value produced')
-                if type(iterm) is set:
+                if type(iterm) is set: # prediction (possibly with conflicts)
                     if {_map[term] for term in iterm} != jterm:
                         raise ValueError('Invalid table value produced')
-
-        conflicts = grammar.conflicts()
-        if len(conflicts) != len(test['conflicts']):
-            raise ValueError('Invalid number of conflicts produced')
-
-        conflicts.sort(key=conflict_key)
-        test['conflicts'].sort(key=conflict_key)
-
-        for idx in range(0, len(conflicts)):
-            iterm, ichar, iconflict = conflicts[idx]
-            jterm, jchar, jconflict = test['conflicts'][idx]
-
-            if iterm != jterm:
-                raise ValueError('Invalid conflicts nonterminal produced')
-
-            if ichar != jchar:
-                raise ValueError('Invalid conflicts transition produced')
-
-            if {_map[item] for item in iconflict} != jconflict:
-                raise ValueError('Invalid conflicts produced')
