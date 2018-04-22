@@ -19,6 +19,7 @@
         .                (concatenation -> combine)
         *                (kleene star -> repitition >= 0)
         +                (plus -> repitition >= 1)
+        ()               (grouping -> disambiguation -> any expression)
         [ab]             (character class -> choice -> any specified char)
         [a-c] or [c-a]  (character range -> choice -> any char between the two)
         [^ab] or [^a-c] (character negation -> choice -> all but the specified)
@@ -35,10 +36,10 @@
                escape is needed if mentioned ([\]]). All other characters are
                treated as literals.
     - concat can be either implicit or explicit
-    - grouping/disambiguation is allowed using parenthesis ()
     - supported escape sequences:
         operator literals -> \?, \*, \., \+, \|
         grouping literals -> \(, \), \[, \]
+        whitespace literals -> \s, \t, \n, \r, \f, \v
 
  Testing is implemented in a table driven fashion using the black box method.
  The test may be run at the command line with the following invocation:
@@ -209,7 +210,7 @@ class RegularGrammar(object):
           escaped escape -> escape
           escaped whitespace -> whitespace
 
-        Runtime: O(n) - linear to size of the input expr
+        Runtime: O(n) - linear to the length of expr
         Type: string -> list | raise ValueError
         """
         output = []
@@ -240,7 +241,7 @@ class RegularGrammar(object):
         Expand the internal representation of the expression so that
         character classes and ranges are eliminated.
 
-        Runtime: O(n) - linear to input expr
+        Runtime: O(n) - linear to the length of expr
         Type: list -> list | raise ValueError
         """
         output, literals = [], []
@@ -286,17 +287,16 @@ class RegularGrammar(object):
         Expand the internal representation of the expression so that
         concatentation is explicit throughout.
 
-        Runtime: O(n) - linear to input expr
+        Runtime: O(n) - linear to the length of expr
         Type: list -> list
         """
         output = []
         for elem in expr:
-            if output and not \
-               (output[-1] == self._operators['('] or \
-                output[-1] == self._operators['|'] or \
-                output[-1] == self._operators['.']) and \
-               (elem == self._operators['('] or \
-                elem in self._characters):
+            if output and \
+               output[-1] != self._operators['('] and \
+               output[-1] != self._operators['|'] and \
+               output[-1] != self._operators['.'] and \
+               (elem == self._operators['('] or elem in self._characters):
                 output.append(self._operators['.'])
             output.append(elem)
         return output
@@ -308,7 +308,7 @@ class RegularGrammar(object):
         Adapted from Dijkstra's Shunting yard algorithm which can be viewed
         @https://en.wikipedia.org/wiki/Shunting-yard_algorithm.
 
-        Runtime: O(n) - linear to input expression
+        Runtime: O(n) - linear to the length of expr
         Type: list -> list | raise ValueError
         """
         stack, queue = [], []  # operators, output expression
@@ -362,7 +362,7 @@ class RegularGrammar(object):
         algorithms' by Bruce Watson,
         located @http://alexandria.tue.nl/extra1/wskrap/publichtml/9313452.pdf
 
-        Runtime: O(n) - linear to input expression
+        Runtime: O(n) - linear to the length of expr
         Type: list -> set x set x set x dict x string x string
         """
         Q = set()   # states
@@ -373,8 +373,8 @@ class RegularGrammar(object):
         F = None    # accepting state F in Q
 
         def e_update(s, f):
-            transitions = E[s] = E.get(s, set())
-            transitions.add(f)
+            E[s] = E.get(s, set())
+            E[s].add(f)
 
         stk = []  # NFA machine stk
         for token in expr:
@@ -508,7 +508,8 @@ class RegularGrammar(object):
         if len(T) != len(Q) * len(V):
             Q = Q | frozenset([q_err])
 
-        states, symbols = dict(zip(Q, range(len(Q)))), dict(zip(V, range(len(V))))
+        states = {v:k for k,v in enumerate(Q)}
+        symbols = {v:k for k,v in enumerate(V)}
         table = [[q_err for _ in states] for _ in symbols]
         for (state, symbol, dest) in T:
             table[symbols[symbol]][states[state]] = dest

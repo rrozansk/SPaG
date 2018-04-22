@@ -239,13 +239,13 @@ class ContextFreeGrammar(object):
                 for (idx, elem) in enumerate(production):
                     if elem in nonterminals:
                         new = self._first_production(production[idx+1:], first)
-                        new.update(follow[elem])
                         if self.EPS in new:
                             new.discard(self.EPS)
                             new.update(follow[nonterminal])
 
-                        if new != follow[elem]:
-                            follow[elem] = new
+                        new = new - follow[elem]
+                        if new:
+                            follow[elem].update(new)
                             changed = True
 
             if not changed:
@@ -261,8 +261,8 @@ class ContextFreeGrammar(object):
         Type: set x set x dict[string]set x dict[string]set x list of tuples
                 -> list of lists x dict[string]int x dict[string]int
         """
-        rows = {n:c for c,n in enumerate(nonterminals)}
-        cols = {t:c for c,t in enumerate(terminals | set([self.EOI]))}
+        rows = {n:i for i,n in enumerate(nonterminals)}
+        cols = {t:i for i,t in enumerate(terminals | set([self.EOI]))}
 
         table = [[set() for _ in cols] for _ in rows]
 

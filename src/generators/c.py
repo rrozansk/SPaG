@@ -47,54 +47,65 @@ class C(generator.Generator):
         """
         time = datetime.datetime.utcnow().isoformat("T") + "Z"
 
-        header = "" +\
-                 "/*\n" +\
-                 " * File:    " + filename + ".h\n" +\
-                 " * Author:  **AUTO GENERATED**\n" +\
-                 " * Created: " + time + "\n" +\
-                 " * Archive: https://github.com/rrozansk/Grammar-Generator\n" +\
-                 " *\n" +\
-                 " * WARNING!! AUTO GENERATED FILE, DO NOT EDIT!\n" +\
-                 " */\n"
+        header = (
+                  ""
+                  "/*\n"
+                  " * File:    " + filename + ".h\n"
+                  " * Author:  **AUTO GENERATED**\n"
+                  " * Created: " + time + "\n"
+                  " * Archive: https://github.com/rrozansk/Scanner-Parser-Generator\n"
+                  " *\n"
+                  " * WARNING!! AUTO GENERATED FILE, DO NOT EDIT!\n"
+                  " */\n"
+                 )
 
         if self._scanner is not None:
             scan_func = self._sanatize(self._scanner.name())
-            header += "\n" +\
-                      "// Token's ...\n" +\
-                      "typedef struct token token_t;\n" +\
-                      "\n" +\
-                      "// Returns the string representation of the token.\n" +\
-                      "char *value(token token_t);\n" +\
-                      "\n" +\
-                      "// Return the type of the token.\n" +\
-                      "int type(token token_t);\n" +\
-                      "\n" +\
-                      "// Return the starting line the token was read on.\n" +\
-                      "int line(token token_t);\n" +\
-                      "\n" +\
-                      "// Return the starting column the token was read on.\n" +\
-                      "int column(token token_t);\n" +\
-                      "\n" +\
-                      "/*\n" +\
-                      " * A scanner ...\n" +\
-                      " *\n" +\
-                      " * Recognized tokens:\n"
+            header += (
+                       "\n"
+                       "// Token's ...\n"
+                       "typedef struct token token_t;\n"
+                       "\n"
+                       "// Returns the string representation of the token.\n"
+                       "char *text(token token_t);\n"
+                       "\n"
+                       "// Return the type of the token.\n"
+                       "int type(token token_t);\n"
+                       "\n"
+                       "// Return the starting line the token was read on.\n"
+                       "int line(token token_t);\n"
+                       "\n"
+                       "// Return the starting column the token was read on.\n"
+                       "int column(token token_t);\n"
+                       "\n"
+                       "// Return the file the token was read in.\n"
+                       "char *file(token token_t);\n"
+                       "\n"
+                       "/*\n"
+                       " * A scanner ...\n"
+                       " *\n"
+                       " * Recognized tokens:\n"
+                      )
             for name, pattern in self._scanner.expressions().items():
                 header += " *  - " + name + " ::= " + pattern + "\n"
-            header += " */\n" +\
-                      "void " + scan_func + "(FILE *f, token_t *token);\n"
+            # return's 0/1 for succ/error. mutates token passed in
+            header += " */\nint " + scan_func + "(FILE *f, token_t *token);\n"
 
         if self._parser is not None:
             parse_func = self._sanatize(self._parser.name())
-            header += "\n/*\n"
-            header += " *            ::BNF GRAMMMAR::\n"
-            header += " *\n"
-            for (idx, nonterm, rule) in self._parser.rules():
+            header += (
+                       "\n/*\n"
+                       " *            ::BNF GRAMMMAR::\n"
+                       " *\n"
+                      )
+            for nonterm, rule in self._parser.rules():
                 header += " *  " + nonterm + " -> " + " ".join(rule) + "\n"
-            header += " * \n"
-            header += " * Start production -> " + self._parser.start() + "\n"
-            header += " */\n"
-            header += "void " + parse_func + "(FILE *f);\n"
+            header += (
+                       " * \n"
+                       " * Start production -> " + self._parser.start() + "\n"
+                       " */\n"
+                       "void " + parse_func + "(FILE *f);\n"
+                      )
 
         return header
 
@@ -104,40 +115,46 @@ class C(generator.Generator):
         """
         time = datetime.datetime.utcnow().isoformat("T") + "Z"
 
-        source = ""
-        source += "/*\n"
-        source += " * File:    " + filename + ".c\n"
-        source += " * Author:  **AUTO GENERATED**\n"
-        source += " * Created: " + time + "\n"
-        source += " * Archive: https://github.com/rrozansk/Grammar-Generator\n"
-        source += " *\n"
-        source += " * WARNING!! AUTO GENERATED FILE, DO NOT EDIT!\n"
-        source += " */\n"
-        source += "#include <stdio.h>\n"
+        source = (
+                  ""
+                  "/*\n"
+                  " * File:    " + filename + ".c\n"
+                  " * Author:  **AUTO GENERATED**\n"
+                  " * Created: " + time + "\n"
+                  " * Archive: https://github.com/rrozansk/Scanner-Parser-Generator\n"
+                  " *\n"
+                  " * WARNING!! AUTO GENERATED FILE, DO NOT EDIT!\n"
+                  " */\n"
+                  "#include <stdio.h>\n"
+                 )
 
         if self._scanner is not None:
             scan_func = self._sanatize(self._scanner.name())
-            source += "\n"
-            source += "typedef struct token {\n"
-            source += "  int line;\n"
-            source += "  int column;\n"
-            source += "  enum {\n"
-            source += "\n"
-            source += "  } type;\n"
-            source += "  char *value;\n"
-            source += "} token_t;\n"
-            source += "\n"
-            source += "// Scanner source generation not yet implemented.\n"
-            source += "int " + scan_func + "(FILE *f, token_t *token) {\n"
-            source += "  return 0; // fail\n"
-            source += "}\n"  # TODO graph encoded as GOTOs
+            source += (
+                       "\n"
+                       "typedef struct token {\n"
+                       "  int line;\n"
+                       "  int column;\n"
+                       "  enum {\n"
+                       "\n"
+                       "  } type;\n"
+                       "  char *value;\n"
+                       "} token_t;\n"
+                       "\n"
+                       "// Scanner source generation not yet implemented.\n"
+                       "int " + scan_func + "(FILE *f, token_t *token) {\n"
+                       "  return 0; // fail\n"
+                       "}\n"  # TODO graph encoded as GOTOs
+                      )
 
         if self._parser is not None:
             parse_func = self._sanatize(self._parser.name())
-            source += "\n"
-            source += "// parser source generation not yet implemented\n"
-            source += "void " + parse_func + "(FILE *f) {\n"
-            source += "}\n"  # TODO
+            source += (
+                       "\n"
+                       "// parser source generation not yet implemented\n"
+                       "void " + parse_func + "(FILE *f) {\n"
+                       "}\n"  # TODO
+                      )
 
         return source
 
