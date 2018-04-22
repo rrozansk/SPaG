@@ -38,13 +38,14 @@ class ContextFreeGrammar(object):
 
     _name = None
     _start = None
-    _terms = None
-    _nterms = None
+    _terminals = None
+    _nonterminals = None
     _first = None
     _follow = None
-    _prods = None
     _rules = None
-    _tbl = None
+    _table = None
+    _rows = None
+    _cols = None
 
     def __init__(self, name, productions, start):
         """
@@ -58,7 +59,7 @@ class ContextFreeGrammar(object):
         If creation is unsuccessful a ValueWrror will be thrown, otherwise the
         results can be queried through the API provided below.
 
-        Type: string x list[tuples] -> None | raise ValueError
+        Type: string x list of tuples -> None | raise ValueError
         """
         if type(name) is not str:
             raise ValueError('Invalid Input: name must be a string')
@@ -73,7 +74,7 @@ class ContextFreeGrammar(object):
         if type(productions) is not dict:
             raise ValueError('Invalid Input: productions must be a dict')
 
-        self._prods = {}
+        self._rules = []
         for nonterminal, rhs in productions.items():
             if type(nonterminal) is not str:
                 raise ValueError('Invalid Input: nonterminal must be a string')
@@ -81,21 +82,17 @@ class ContextFreeGrammar(object):
             if type(rhs) is not str:
                 raise ValueError('Invalid Input: rules must be a string')
 
-            rules = [rule.split() for rule in rhs.split('|')]
-            self._prods[nonterminal] = rules
+            for rule in rhs.split('|'):
+                self._rules.append((nonterminal, rule.split()))
 
-        nonterms = self._nonterminals()
-        terms = self._terminals(nonterms)
-        first = self._first(terms, nonterms)
-        follow = self._follow(nonterms, first)
-        table, rules = self._table(terms, nonterms, first, follow)
-
-        self._nterms = nonterms
-        self._terms = terms
-        self._first = first
-        self._follow = follow
-        self._tbl = table
-        self._rules = rules
+        self._terminals, self._nonterminals = self._symbols(self._rules)
+        self._first = self._first(self._terminals, self._nonterminals, self._rules)
+        self._follow = self._follow(self._nonterminals, self._first, self._rules)
+        self._table, self._rows, self._cols = self._table(self._terminals,
+                                                          self._nonterminals,
+                                                          self._first,
+                                                          self._follow,
+                                                          self._rules)
 
     def name(self):
         """
@@ -119,7 +116,7 @@ class ContextFreeGrammar(object):
 
         Type: None -> set
         """
-        return deepcopy(self._terms)
+        return deepcopy(self._terminals)
 
     def nonterminals(self):
         """
@@ -127,13 +124,13 @@ class ContextFreeGrammar(object):
 
         Type: None -> set
         """
-        return deepcopy(self._nterms)
+        return deepcopy(self._nonterminals)
 
     def first(self):
         """
         Get the first set of the grammar.
 
-        Type: None -> set
+        Type: None -> dict[string]set
         """
         return deepcopy(self._first)
 
@@ -141,7 +138,7 @@ class ContextFreeGrammar(object):
         """
         Get the follow set of the grammar.
 
-        Type: None -> set
+        Type: None -> dict[string]set
         """
         return deepcopy(self._follow)
 
@@ -149,7 +146,7 @@ class ContextFreeGrammar(object):
         """
         Get the production rules of the grammar.
 
-        Type: None -> set
+        Type: None -> list of tuples
         """
         return deepcopy(self._rules)
 
@@ -157,37 +154,31 @@ class ContextFreeGrammar(object):
         """
         Get the parse table of the grammar.
 
-        Type: None -> set
+        Type: None -> list of lists x dict[string]int x dict[string]int
         """
-        return deepcopy(self._tbl)
+        return deepcopy(self._table), deepcopy(self._rows), deepcopy(self._cols)
 
-    def _nonterminals(self):
+    def _symbols(self, productions):
         """
-        Report all non terminals which are just the production rules.
-
-        Runtime: O(n) - linear to the number of productions.
-        Type: None -> set
-        """
-        return set(self._prods.keys())
-
-    def _terminals(self, nonterminals):
-        """
-        Report all literal symbols which appear in the grammar.
+        Report all literal terminal symbols and non terminal production symbols
+        which appear in the grammar.
 
         Runtime: O(n) - linear to the number symbols in the grammar.
-        Type: None -> set
+        Type: list of tuples -> set x set
         """
-        terminals = set()
-        for productions in self._prods.values():
-            terminals.update(*productions)
-        return terminals - nonterminals
+        terminals, nonterminals = set(), set()
+        for nonterminal, rule in productions:
+            terminals.update(rule)
+            nonterminals.add(nonterminal)
+        terminals = terminals - nonterminals
+        return terminals, nonterminals
 
     def _first_production(self, production, first):
         """
         Compute the first set of a single nonterminal's rhs/production.
 
         Runtime: O(n) - linear to the number of production rules.
-        Type: None -> set
+        Type: list of string x dict[string]set -> set
         """
         _first = set([self.EPS])
         for symbol in production:
@@ -197,117 +188,93 @@ class ContextFreeGrammar(object):
                 break
         return _first
 
-    def _first(self, terminals, nonterminals):
+    def _first(self, terminals, nonterminals, productions):
         """
         Calculate the first set following the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
 
         Runtime: O(?) - ?
-        Type: None -> set
+        Type: set x set x list of tuples -> dict[string]set
         """
         first = {}
 
-        # foreach elem A of TERMS do _first[A] = {A}
-        for terminal in terminals:
-            first[terminal] = set([terminal])
+        # foreach elem A of TERMS do first[A] = {A}
+        for terminal in terminals: first[terminal] = set([terminal])
 
-        # foreach elem A of NONTERMS do _first[A] = {}
-        for nonterminal in nonterminals:
-            first[nonterminal] = set()
+        # foreach elem A of NONTERMS do first[A] = {}
+        for nonterminal in nonterminals: first[nonterminal] = set()
 
-        # loop until nothing new happens updating the _first sets
+        # loop until nothing new happens updating the first sets
         while True:
             changed = False
 
-            for nonterminal, productions in self._prods.items():
-                for production in productions:
-                    new = self._first_production(production, first)
-                    new.update(first[nonterminal])
-                    if new != first[nonterminal]:
-                        first[nonterminal] = new
-                        changed = True
+            for nonterminal, production in productions:
+                new = self._first_production(production, first) - first[nonterminal]
+                if new:
+                    first[nonterminal].update(new)
+                    changed = True
 
             if not changed:
                 return first
 
-    def _follow(self, nonterminals, first):
+    def _follow(self, nonterminals, first, productions):
         """
         Calculate the follow set following the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
 
         Runtime: O(?) - ?
-        Type: None -> set
+        Type: set x dict[string]set x list of tuples -> dict[string]set
         """
-        # foreach elem A of NONTERMS do Follow[A] = {}
+        # foreach elem A of NONTERMS do follow[A] = {}
         follow = {nonterminal: set() for nonterminal in nonterminals}
 
-        # put $ (end of input marker) in Follow(<Start>)
+        # put $ (end of input marker) in follow(<Start>)
         follow[self._start] = set([self.EOI])
 
-        # loop until nothing new happens updating the Follow sets
+        # loop until nothing new happens updating the follow sets
         while True:
             changed = False
 
-            for nonterminal, productions in self._prods.items():
-                for production in productions:
-                    for idx in range(0, len(production)):
-                        if production[idx] in nonterminals:
-                            new = self._first_production(production[idx+1:], first)
-                            new.update(follow[production[idx]])
-                            if self.EPS in new:
-                                new.discard(self.EPS)
-                                new.update(follow[nonterminal])
+            for nonterminal, production in productions:
+                for (idx, elem) in enumerate(production):
+                    if elem in nonterminals:
+                        new = self._first_production(production[idx+1:], first)
+                        new.update(follow[elem])
+                        if self.EPS in new:
+                            new.discard(self.EPS)
+                            new.update(follow[nonterminal])
 
-                            if new != follow[production[idx]]:
-                                follow[production[idx]] = new
-                                changed = True
+                        if new != follow[elem]:
+                            follow[elem] = new
+                            changed = True
 
             if not changed:
                 return follow
 
-    def _predict(self, nonterminal, production, first, follow):
+    def _table(self, terminals, nonterminals, first, follow, productions):
         """
+        Construct the LL(1) parsing table by finding predict sets.
         Calculate the predict set following the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
 
         Runtime: O(?) - ?
-        Type: None -> set
+        Type: set x set x dict[string]set x dict[string]set x list of tuples
+                -> list of lists x dict[string]int x dict[string]int
         """
-        predict = self._first_production(production, first)
-        if self.EPS in predict:
-            predict.discard(self.EPS)
-            predict.update(follow[nonterminal])
-        return predict
+        rows = {n:c for c,n in enumerate(nonterminals)}
+        cols = {t:c for c,t in enumerate(terminals | set([self.EOI]))}
 
-    def _table(self, terminals, nonterminals, first, follow):
-        """
-        Construct the LL(1) parsing table by finding predict sets.
+        table = [[set() for _ in cols] for _ in rows]
 
-        Runtime: O(?) - ?
-        Type: None -> set
-        """
-        # build the table with row and column headers
-        terminals = list(terminals)+[self.EOI]
-        nonterminals = list(nonterminals)
-        table = [[n]+[set() for _ in terminals] for n in nonterminals]
-        table.insert(0, [' ']+terminals)
+        for (rule, (nonterminal, production)) in enumerate(productions):
+            predict = self._first_production(production, first)
+            if self.EPS in predict:
+                predict.discard(self.EPS)
+                predict.update(follow[nonterminal])
+            for terminal in predict:
+                table[rows[nonterminal]][cols[terminal]].add(rule)
 
-        # acct for row/column headers
-        tlookup = {t:c for c,t in enumerate(terminals, 1)}
-        nlookup = {n:c for c,n in enumerate(nonterminals, 1)}
-
-        productions = []
-        rule = 0
-        for nonterminal, _productions in self._prods.items():
-            idx_n = nlookup[nonterminal]
-            for production in _productions:
-                predict = self._predict(nonterminal, production, first, follow)
-                for terminal in predict:
-                    table[idx_n][tlookup[terminal]].add(rule)
-                productions.append((rule, nonterminal, production))
-                rule += 1
-
-        return (table, productions)
+        return table, rows, cols
 
 
 if __name__ == "__main__":
@@ -334,10 +301,10 @@ if __name__ == "__main__":
                 '<E>': set([0, 'a'])
             },
             'rules': [
-                (0, '<S>', ['<E>']),
-                (1, '<S>', ['<E>', 'a']),
-                (2, '<E>', ['b']),
-                (3, '<E>', [])
+                ('<S>', ['<E>']),
+                ('<S>', ['<E>', 'a']),
+                ('<E>', ['b']),
+                ('<E>', [])
             ],
             'table': [
                 [' ', 'a', 0, 'b'],
@@ -366,9 +333,9 @@ if __name__ == "__main__":
                 '<A>': set(['a'])
             },
             'rules': [
-                (0, '<S>', ['<A>', 'a', 'b']),
-                (1, '<A>', ['a']),
-                (2, '<A>', [])
+                ('<S>', ['<A>', 'a', 'b']),
+                ('<A>', ['a']),
+                ('<A>', [])
             ],
             'table': [
                 [' ', 'a', 0, 'b'],
@@ -410,15 +377,15 @@ if __name__ == "__main__":
                 '<F>': set([0, '+', '-', '*', ')'])
             },
             'rules': [
-                (0, '<E>', ['<E>', '<A>', '<T>']),
-                (1, '<E>', ['<T>']),
-                (2, '<A>', ['+']),
-                (3, '<A>', ['-']),
-                (4, '<T>', ['<T>', '<M>', '<F>']),
-                (5, '<T>', ['<F>']),
-                (6, '<M>', ['*']),
-                (7, '<F>', ['(', '<E>', ')']),
-                (8, '<F>', ['id'])
+                ('<E>', ['<E>', '<A>', '<T>']),
+                ('<E>', ['<T>']),
+                ('<A>', ['+']),
+                ('<A>', ['-']),
+                ('<T>', ['<T>', '<M>', '<F>']),
+                ('<T>', ['<F>']),
+                ('<M>', ['*']),
+                ('<F>', ['(', '<E>', ')']),
+                ('<F>', ['id'])
             ],
             'table': [
                 [' ', 0, 'id', ')', '(', '+', '*', '-'],
@@ -531,17 +498,17 @@ if __name__ == "__main__":
                 '<F>': set([')', '+', '-', '*', 0])
             },
             'rules': [
-                (0, '<E>', ['<T>', '<E\'>']),
-                (1, '<E\'>', ['<A>', '<T>', '<E\'>']),
-                (2, '<E\'>', []),
-                (3, '<A>', ['+']),
-                (4, '<A>', ['-']),
-                (5, '<T>', ['<F>', '<T\'>']),
-                (6, '<T\'>', ['<M>', '<F>', '<T\'>']),
-                (7, '<T\'>', []),
-                (8, '<M>', ['*']),
-                (9, '<F>', ['(', '<E>', ')']),
-                (10, '<F>', ['id'])
+                ('<E>', ['<T>', '<E\'>']),
+                ('<E\'>', ['<A>', '<T>', '<E\'>']),
+                ('<E\'>', []),
+                ('<A>', ['+']),
+                ('<A>', ['-']),
+                ('<T>', ['<F>', '<T\'>']),
+                ('<T\'>', ['<M>', '<F>', '<T\'>']),
+                ('<T\'>', []),
+                ('<M>', ['*']),
+                ('<F>', ['(', '<E>', ')']),
+                ('<F>', ['id'])
             ],
             'table': [
                 [' ', 0, 'id', ')', '(', '+', '*', '-'],
@@ -585,10 +552,10 @@ if __name__ == "__main__":
                 '<B>': set(['a', 'b'])
             },
             'rules': [
-                (0, '<S>', ['<A>', 'a', '<A>', 'b']),
-                (1, '<S>', ['<B>', 'b', '<B>', 'a']),
-                (2, '<A>', []),
-                (3, '<B>', [])
+                ('<S>', ['<A>', 'a', '<A>', 'b']),
+                ('<S>', ['<B>', 'b', '<B>', 'a']),
+                ('<A>', []),
+                ('<B>', [])
             ],
             'table': [
                 [' ', 0, 'a', 'b'],
@@ -652,20 +619,20 @@ if __name__ == "__main__":
                                'while', 'not', 'zero?', '}', 'id', 'if'])
             },
             'rules': [
-                (0, '<STMT>', ['if', '<EXPR>', 'then', '<STMT>']),
-                (1, '<STMT>', ['while', '<EXPR>', 'do', '<STMT>']),
-                (2, '<STMT>', ['<EXPR>']),
-                (3, '<EXPR>', ['<TERM>', '->', 'id']),
-                (4, '<EXPR>', ['zero?', '<TERM>']),
-                (5, '<EXPR>', ['not', '<EXPR>']),
-                (6, '<EXPR>', ['++', 'id']),
-                (7, '<EXPR>', ['--', 'id']),
-                (8, '<TERM>', ['id']),
-                (9, '<TERM>', ['constant']),
-                (10, '<BLOCK>', ['<STMT>']),
-                (11, '<BLOCK>', ['{', '<STMTS>', '}']),
-                (12, '<STMTS>', ['<STMT>', '<STMTS>']),
-                (13, '<STMTS>', [])
+                ('<STMT>', ['if', '<EXPR>', 'then', '<STMT>']),
+                ('<STMT>', ['while', '<EXPR>', 'do', '<STMT>']),
+                ('<STMT>', ['<EXPR>']),
+                ('<EXPR>', ['<TERM>', '->', 'id']),
+                ('<EXPR>', ['zero?', '<TERM>']),
+                ('<EXPR>', ['not', '<EXPR>']),
+                ('<EXPR>', ['++', 'id']),
+                ('<EXPR>', ['--', 'id']),
+                ('<TERM>', ['id']),
+                ('<TERM>', ['constant']),
+                ('<BLOCK>', ['<STMT>']),
+                ('<BLOCK>', ['{', '<STMTS>', '}']),
+                ('<STMTS>', ['<STMT>', '<STMTS>']),
+                ('<STMTS>', [])
             ],
             'table': [
                 [' ', 0, 'then', 'constant', 'do', '++', 'zero?', 'while',
@@ -746,25 +713,25 @@ if __name__ == "__main__":
               '<ELEMENTS\'>': set([']'])
             },
             'rules': [
-              (0, '<VALUE>', ['string']),
-              (1, '<VALUE>', ['number']),
-              (2, '<VALUE>', ['bool']),
-              (3, '<VALUE>', ['null']),
-              (4, '<VALUE>', ['<OBJECT>']),
-              (5, '<VALUE>', ['<ARRAY>']),
-              (6, '<OBJECT>', ['{', '<OBJECT\'>']),
-              (7, '<OBJECT\'>', ['}']),
-              (8, '<OBJECT\'>', ['<MEMBERS>', '}']),
-              (9, '<MEMBERS>', ['<PAIR>', '<MEMBERS\'>']),
-              (10, '<PAIR>', ['string', ':', '<VALUE>']),
-              (11, '<MEMBERS\'>', [',', '<MEMBERS>']),
-              (12, '<MEMBERS\'>', []),
-              (13, '<ARRAY>', ['[', '<ARRAY\'>']),
-              (14, '<ARRAY\'>', [']']),
-              (15, '<ARRAY\'>', ['<ELEMENTS>', ']']),
-              (16, '<ELEMENTS>', ['<VALUE>', '<ELEMENTS\'>']),
-              (17, '<ELEMENTS\'>', [',', '<ELEMENTS>']),
-              (18, '<ELEMENTS\'>', [])
+              ('<VALUE>', ['string']),
+              ('<VALUE>', ['number']),
+              ('<VALUE>', ['bool']),
+              ('<VALUE>', ['null']),
+              ('<VALUE>', ['<OBJECT>']),
+              ('<VALUE>', ['<ARRAY>']),
+              ('<OBJECT>', ['{', '<OBJECT\'>']),
+              ('<OBJECT\'>', ['}']),
+              ('<OBJECT\'>', ['<MEMBERS>', '}']),
+              ('<MEMBERS>', ['<PAIR>', '<MEMBERS\'>']),
+              ('<PAIR>', ['string', ':', '<VALUE>']),
+              ('<MEMBERS\'>', [',', '<MEMBERS>']),
+              ('<MEMBERS\'>', []),
+              ('<ARRAY>', ['[', '<ARRAY\'>']),
+              ('<ARRAY\'>', [']']),
+              ('<ARRAY\'>', ['<ELEMENTS>', ']']),
+              ('<ELEMENTS>', ['<VALUE>', '<ELEMENTS\'>']),
+              ('<ELEMENTS\'>', [',', '<ELEMENTS>']),
+              ('<ELEMENTS\'>', [])
             ],
             'table': [[' ', 0, ':', 'string', ']', 'number', ',', 'bool', '{',
                        'null', '}', '['],
@@ -842,18 +809,18 @@ if __name__ == "__main__":
               '<VALUE>': set([0, '[', 'string'])
             },
             'rules': [
-              (0, '<INI>', ['<SECTION>', '<INI>']),
-              (1, '<INI>', []),
-              (2, '<SECTION>', ['<HEADER>', '<SETTINGS>']),
-              (3, '<HEADER>', ['[', 'string', ']']),
-              (4, '<SETTINGS>', ['<KEY>', '<SEP>', '<VALUE>', '<SETTINGS>']),
-              (5, '<SETTINGS>', []),
-              (6, '<KEY>', ['string']),
-              (7, '<SEP>', [':']),
-              (8, '<SEP>', ['=']),
-              (9, '<VALUE>', ['string']),
-              (10, '<VALUE>', ['number']),
-              (11, '<VALUE>', ['bool'])
+              ('<INI>', ['<SECTION>', '<INI>']),
+              ('<INI>', []),
+              ('<SECTION>', ['<HEADER>', '<SETTINGS>']),
+              ('<HEADER>', ['[', 'string', ']']),
+              ('<SETTINGS>', ['<KEY>', '<SEP>', '<VALUE>', '<SETTINGS>']),
+              ('<SETTINGS>', []),
+              ('<KEY>', ['string']),
+              ('<SEP>', [':']),
+              ('<SEP>', ['=']),
+              ('<VALUE>', ['string']),
+              ('<VALUE>', ['number']),
+              ('<VALUE>', ['bool'])
             ],
             'table': [[' ', 0, 'bool', 'string', '=', '[', ':', ']', 'number'],
                       ['<VALUE>', set([]), set([11]), set([9]), set([]),
@@ -873,12 +840,6 @@ if __name__ == "__main__":
                      ]
         }
     ]
-
-    def make_rule_key(rule):
-        return rule[1] + ''.join(rule[2])
-
-    def row_header(row):
-        return row[0]
 
     for test in TESTS:
         try:
@@ -928,55 +889,39 @@ if __name__ == "__main__":
         if len(rules) != len(test['rules']):
             raise ValueError('Invalid number of table rules produced')
 
-        rules.sort(key=make_rule_key)
-        test['rules'].sort(key=make_rule_key)
-
         _map = {}
-        for idx in range(0, len(rules)):
-            i, iname, iproduction = rules[idx]
-            j, jname, jproduction = test['rules'][idx]
+        for (idx, (nonterminal, rule)) in enumerate(rules):
+            found = False
+            for (_idx, (_nonterminal, _rule)) in enumerate(test['rules']):
+                if nonterminal == _nonterminal and \
+                   len(rule) == len(_rule) and \
+                   all(map(lambda i,j: i == j, rule, _rule)):
+                    _map[idx] = _idx
+                    found = True
+                    break
 
-            if iname != jname:
-                raise ValueError('Invalid production rule name produced')
-
-            if len(iproduction) != len(jproduction):
+            if not found:
                 raise ValueError('Invalid production rule produced')
 
-            if not all(map(lambda i,j: i == j, iproduction, jproduction)):
-                raise ValueError('Invalid production rule produced')
+        _cols = {t:i for i,t in enumerate(test['table'].pop(0)[1:])}
+        _rows = {n:i for i,n in enumerate([r.pop(0) for r in test['table']])}
 
-            _map[i] = j
+        table, rows, cols = grammar.table()
+        if len(rows) != len(_rows) or set(rows.keys()) ^ set(_rows.keys()):
+            raise ValueError('Invalid number of table row headers produced')
 
-        table = grammar.table()
+        if len(cols) != len(_cols) or set(cols.keys()) ^ set(_cols.keys()):
+            raise ValueError('Invalid number of table column headers produced')
+
         if len(table) != len(test['table']):
             raise ValueError('Invalid number of table rows produced')
 
         if not all(map(lambda r,_r: len(r) == len(_r), table, test['table'])):
             raise ValueError('Invalid number of table columns produced')
 
-        # sort by nonterminal header
-        table.sort(key=row_header)
-        test['table'].sort(key=row_header)
-
-        # transpose
-        table = [list(row) for row in zip(*table)]
-        test['table'] = [list(row) for row in zip(*test['table'])]
-
-        # sort by terminal header
-        table.sort(key=row_header)
-        test['table'].sort(key=row_header)
-
-        for r in range(0, len(table)):
-            for c in range(0, len(table[0])):
-                iterm = table[r][c]
-                jterm = test['table'][r][c]
-                if type(iterm) != type(jterm):
-                    raise ValueError('Invalid table value type produced')
-
-                if type(iterm) is str and iterm != jterm: # row/col header
-                    raise ValueError('Invalid table header value produced')
-                if type(iterm) is int and iterm != jterm: # epsilon, end of input headers
-                    raise ValueError('Invalid table header value produced')
-                if type(iterm) is set: # prediction (possibly with conflicts)
-                    if {_map[term] for term in iterm} != jterm:
-                        raise ValueError('Invalid table value produced')
+        for r in rows:
+            for c in cols:
+                produced = {_map[elem] for elem in table[rows[r]][cols[c]]}
+                expected = test['table'][_rows[r]][_cols[c]]
+                if produced != expected:
+                    raise ValueError('Invalid table value produced')
