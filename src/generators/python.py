@@ -12,7 +12,7 @@ class Python(generator.Generator):
     """
 
     def _output(self, filename):
-        pass
+        super(Python, self).output(filename)
 
     def output(self, filename):
         """

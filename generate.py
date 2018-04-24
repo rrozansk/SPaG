@@ -1,25 +1,29 @@
 """
 A python CLI program to drive the scanner/parser generation.
+
+for help/information about [in/out]put run the following at the command line:
+
+ $ python generate.py --help
 """
 import src.scanner as scanner
 import src.parser as parser
 
-import src.generators.c as C
-import src.generators.go as Go
-import src.generators.python as Python
+from src.generators import *
 
 import argparse
 
 GENERATORS = {
-  "c":      C.C,
-  "go":     Go.Go,
-  "python": Python.Python
+  "c":      c.C,
+  "go":     go.Go,
+  "python": python.Python
 }
 
-CLI = argparse.ArgumentParser(description='simple cli (command line interface)\
-                                           program to generate lexer(s) and/or\
-                                           parser(s) for a given output\
-                                           language')
+CLI = argparse.ArgumentParser(description='''
+Simple CLI (Command Line Interface) program to generate lexer(s) and/or
+parser(s) for a given input specification. For information on data input,
+capabilities, limitation and more see the README or have a look at
+src/{scanner, parser}.py.
+''')
 
 CLI.add_argument('-v', '--version', action='version',
                  version='Lexer/Parser Generator v1.0',
@@ -32,7 +36,7 @@ CLI.add_argument('-o', '--output', action='store', required=True, type=str,
                  choices=GENERATORS.keys(),
                  help='code generation target language')
 CLI.add_argument('-f', '--filename', action='store', required=True, type=str,
-                 help='base filename (w/o extns) to use for generated output')
+                 help='base filename to use for generated output')
 
 ARGS = vars(CLI.parse_args())
 
@@ -92,5 +96,8 @@ if ARGS['parser'] is not None:
         GENERATOR.set_parser(PARSER)
     except ValueError as e:
         print 'Parser creation failed\n', e
+
+if not GENERATOR.get_parser() and not GENERATOR.get_scanner():
+    raise ValueError('Error: Must provide atleast a scanner or a parser')
 
 GENERATOR.output(ARGS['filename'])

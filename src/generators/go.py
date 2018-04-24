@@ -12,7 +12,7 @@ class Go(generator.Generator):
     """
 
     def _output(self, filename):
-        pass
+        super(Go, self).output(filename)
 
     def output(self, filename):
         """

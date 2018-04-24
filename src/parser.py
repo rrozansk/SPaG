@@ -2,18 +2,20 @@
  parser.py includes the implementation and testing of ContextFreeGrammar
  objects.
 
- The ContextFreeGrammar object represents a BNF style grammar which can be
- programatically transformed into a parse table for the given language. While
- it is possible for any grammar to be specified, only LL1 grammars are
- supported with the following requirements to successfully produce a parse
- table:
+ The ContextFreeGrammar object represents a BNF (Backus-Naur form) input grammar
+ programatically transformed into a parse table. While it is possible for any
+ grammar to be specified, only LL(1) grammars are supported with the following
+ requirements to successfully produce a parse table:
 
-   1. No left recursion (both direct and indirect)
+   1. No left recursion (direct or indirect)
    2. Must be left factored
    3. No ambiguity
 
- If any of the above requirements are violated, or the grammer specified is not
- LL1, there will be a conflict set produced to show the issues in the grammar.
+ If any of the above requirements are violated, or the grammar specified is not
+ LL(1), there will be a conflict in the table. This manifests itself as an entry
+ with more than one member. This means with the given set of input productions
+ and with the aid of a single look ahead token it cannot be known what rule to
+ choose in order to successfully produce a parse.
 
  Testing is implemented in a table driven fashion using the black box method.
  The tests may be run at the command line with the following invocation:
@@ -29,11 +31,11 @@ from copy import deepcopy
 
 class ContextFreeGrammar(object):
     """
-    ContextFreeGrammar represents a Backus Normal Form (BNF) grammar which can
-    be programatically transformed into a parse table.
+    ContextFreeGrammar represents a Backus-Naur form (BNF) input grammar
+    programatically transformed into a parse table.
     """
 
-    EOI = 0  # end of input marker
+    EOI = 0  # end of input marker ($)
     EPS = 1  # Epsilon marker
 
     _name = None
@@ -49,17 +51,21 @@ class ContextFreeGrammar(object):
 
     def __init__(self, name, productions, start):
         """
-        Attempt to initialize a Context Free Gramamr object with the specified
-        name, production rules and start rule. Productions rules are a list
-        where each individual item (production rule) is represented as tuple.
-        The first element is the nonterminal symbol and the second element is a
-        string containing the productions, seperated by a vertical bar (|). An
-        empty production specifies an epsilon.
+        Attempt to initialize a ContextFreeGramamr object with the specified
+        name, production rules and start rule name. Production rules are a dict
+        where each key is a nonterminal and the corresponding value is the
+        production rule. Multiple productions may be specified by seperating
+        them by a vertical bar (|). An empty production specifies an epsilon.
 
-        If creation is unsuccessful a ValueWrror will be thrown, otherwise the
+        If creation is unsuccessful a ValueError will be thrown, otherwise the
         results can be queried through the API provided below.
 
-        Type: string x list of tuples -> None | raise ValueError
+        Input Type:
+          name:        String
+          productions: Dict[String, String]
+          start:       String
+
+        Output Type: None | raise ValueError
         """
         if type(name) is not str:
             raise ValueError('Invalid Input: name must be a string')
@@ -88,83 +94,85 @@ class ContextFreeGrammar(object):
         self._terminals, self._nonterminals = self._symbols(self._rules)
         self._first = self._first(self._terminals, self._nonterminals, self._rules)
         self._follow = self._follow(self._nonterminals, self._first, self._rules)
-        self._table, self._rows, self._cols = self._table(self._terminals,
-                                                          self._nonterminals,
-                                                          self._first,
-                                                          self._follow,
-                                                          self._rules)
+        self._table, self._rows, self._cols = \
+          self._table(self._terminals, self._nonterminals,
+                      self._first, self._follow, self._rules)
 
     def name(self):
         """
-        Get the name of the Context Free Grammar.
+        Query for the name of the grammar.
 
-        Type: None -> string
+        Output Type: String
         """
         return deepcopy(self._name)
 
     def start(self):
         """
-        Get the start state of the grammar.
+        Query for the start state of the grammar.
 
-        Type: None -> string
+        Output Type: String
         """
         return deepcopy(self._start)
 
     def terminals(self):
         """
-        Get the terminals of the grammar.
+        Query for the terminals of the grammar.
 
-        Type: None -> set
+        Output Type: Set[String]
         """
         return deepcopy(self._terminals)
 
     def nonterminals(self):
         """
-        Get the nonterminals of the grammar.
+        Query for the nonterminals of the grammar.
 
-        Type: None -> set
+        Output Type: Set[String]
         """
         return deepcopy(self._nonterminals)
 
     def first(self):
         """
-        Get the first set of the grammar.
+        Query for the first set's of the grammar's terminals and nonterminals.
 
-        Type: None -> dict[string]set
+        Output Type: Dict[String, Set[String, Int]]
         """
         return deepcopy(self._first)
 
     def follow(self):
         """
-        Get the follow set of the grammar.
+        Query for the follow set's of the grammar's nonterminals.
 
-        Type: None -> dict[string]set
+        Output Type: Dict[String, Set[String, Int]]
         """
         return deepcopy(self._follow)
 
     def rules(self):
         """
-        Get the production rules of the grammar.
+        Query for the production rules of the grammar.
 
-        Type: None -> list of tuples
+        Output Type: List[Tuple[String, List[String]]]
         """
         return deepcopy(self._rules)
 
     def table(self):
         """
-        Get the parse table of the grammar.
+        Query for the parse table of the grammar.
 
-        Type: None -> list of lists x dict[string]int x dict[string]int
+        Output Type: List[List[Set[Int]]] x Dict[String, Int] x Dict[String, Int]
         """
         return deepcopy(self._table), deepcopy(self._rows), deepcopy(self._cols)
 
     def _symbols(self, productions):
         """
         Report all literal terminal symbols and non terminal production symbols
-        which appear in the grammar.
+        appearing  in the grammar.
 
         Runtime: O(n) - linear to the number symbols in the grammar.
-        Type: list of tuples -> set x set
+
+        Input Type:
+          productions: List[Tuple[String, List[String]]]
+
+        Output Type: Set[String] x Set[String]
         """
         terminals, nonterminals = set(), set()
         for nonterminal, rule in productions:
@@ -175,10 +183,17 @@ class ContextFreeGrammar(object):
 
     def _first_production(self, production, first):
         """
-        Compute the first set of a single nonterminal's rhs/production.
+        Compute the first set of a single nonterminal's rhs/production following
+        the algorithm at:
+        http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
 
-        Runtime: O(n) - linear to the number of production rules.
-        Type: list of string x dict[string]set -> set
+        Runtime: O(n) - linear to the length of the production rule.
+
+        Input Type:
+          production: List[String]
+          first:      Dict[String, Set[String, Int]]
+
+        Output Type: Set[String, Int]
         """
         _first = set([self.EPS])
         for symbol in production:
@@ -190,11 +205,18 @@ class ContextFreeGrammar(object):
 
     def _first(self, terminals, nonterminals, productions):
         """
-        Calculate the first set following the algorithm at:
+        Calculate the first set for each terminal and nonterminal in the grammar
+        following the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
 
         Runtime: O(?) - ?
-        Type: set x set x list of tuples -> dict[string]set
+
+        Input Type:
+          terminals:    Set[String]
+          nonterminals: Set[String]
+          productions:  List[Tuple[String, List[String]]]
+
+        Output Type: Dict[String, Set[String, Int]]
         """
         first = {}
 
@@ -219,11 +241,18 @@ class ContextFreeGrammar(object):
 
     def _follow(self, nonterminals, first, productions):
         """
-        Calculate the follow set following the algorithm at:
+        Calculate the follow set for each nonterminal in the grammar following
+        the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
 
         Runtime: O(?) - ?
-        Type: set x dict[string]set x list of tuples -> dict[string]set
+
+        Input Type:
+          nonterminals: Set[String]
+          first:        Dict[String, Set[String, Int]]
+          productions:  List[Tuple[String, List[String]]]
+
+        Output Type: Dict[String, Set[String, Int]]
         """
         # foreach elem A of NONTERMS do follow[A] = {}
         follow = {nonterminal: set() for nonterminal in nonterminals}
@@ -253,13 +282,20 @@ class ContextFreeGrammar(object):
 
     def _table(self, terminals, nonterminals, first, follow, productions):
         """
-        Construct the LL(1) parsing table by finding predict sets.
-        Calculate the predict set following the algorithm at:
+        Construct the LL(1) parse table indexed by nonterminal x terminal by
+        finding the predict sets following the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
 
         Runtime: O(?) - ?
-        Type: set x set x dict[string]set x dict[string]set x list of tuples
-                -> list of lists x dict[string]int x dict[string]int
+
+        Input Type:
+          terminals:    Set[String]
+          nonterminals: Set[String]
+          first:        Dict[String, Set[String, Int]]
+          follow:       Dict[String, Set[String, Int]]
+          productions:  List[Tuple[String, List[String]]]
+
+        Output Type: List[List[Set[Int]]] x Dict[String] x Dict[String, Int]
         """
         rows = {n:i for i,n in enumerate(nonterminals)}
         cols = {t:i for i,t in enumerate(terminals | set([self.EOI]))}

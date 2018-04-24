@@ -21,8 +21,8 @@
         +                (plus -> repitition >= 1)
         ()               (grouping -> disambiguation -> any expression)
         [ab]             (character class -> choice -> any specified char)
-        [a-c] or [c-a]  (character range -> choice -> any char between the two)
-        [^ab] or [^a-c] (character negation -> choice -> all but the specified)
+        [a-c] or [c-a]   (character range -> choice -> any char between the two)
+        [^ab] or [^a-c]  (character negation -> choice -> all but the specified)
         NOTES: '^' is required to come first after the bracket for negation.
                If alone ([^]) it is translated as all alphabet characters.
                It is still legal for character ranges as well ([b-^] and
@@ -37,12 +37,13 @@
                treated as literals.
     - concat can be either implicit or explicit
     - supported escape sequences:
-        operator literals -> \?, \*, \., \+, \|
-        grouping literals -> \(, \), \[, \]
+        operator literals   -> \?, \*, \., \+, \|
+        grouping literals   -> \(, \), \[, \]
         whitespace literals -> \s, \t, \n, \r, \f, \v
+        escape literal      -> \\\\
 
  Testing is implemented in a table driven fashion using the black box method.
- The test may be run at the command line with the following invocation:
+ The tests may be run at the command line with the following invocation:
 
    $ python scanner.py
 
@@ -58,7 +59,7 @@ from copy import deepcopy
 class RegularGrammar(object):
     """
     RegularGrammar represents a collection of formal regular expressions which
-    can be programatically transformed/compiled into a minmal DFA.
+    can be programatically compiled into a minmal DFA.
     """
 
     # Map internal representation of operators -> literals
@@ -99,7 +100,11 @@ class RegularGrammar(object):
         unsuccessful a value error will be thrown, otherwise the results can be
         queried through the API provided below.
 
-        Type: string x dict[string]string -> None | raise ValueError
+        Input Type:
+          name:        String
+          expressions: Dict[String, String]
+
+        Output Type: None | raise ValueError
         """
         if type(name) is not str:
             raise ValueError('Invalid Input: name must be a string')
@@ -145,57 +150,61 @@ class RegularGrammar(object):
 
     def name(self):
         """
-        Get the name of the Regular Grammar.
+        Query for the name of the grammar.
 
-        Type: None -> string
+        Output Type: String
         """
         return deepcopy(self._name)
 
     def expressions(self):
         """
-        Get the patterns recognized by the Regular Grammar.
+        Query for the patterns recognized by the grammar.
 
-        Type: None -> dict[string]string
+        Output Type: Dict[String, String]
         """
         return deepcopy(self._exprs)
 
     def states(self):
         """
-        Get the states in the grammars equivalent minimal DFA.
+        Query for states in the grammars equivalent minimal DFA.
 
-        Type: None -> set
+        Output Type: Set[String]
         """
         return deepcopy(self._states)
 
     def alphabet(self):
         """
-        Get the alphabet of characters recognized by the grammars DFA.
+        Query for alphabet of characters recognized by the grammars DFA.
 
-        Type: None -> set
+        Output Type: Set[String]
         """
         return deepcopy(self._alphas)
 
     def transitions(self):
         """
-        Get the state transitions defining the grammars DFA.
+        Query for the state transitions defining the grammars DFA.
 
-        Type: None -> dict, dict, list x list 
+        Output Type: Tuple[
+                           Dict[String, Int],
+                           Dict[String, Int],
+                           List[List[String]]
+                          ]
         """
         return deepcopy(self._deltas)
 
     def start(self):
         """
-        Get the start state of the grammars DFA.
+        Query for the start state of the grammars DFA.
 
-        Type: None -> string
+        Output Type: String
         """
         return deepcopy(self._start)
 
     def accepting(self):
         """
-        Get all accepting states of the grammars DFA.
+        Query for all accepting states of the grammars DFA.
 
-        Type: None -> set
+        Output Type: Set[String]
         """
         return deepcopy(self._finals)
 
@@ -210,8 +219,12 @@ class RegularGrammar(object):
           escaped escape -> escape
           escaped whitespace -> whitespace
 
-        Runtime: O(n) - linear to the length of expr
-        Type: string -> list | raise ValueError
+        Runtime: O(n) - linear to the length of expr.
+
+        Input Type:
+          expr: String
+
+        Output Type: List[String, Int] | raise ValueError
         """
         output = []
         escape = False
@@ -241,8 +254,12 @@ class RegularGrammar(object):
         Expand the internal representation of the expression so that
         character classes and ranges are eliminated.
 
-        Runtime: O(n) - linear to the length of expr
-        Type: list -> list | raise ValueError
+        Runtime: O(n) - linear to the length of expr.
+
+        Input Type:
+          expr: List[String, Int]
+
+        Output Type: List[String, Int] | raise ValueError
         """
         output, literals = [], []
         expansion, negation, prange = False, False, False
@@ -287,8 +304,12 @@ class RegularGrammar(object):
         Expand the internal representation of the expression so that
         concatentation is explicit throughout.
 
-        Runtime: O(n) - linear to the length of expr
-        Type: list -> list
+        Runtime: O(n) - linear to the length of expr.
+
+        Input Type:
+          expr: List[String, Int]
+
+        Output Type: List[String, Int]
         """
         output = []
         for elem in expr:
@@ -308,8 +329,12 @@ class RegularGrammar(object):
         Adapted from Dijkstra's Shunting yard algorithm which can be viewed
         @https://en.wikipedia.org/wiki/Shunting-yard_algorithm.
 
-        Runtime: O(n) - linear to the length of expr
-        Type: list -> list | raise ValueError
+        Runtime: O(n) - linear to the length of expr.
+
+        Input Type:
+          expr: List[String, Int]
+
+        Output Type: List[String, Int] | raise ValueError
         """
         stack, queue = [], []  # operators, output expression
 
@@ -346,8 +371,9 @@ class RegularGrammar(object):
         """
         Generate a new universally unique state name/label.
 
-        Runtime: O(1) - constant
-        Type: None -> string
+        Runtime: O(1) - constant.
+
+        Output Type: String
         """
         return str(uuid4())
 
@@ -362,8 +388,18 @@ class RegularGrammar(object):
         algorithms' by Bruce Watson,
         located @http://alexandria.tue.nl/extra1/wskrap/publichtml/9313452.pdf
 
-        Runtime: O(n) - linear to the length of expr
-        Type: list -> set x set x set x dict x string x string
+        Runtime: O(n) - linear to the length of expr.
+
+        Input Type:
+          expr: List[String, Int]
+
+        Output Type:
+          Set[String]
+          x Set[String]
+          x Set[Tuple[String, String, String]]
+          x Dict[String, Set[String]]
+          x String
+          x String
         """
         Q = set()   # states
         V = set()   # input symbols (alphabet)
@@ -441,8 +477,14 @@ class RegularGrammar(object):
         states q' which are reachable using only epsilon transitions, handling
         cycles appropriately.
 
-        Runtime: O(n) - linear in the number of epsilon transitions
-        Type: string x dict[string]set x dict[string]set -> set
+        Runtime: O(n) - linear in the number of epsilon transitions.
+
+        Input Type:
+          q:     String
+          E:     Dict[String, Set[String]]
+          cache: Dict[String, Set[String]]
+
+        Output Type: Set[String]
         """
         if q in cache:
             return cache[q]
@@ -465,21 +507,35 @@ class RegularGrammar(object):
         state are considered. This results in a minimized DFA with reguard to
         reachable states, but not with reguard to nondistinguishable states.
 
-        Runtime: O(2^n) - exponential in the number of states
-        Type: set x set x set x dict[string]set x string x string
-                -> set x set x set x string x set
+        Runtime: O(2^n) - exponential in the number of states.
+
+        Input Type:
+          eNFA: Tuple[
+                      Set[String],
+                      Set[String],
+                      Set[Tuple[String, String, String]],
+                      Dict[String, Set[String]],
+                      String,
+                      String
+                     ]
+
+        Output Type:
+          Set[Frozenset[String]]
+          x Set[String]
+          x Set[Tuple[Frozenset[String], String, Frozenset[String]]]
+          x Frozenset[String]
+          x Set[Frozenset[String]]
         """
         Q, V, T, E, S, F = eNFA
 
-        cache = {}
+        cache = dict()
         Sp = frozenset(self._e_closure(S, E, cache))
         Qp, Fp, Tp, explore = set(), set(), set(), set([Sp])
         while explore:
             q = explore.pop()  # DFA state; set of NFA states
             if q not in Qp:
                 Qp.add(q)
-                if F in q:
-                    Fp.add(q)
+                if F in q: Fp.add(q)
                 qps = {}
                 for t in T:
                     if t[0] in q:
@@ -490,7 +546,7 @@ class RegularGrammar(object):
                     explore.add(qp)
                     Tp.add((q, a, qp))
 
-        return frozenset(Qp), V, Tp, Sp, frozenset(Fp)
+        return Qp, V, Tp, Sp, Fp
 
     def _total(self, dfa):
         """
@@ -498,15 +554,32 @@ class RegularGrammar(object):
         sink/error state. All unspecified state transitions are then specified
         by adding a transition to the new sink/error state.
 
-        Runtime: O(n) - linear in the number of states and transitions
-        Type: set x set x set x string x set -> set x set x set x string x set
+        Runtime: O(n) - linear in the number of states and transitions.
+
+        Input Type:
+          dfa: Tuple[
+                     Set[Frozenset[String]],
+                     Set[String],
+                     Set[Tuple[Frozenset[String], String, Frozenset[String]]],
+                     Frozenset[String],
+                     Set[Frozenset[String]]
+                    ]
+
+        Output Type:
+          Set[Frozenset[String]]
+          x Set[String]
+          x Tuple[
+                  Dict[Frozenset[String], Int],
+                  Dict[String, Int],
+                  List[List[Frozenset[String]]]
+                 ]
+          x Frozenset[String]
+          x Set[Frozenset[String]]
         """
         Q, V, T, S, F = dfa
 
-        q_err = self._state()
-
-        if len(T) != len(Q) * len(V):
-            Q = Q | frozenset([q_err])
+        q_err = frozenset([self._state()])
+        if len(T) != len(Q) * len(V): Q.add(q_err)
 
         states = {v:k for k,v in enumerate(Q)}
         symbols = {v:k for k,v in enumerate(V)}
@@ -518,17 +591,43 @@ class RegularGrammar(object):
 
     def _Hopcroft(self, dfa):
         """
-        Minimize the DFA with reguard to nondistinguishable states using
+        Minimize the DFA with reguard to indistinguishable states using
         hopcrafts algorithm, which merges states together based on partition
         refinement.
 
-        Runtime: O(ns log n) - linear log (n=number states; s=alphabet size)
-        Type: set x set x set x set x set -> set x set x set x set x set
+        Runtime: O(ns log n) - linear log (n=number states; s=alphabet size).
+
+        Input Type:
+          dfa: Tuple[
+                     Set[Frozenset[String]],
+                     Set[String],
+                     Tuple[
+                           Dict[Frozenset[String], Int],
+                           Dict[String, Int],
+                           List[List[Frozenset[String]]]
+                          ],
+                     Frozenset[String],
+                     Set[Frozenset[String]]
+                    ]
+
+
+        Output Type:
+          Set[Set[Frozenset[Frozenset[String]]]]
+          x Set[String]
+          x Tuple[
+                  Dict[Set[Frozenset[Frozenset[String]]], Int],
+                  Dict[String, Int],
+                  List[List[Set[Frozenset[Frozenset[String]]]]]
+                 ]
+          x Set[Frozenset[Frozenset[String]]]
+          x Set[Set[Frozenset[Frozenset[String]]]]
         """
         Q, V, (states, symbols, T), S, F = dfa
+        Q, F = frozenset(Q), frozenset(F)
 
         P = set([F, Q - F]) - set([frozenset()])  # if Q - F was empty
         W = set([F])
+
         while W:
             A = W.pop()
             for vIdx in symbols.values():
@@ -580,8 +679,27 @@ class RegularGrammar(object):
         Perform an alpha rename on all DFA states to simplify the
         representation which the end user will consume.
 
-        Runtime: O(n) - linear in the number of states and transitions
-        Type: set x set x set x string x set -> set x set x set x string x set
+        Runtime: O(n) - linear in the number of states and transitions.
+
+        Input Type:
+          dfa: Tuple[
+                     Set[Set[Frozenset[Frozenset[String]]]],
+                     Set[String],
+                     Tuple[
+                           Dict[Set[Frozenset[Frozenset[String]]], Int],
+                           Dict[String,  Int],
+                           List[List[Set[Frozenset[Frozenset[String]]]]]
+                          ],
+                     Set[Frozenset[Frozenset[String]]],
+                     Set[Set[Frozenset[Frozenset[String]]]]
+                    ]
+
+        Output Type:
+          Set[String]
+          x Set[String]
+          x Tuple[Dict[String, Int], Dict[String, Int], List[List[String]]]
+          x String
+          x Set[String]
         """
         Q, V, (states, symbols, table), S, F = dfa
         rename = {q: self._state() for q in Q}
@@ -590,7 +708,6 @@ class RegularGrammar(object):
         table = [[rename[col] for col in row] for row in table]
         Fp = {rename[f] for f in F}
         Sp = rename[S]
-
         return Qp, V, (states, symbols, table), Sp, Fp
 
 
