@@ -10,6 +10,8 @@
 
  The final DFA produced will have a complete delta (transition) function and
  will include an extra sink/error state to absorb all invalid input if needed.
+ It will also include a dictionary mapping types (i.e. named pattern expression)
+ to there corresponding final state(s) in the DFA.
 
  Regular expressions must be specified following these guidelines:
     - only printable ascii characters (33-126) and spaces are supported
@@ -100,7 +102,7 @@ class RegularGrammar(object):
         unsuccessful a value error will be thrown, otherwise the results can be
         queried through the API provided below.
 
-        Input Type:
+        Input Types:
           name:        String
           expressions: Dict[String, String]
 
@@ -114,9 +116,8 @@ class RegularGrammar(object):
         if type(expressions) is not dict:
             raise ValueError('Invalid Input: expressions must be a dictionary')
 
-        _pattern = ''
+        NFAs = []
         self._exprs = dict()
-
         for name, pattern in expressions.items():
             if type(name) is not str:
                 raise ValueError('Invalid Input: name must be a string')
@@ -125,28 +126,23 @@ class RegularGrammar(object):
                 raise ValueError('Invalid Input: pattern must be a string')
 
             self._exprs[name] = pattern
-            _pattern += '|(' + pattern + ')'
 
-        _pattern = _pattern[1:]
+            pattern = self._scan(pattern)
+            pattern = self._expand_char_class_range(pattern)
+            pattern = self._expand_concat(pattern)
+            pattern = self._shunt(pattern)
 
-        expr = self._scan(_pattern)
-        expr = self._expand_char_class_range(expr)
-        expr = self._expand_concat(expr)
-        expr = self._shunt(expr)
+            NFAs.append((self._NFA(name, pattern)))
 
-        nfa = self._NFA(expr)
-
-        dfa = self._DFA(nfa)
-        dfa = self._total(dfa)
-        dfa = self._Hopcroft(dfa)
-
-        Q, V, T, S, F = self._alpha(dfa)
+        Q, V, T, S, F, G = self._total(*self._DFA(*self._merge_NFAs(NFAs)))
+        Q, V, T, S, F, G = self._alpha(*self._Hopcroft(Q, V, T, S, F, G))
 
         self._states = Q
         self._alphas = V
         self._deltas = T
         self._start = S
         self._finals = F
+        self._types = G
 
     def name(self):
         """
@@ -207,6 +203,15 @@ class RegularGrammar(object):
         Output Type: Set[String]
         """
         return deepcopy(self._finals)
+
+    def types(self):
+        """
+        Query for the dictionary which labels all named pattern expressions
+        (types) with there corresponding associated final state(s).
+
+        Output Type: Dict[String, Set[String]]
+        """
+        return deepcopy(self._types)
 
     def _scan(self, expr):
         """
@@ -377,7 +382,7 @@ class RegularGrammar(object):
         """
         return str(uuid4())
 
-    def _NFA(self, expr):
+    def _NFA(self, type, expr):
         """
         Attempt to convert an internal representation of a regular expression
         in RPN to an epsilon NFA. Operators handled: union |, kleene star *,
@@ -391,15 +396,17 @@ class RegularGrammar(object):
         Runtime: O(n) - linear to the length of expr.
 
         Input Type:
+          type: String
           expr: List[String, Int]
 
-        Output Type:
+        Output Types:
           Set[String]
           x Set[String]
           x Set[Tuple[String, String, String]]
           x Dict[String, Set[String]]
           x String
           x String
+          x Dict[String, String]
         """
         Q = set()   # states
         V = set()   # input symbols (alphabet)
@@ -407,6 +414,7 @@ class RegularGrammar(object):
         E = dict()  # e-transition relation: E in P(Q x Q)
         S = None    # start state S in Q
         F = None    # accepting state F in Q
+        G = dict()  # map type to the final state(s)
 
         def e_update(s, f):
             E[s] = E.get(s, set())
@@ -467,7 +475,53 @@ class RegularGrammar(object):
         if len(stk) != 1:
             raise ValueError('Error: invalid expression')
         S, F = stk.pop()
-        return Q, V, T, E, S, F
+        G[type] = F
+        return Q, V, T, E, S, F, G
+
+    def _merge_NFAs(self, NFAs):
+        """
+        Merge multiple NFAs with a new single start state containing epsilon
+        transitions to each individual machine.
+
+        Runtime: O(n) - linear in the number of NFA's.
+
+        Input Type:
+          NFAs: List[
+                     Tuple[
+                           Set[String],
+                           Set[String],
+                           Set[Tuple[String, String, String]],
+                           Dict[String, Set[String]],
+                           String,
+                           String,
+                           Dict[String, String]
+                          ]
+                    ]
+
+        Output Type:
+          Set[String]
+          x Set[String]
+          x Set[Tuple[String, String, String]]
+          x Dict[String, Set[String]]
+          x String
+          x String
+          x Dict[String, String]
+        """
+        S = self._state()
+        Q, V, T, E, S, F, G = set(), set(), set(), dict(), S, set(), dict()
+        E[S] = set()
+        for NFA in NFAs:
+            q, v, t, e, s, f, g = NFA
+            Q.update(q)
+            V.update(v)
+            T.update(t)
+            E[S].add(s)
+            for state, etransitions in e.items():
+                E[state] = E.get(state, set()) | etransitions
+            F.add(f)
+            for type, state in g.items():
+                G[type] = state
+        return Q, V, T, E, S, F, G
 
     def _e_closure(self, q, E, cache):
         """
@@ -479,7 +533,7 @@ class RegularGrammar(object):
 
         Runtime: O(n) - linear in the number of epsilon transitions.
 
-        Input Type:
+        Input Types:
           q:     String
           E:     Dict[String, Set[String]]
           cache: Dict[String, Set[String]]
@@ -500,7 +554,7 @@ class RegularGrammar(object):
 
         return closure
 
-    def _DFA(self, eNFA):
+    def _DFA(self, Q, V, T, E, S, F, G):
         """
         Convert the epsilon NFA to a DFA using subset construction and
         e-closure conversion. Only states wich are reachable from the start
@@ -509,33 +563,31 @@ class RegularGrammar(object):
 
         Runtime: O(2^n) - exponential in the number of states.
 
-        Input Type:
-          eNFA: Tuple[
-                      Set[String],
-                      Set[String],
-                      Set[Tuple[String, String, String]],
-                      Dict[String, Set[String]],
-                      String,
-                      String
-                     ]
+        Input Types:
+          Q: Set[String]
+          V: Set[String]
+          T: Set[Tuple[String, String, String]]
+          E: Dict[String, Set[String]]
+          S: String
+          F: Set[String]
+          G: Dict[String, String]
 
-        Output Type:
+        Output Types:
           Set[Frozenset[String]]
           x Set[String]
           x Set[Tuple[Frozenset[String], String, Frozenset[String]]]
           x Frozenset[String]
           x Set[Frozenset[String]]
+          x Dict[String, Set[Frozenset[String]]]
         """
-        Q, V, T, E, S, F = eNFA
-
-        cache = dict()
+        cache, Gp = dict(), dict()
         Sp = frozenset(self._e_closure(S, E, cache))
         Qp, Fp, Tp, explore = set(), set(), set(), set([Sp])
         while explore:
             q = explore.pop()  # DFA state; set of NFA states
             if q not in Qp:
                 Qp.add(q)
-                if F in q: Fp.add(q)
+                if F & q: Fp.add(q)
                 qps = {}
                 for t in T:
                     if t[0] in q:
@@ -546,9 +598,14 @@ class RegularGrammar(object):
                     explore.add(qp)
                     Tp.add((q, a, qp))
 
-        return Qp, V, Tp, Sp, Fp
+        for type, NFA_final in G.items():
+            for DFA_final in Fp:
+                if NFA_final in DFA_final:
+                    Gp[type] = Gp.get(type, set()) | set([DFA_final])
 
-    def _total(self, dfa):
+        return Qp, V, Tp, Sp, Fp, Gp
+
+    def _total(self, Q, V, T, S, F, G):
         """
         Make the DFA's delta function total, if not already, by adding a
         sink/error state. All unspecified state transitions are then specified
@@ -556,16 +613,15 @@ class RegularGrammar(object):
 
         Runtime: O(n) - linear in the number of states and transitions.
 
-        Input Type:
-          dfa: Tuple[
-                     Set[Frozenset[String]],
-                     Set[String],
-                     Set[Tuple[Frozenset[String], String, Frozenset[String]]],
-                     Frozenset[String],
-                     Set[Frozenset[String]]
-                    ]
+        Input Types:
+          Q: Set[Frozenset[String]]
+          V: Set[String]
+          T: Set[Tuple[Frozenset[String], String, Frozenset[String]]]
+          S: Frozenset[String]
+          F: Set[Frozenset[String]
+          G: Dict[String, Set[Frozenset[String]]]
 
-        Output Type:
+        Output Types:
           Set[Frozenset[String]]
           x Set[String]
           x Tuple[
@@ -575,9 +631,8 @@ class RegularGrammar(object):
                  ]
           x Frozenset[String]
           x Set[Frozenset[String]]
+          x Dict[String, Set[Frozenset[String]]]
         """
-        Q, V, T, S, F = dfa
-
         q_err = frozenset([self._state()])
         if len(T) != len(Q) * len(V): Q.add(q_err)
 
@@ -587,9 +642,9 @@ class RegularGrammar(object):
         for (state, symbol, dest) in T:
             table[symbols[symbol]][states[state]] = dest
 
-        return Q, V, (states, symbols, table), S, F
+        return Q, V, (states, symbols, table), S, F, G
 
-    def _Hopcroft(self, dfa):
+    def _Hopcroft(self, Q, V, T, S, F, G):
         """
         Minimize the DFA with reguard to indistinguishable states using
         hopcrafts algorithm, which merges states together based on partition
@@ -597,21 +652,19 @@ class RegularGrammar(object):
 
         Runtime: O(ns log n) - linear log (n=number states; s=alphabet size).
 
-        Input Type:
-          dfa: Tuple[
-                     Set[Frozenset[String]],
-                     Set[String],
-                     Tuple[
-                           Dict[Frozenset[String], Int],
-                           Dict[String, Int],
-                           List[List[Frozenset[String]]]
-                          ],
-                     Frozenset[String],
-                     Set[Frozenset[String]]
-                    ]
+        Input Types:
+          Q: Set[Frozenset[String]]
+          V: Set[String]
+          T: Tuple[
+                   Dict[Frozenset[String], Int],
+                   Dict[String, Int],
+                   List[List[Frozenset[String]]]
+                  ]
+          S: Frozenset[String]
+          F: Set[Frozenset[String]]
+          G: Dict[String, Set[Frozenset[String]]]
 
-
-        Output Type:
+        Output Types:
           Set[Set[Frozenset[Frozenset[String]]]]
           x Set[String]
           x Tuple[
@@ -621,8 +674,9 @@ class RegularGrammar(object):
                  ]
           x Set[Frozenset[Frozenset[String]]]
           x Set[Set[Frozenset[Frozenset[String]]]]
+          x Dict[String, Set[Set[Frozenset[Frozenset[String]]]]
         """
-        Q, V, (states, symbols, T), S, F = dfa
+        (states, symbols, T) = T
         Q, F = frozenset(Q), frozenset(F)
 
         P = set([F, Q - F]) - set([frozenset()])  # if Q - F was empty
@@ -672,43 +726,51 @@ class RegularGrammar(object):
 
         Fp = {part for part in P if part & F}
 
-        return P, V, (_states, symbols, Tp), Sp, Fp
+        Gp = dict()
+        for type, DFA_finals in G.items():
+            for DFA_final in DFA_finals:
+                for DFA_merged_final in Fp:
+                    if DFA_final in DFA_merged_final:
+                        Gp[type] = Gp.get(type, set()) | set([DFA_merged_final])
 
-    def _alpha(self, dfa):
+        return P, V, (_states, symbols, Tp), Sp, Fp, Gp
+
+    def _alpha(self, Q, V, T, S, F, G):
         """
         Perform an alpha rename on all DFA states to simplify the
         representation which the end user will consume.
 
         Runtime: O(n) - linear in the number of states and transitions.
 
-        Input Type:
-          dfa: Tuple[
-                     Set[Set[Frozenset[Frozenset[String]]]],
-                     Set[String],
-                     Tuple[
-                           Dict[Set[Frozenset[Frozenset[String]]], Int],
-                           Dict[String,  Int],
-                           List[List[Set[Frozenset[Frozenset[String]]]]]
-                          ],
-                     Set[Frozenset[Frozenset[String]]],
-                     Set[Set[Frozenset[Frozenset[String]]]]
-                    ]
+        Input Types:
+          Q: Set[Set[Frozenset[Frozenset[String]]]]
+          V: Set[String]
+          T: Tuple[
+                   Dict[Set[Frozenset[Frozenset[String]]], Int],
+                   Dict[String,  Int],
+                   List[List[Set[Frozenset[Frozenset[String]]]]]
+                  ]
+          S: Set[Frozenset[Frozenset[String]]]
+          F: Set[Set[Frozenset[Frozenset[String]]]]
+          G: Dict[String, Set[Set[Frozenset[Frozenset[String]]]]]
 
-        Output Type:
+        Output Types:
           Set[String]
           x Set[String]
           x Tuple[Dict[String, Int], Dict[String, Int], List[List[String]]]
           x String
           x Set[String]
+          x Dict[String, Set[String]]
         """
-        Q, V, (states, symbols, table), S, F = dfa
         rename = {q: self._state() for q in Q}
         Qp = set(rename.values())
+        (states, symbols, table) = T
         states = {rename[state]:idx for state,idx in states.items()}
-        table = [[rename[col] for col in row] for row in table]
-        Fp = {rename[f] for f in F}
+        Tp = (states, symbols, [[rename[col] for col in row] for row in table])
         Sp = rename[S]
-        return Qp, V, (states, symbols, table), Sp, Fp
+        Fp = {rename[f] for f in F}
+        Gp = {g:set([rename[s] for s in states]) for g,states in G.items()}
+        return Qp, V, Tp, Sp, Fp, Gp
 
 
 if __name__ == '__main__':
@@ -728,7 +790,10 @@ if __name__ == '__main__':
                     ['a', 'A', 'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['A'])
+                'F': set(['A']),
+                'G': {
+                  'alpha': set(['A'])
+                }
             }
         },
         {
@@ -746,7 +811,10 @@ if __name__ == '__main__':
                     ['b', 'Err', 'B',   'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['B'])
+                'F': set(['B']),
+                'G': {
+                  'concat': set(['B'])
+                }
             }
         },
         {
@@ -764,7 +832,10 @@ if __name__ == '__main__':
                     ['b', 'AB', 'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['AB'])
+                'F': set(['AB']),
+                'G': {
+                  'alt': set(['AB'])
+                }
             }
         },
         {
@@ -781,7 +852,10 @@ if __name__ == '__main__':
                     ['a', 'A']
                 ],
                 'S': 'A',
-                'F': set(['A'])
+                'F': set(['A']),
+                'G': {
+                  'star': set(['A'])
+                }
             }
         },
         {
@@ -798,7 +872,10 @@ if __name__ == '__main__':
                     ['a', 'A', 'A']
                 ],
                 'S': 'S',
-                'F': set(['A'])
+                'F': set(['A']),
+                'G': {
+                  'plus': set(['A'])
+                }
             }
         },
         {
@@ -815,7 +892,10 @@ if __name__ == '__main__':
                     ['a', 'A', 'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['S', 'A'])
+                'F': set(['S', 'A']),
+                'G': {
+                  'maybe': set(['S', 'A'])
+                }
             }
         },
         {
@@ -833,7 +913,10 @@ if __name__ == '__main__':
                     ['b', 'AB*']
                 ],
                 'S': 'AB*',
-                'F': set(['AB*'])
+                'F': set(['AB*']),
+                'G': {
+                  'group': set(['AB*'])
+                }
             }
         },
         {
@@ -851,7 +934,10 @@ if __name__ == '__main__':
                     ['b', 'B', 'Err', 'B',   'Err']
                 ],
                 'S': 'S',
-                'F': set(['S', 'A', 'B'])
+                'F': set(['S', 'A', 'B']),
+                'G': {
+                  'assoc': set(['S', 'A', 'B'])
+                }
             }
         },
         {
@@ -886,7 +972,19 @@ if __name__ == '__main__':
                     [']',  'F', 'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['F'])
+                'F': set(['F']),
+                'G': {
+                    'concat': set(['F']),
+                    'alt': set(['F']),
+                    'star': set(['F']),
+                    'question': set(['F']),
+                    'plus': set(['F']),
+                    'slash': set(['F']),
+                    'lparen': set(['F']),
+                    'rparen': set(['F']),
+                    'lbracket': set(['F']),
+                    'rbracket': set(['F'])
+                }
             }
         },
         {
@@ -907,7 +1005,13 @@ if __name__ == '__main__':
                     ['b', 'Err', 'B',   'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['B'])
+                'F': set(['B']),
+                'G': {
+                    'permutation1': set(['B']),
+                    'permutation2': set(['B']),
+                    'permutation3': set(['B']),
+                    'permutation4': set(['B'])
+                }
             }
         },
         {
@@ -928,7 +1032,13 @@ if __name__ == '__main__':
                     ['b', 'B', 'Err', 'Err']
                 ],
                 'S': 'A',
-                'F': set(['B'])
+                'F': set(['B']),
+                'G': {
+                    'permutation1': set(['B']),
+                    'permutation2': set(['B']),
+                    'permutation3': set(['B']),
+                    'permutation4': set(['B'])
+                }
             }
         },
         {
@@ -949,7 +1059,13 @@ if __name__ == '__main__':
                     ['b', 'Err', 'B', 'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['B'])
+                'F': set(['B']),
+                'G': {
+                    'permutation1': set(['B']),
+                    'permutation2': set(['B']),
+                    'permutation3': set(['B']),
+                    'permutation4': set(['B'])
+                }
             }
         },
         {
@@ -970,7 +1086,13 @@ if __name__ == '__main__':
                     ['b', 'B', 'B',   'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['B'])
+                'F': set(['B']),
+                'G': {
+                    'permutation1': set(['B']),
+                    'permutation2': set(['B']),
+                    'permutation3': set(['B']),
+                    'permutation4': set(['B'])
+                }
             }
         },
         {
@@ -991,7 +1113,10 @@ if __name__ == '__main__':
                     ['e', 'Err', 'Err', 'Err', 'Err', 'E',   'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['E'])
+                'F': set(['E']),
+                'G': {
+                    'concat': set(['E'])
+                }
             }
         },
         {
@@ -1012,6 +1137,9 @@ if __name__ == '__main__':
                 ],
                 'S': 'AC',
                 'F': set(['AC', 'DE']),
+                'G': {
+                    'random': set(['AC', 'DE'])
+                }
             }
         },
         {
@@ -1029,7 +1157,10 @@ if __name__ == '__main__':
                     ['b', 'B',  'B',   'Err']
                 ],
                 'S': 'A',
-                'F': set(['A', 'B'])
+                'F': set(['A', 'B']),
+                'G': {
+                    'random': set(['A', 'B'])
+                }
             }
         },
         {
@@ -1050,7 +1181,10 @@ if __name__ == '__main__':
                     ['e', 'Err', 'Err', 'Err', 'Err', 'Err', 'F',   'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['F', 'B'])
+                'F': set(['F', 'B']),
+                'G': {
+                    'random': set(['F', 'B'])
+                }
             }
         },
         {
@@ -1071,7 +1205,10 @@ if __name__ == '__main__':
                     ['r', 'Err', 'Err', 'Err', 'Err', 'Err', 'BAR', 'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['BAR'])
+                'F': set(['BAR']),
+                'G': {
+                    'random': set(['BAR'])
+                }
             }
         },
         {
@@ -1090,7 +1227,10 @@ if __name__ == '__main__':
                     ['c', 'F',   'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['F'])
+                'F': set(['F']),
+                'G': {
+                    'range': set(['F'])
+                }
             }
         },
         {
@@ -1109,7 +1249,10 @@ if __name__ == '__main__':
                     ['c', 'F',   'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['F'])
+                'F': set(['F']),
+                'G': {
+                    'range': set(['F'])
+                }
             }
         },
         {
@@ -1129,7 +1272,10 @@ if __name__ == '__main__':
                     ['a', 'F',   'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['F'])
+                'F': set(['F']),
+                'G': {
+                    'range': set(['F'])
+                }
             }
         },
         {
@@ -1151,7 +1297,10 @@ if __name__ == '__main__':
                     ['\v', 'S']
                 ],
                 'S': 'S',
-                'F': set(['S'])
+                'F': set(['S']),
+                'G': {
+                    'range': set(['S'])
+                }
             }
         },
         {
@@ -1170,7 +1319,10 @@ if __name__ == '__main__':
                     ['c', 'F',   'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['F'])
+                'F': set(['F']),
+                'G': {
+                    'class': set(['F'])
+                }
             }
         },
         {
@@ -1187,7 +1339,10 @@ if __name__ == '__main__':
                     ['a', 'F',   'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['F'])
+                'F': set(['F']),
+                'G': {
+                    'class': set(['F'])
+                }
             }
         },
         {
@@ -1204,7 +1359,10 @@ if __name__ == '__main__':
                     [']', 'S']
                 ],
                 'S': 'S',
-                'F': set(['S'])
+                'F': set(['S']),
+                'G': {
+                    'class': set(['S'])
+                }
             }
         },
         {
@@ -1226,7 +1384,10 @@ if __name__ == '__main__':
                     ['\v', 'S']
                 ],
                 'S': 'S',
-                'F': set(['S'])
+                'F': set(['S']),
+                'G': {
+                    'class': set(['S'])
+                }
             }
         },
         {
@@ -1247,7 +1408,10 @@ if __name__ == '__main__':
                     ['e', 'S']
                 ],
                 'S': 'S',
-                'F': set(['S'])
+                'F': set(['S']),
+                'G': {
+                    'class': set(['S'])
+                }
             }
         },
         {
@@ -1268,7 +1432,10 @@ if __name__ == '__main__':
                     ['e', 'S']
                 ],
                 'S': 'S',
-                'F': set(['S'])
+                'F': set(['S']),
+                'G': {
+                    'class': set(['S'])
+                }
             }
         },
         {
@@ -1296,7 +1463,10 @@ if __name__ == '__main__':
                     ['9', 'Int',  'Err',  'Int',  'Int', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['Zero', 'Int'])
+                'F': set(['Zero', 'Int']),
+                'G': {
+                    'int': set(['Zero', 'Int'])
+                }
             }
         },
         {
@@ -1327,7 +1497,10 @@ if __name__ == '__main__':
                     ['e', 'Err',       'Sigexp',    'Err',     'Sigexp',       'Err',     'Err',          'Err',     'Err',       'Err']
                 ],
                 'S': 'S',
-                'F': set(['WholePart', 'ExpPart', 'FractionPart'])
+                'F': set(['WholePart', 'ExpPart', 'FractionPart']),
+                'G': {
+                    'float': set(['WholePart', 'ExpPart', 'FractionPart'])
+                }
             }
         },
         {
@@ -1349,7 +1522,10 @@ if __name__ == '__main__':
                     ['\v', 'S']
                 ],
                 'S': 'S',
-                'F': set(['S'])
+                'F': set(['S']),
+                'G': {
+                    'white': set(['S'])
+                }
             }
         },
         {
@@ -1373,7 +1549,10 @@ if __name__ == '__main__':
                     ['s', 'Err', 'Err', 'Err', 'Err', 'Err', 'US',  'Err', 'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['E'])
+                'F': set(['E']),
+                'G': {
+                    'bool': set(['E'])
+                }
             }
         },
         {
@@ -1489,7 +1668,10 @@ if __name__ == '__main__':
                     ['~',  'Err', '_', 'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['F'])
+                'F': set(['F']),
+                'G': {
+                    'comment': set(['F'])
+                }
             }
         },
         {
@@ -1605,7 +1787,10 @@ if __name__ == '__main__':
                     ['~',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR']
                 ],
                 'S': 'BEGIN',
-                'F': set(['END'])
+                'F': set(['END']),
+                'G': {
+                    'comment': set(['END'])
+                }
             }
         },
         {
@@ -1721,7 +1906,10 @@ if __name__ == '__main__':
                     ['~',  'Err', '_2', 'Err', 'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['F'])
+                'F': set(['F']),
+                'G': {
+                    'char': set(['F'])
+                }
             }
         },
         {
@@ -1837,7 +2025,10 @@ if __name__ == '__main__':
                     ['~',  'Err', '_', 'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['F'])
+                'F': set(['F']),
+                'G': {
+                    'str': set(['F'])
+                }
             }
         },
         {
@@ -1916,7 +2107,10 @@ if __name__ == '__main__':
                     ['_',  'DigitOrChar', 'DigitOrChar', 'Err']
                 ],
                 'S': 'Char',
-                'F': set(['DigitOrChar'])
+                'F': set(['DigitOrChar']),
+                'G': {
+                    'id': set(['DigitOrChar'])
+                }
             }
         },
         {
@@ -2089,6 +2283,10 @@ if __name__ == '__main__':
         if len(F) != len(_DFA['F']):
             raise ValueError('Error: Incorrect number of finish states')
 
+        G = grammar.types()
+        if len(G) != len(_DFA['G']):
+            raise ValueError('Error: Incorrect number of types')
+
         state, symbol, T = grammar.transitions()
         if len(T) != len(_DFA['T'])-1 or \
            (T and len(T[0]) != len(_DFA['T'][0])-1):
@@ -2109,6 +2307,7 @@ if __name__ == '__main__':
         for _map in (dict(zip(Q, perm)) for perm in permutations(_Q, len(_Q))):
             if _map[S] == _DFA['S'] and \
                all(map(lambda f: _map[f] in _DFA['F'], F)) and \
+               all(map(lambda (t,states): {_map[s] for s in states} == _DFA['G'].get(t, set()), G.items())) and \
                all(map(lambda v: all(map(lambda q: _map[T[symbol[v]][state[q]]] == _T[_symbol[v]][_state[_map[q]]], Q)) , V)):
                 found = True
                 break
