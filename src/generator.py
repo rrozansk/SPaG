@@ -4,8 +4,8 @@ parser and/or scanner used for code generation. Each targeted language for
 generation should be implemented as a subclass which only needs to override
 the output method.
 """
-import scanner as scan
-import parser as parse
+from . import scanner as scan
+from . import parser as parse
 
 
 class Generator(object):

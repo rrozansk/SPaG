@@ -28,9 +28,9 @@ src/{scanner, parser}.py.
 CLI.add_argument('-v', '--version', action='version',
                  version='Lexer/Parser Generator v1.0',
                  help='version information')
-CLI.add_argument('-s', '--scanner', action='store', type=file,
+CLI.add_argument('-s', '--scanner', action='store', type=open,
                  help='file containing scanner name and type/token pairs')
-CLI.add_argument('-p', '--parser', action='store', type=file,
+CLI.add_argument('-p', '--parser', action='store', type=open,
                  help='file containing parser name and LL(1) BNF grammar')
 CLI.add_argument('-o', '--output', action='store', required=True, type=str,
                  choices=GENERATORS.keys(),
@@ -64,7 +64,7 @@ if ARGS['scanner'] is not None:
         SCANNER = scanner.RegularGrammar(NAME, TOKENS)
         GENERATOR.set_scanner(SCANNER)
     except ValueError as e:
-        print 'Scanner creation failed\n', e
+        print('Scanner creation failed\n', e)
 
 if ARGS['parser'] is not None:
     NAME = None
@@ -95,7 +95,7 @@ if ARGS['parser'] is not None:
         PARSER = parser.ContextFreeGrammar(NAME, PRODUCTIONS, START)
         GENERATOR.set_parser(PARSER)
     except ValueError as e:
-        print 'Parser creation failed\n', e
+        print('Parser creation failed\n', e)
 
 if not GENERATOR.get_parser() and not GENERATOR.get_scanner():
     raise ValueError('Error: Must provide atleast a scanner or a parser')

@@ -2307,7 +2307,7 @@ if __name__ == '__main__':
         for _map in (dict(zip(Q, perm)) for perm in permutations(_Q, len(_Q))):
             if _map[S] == _DFA['S'] and \
                all(map(lambda f: _map[f] in _DFA['F'], F)) and \
-               all(map(lambda (t,states): {_map[s] for s in states} == _DFA['G'].get(t, set()), G.items())) and \
+               all(map(lambda elem: {_map[s] for s in elem[1]} == _DFA['G'].get(elem[0], set()), G.items())) and \
                all(map(lambda v: all(map(lambda q: _map[T[symbol[v]][state[q]]] == _T[_symbol[v]][_state[_map[q]]], Q)) , V)):
                 found = True
                 break
