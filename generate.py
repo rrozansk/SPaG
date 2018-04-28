@@ -5,20 +5,22 @@ for help/information about [in/out]put run the following at the command line:
 
  $ python generate.py --help
 """
+from argparse import ArgumentParser
+from importlib import import_module
+
 import src.scanner as scanner
 import src.parser as parser
+import src.generators
 
-from src.generators import *
+GENERATORS = {}
+for module in src.generators.__all__:
+  generator = import_module('src.generators.' + module)
+  generator = getattr(generator, module.capitalize(), None)
+  if not generator:
+      raise ValueError('Error: Expected generator not found: ', module)
+  GENERATORS[module] = generator
 
-import argparse
-
-GENERATORS = {
-  "c":      c.C,
-  "go":     go.Go,
-  "python": python.Python
-}
-
-CLI = argparse.ArgumentParser(description='''
+CLI = ArgumentParser(description='''
 Simple CLI (Command Line Interface) program to generate lexer(s) and/or
 parser(s) for a given input specification. For information on data input,
 capabilities, limitation and more see the README or have a look at
