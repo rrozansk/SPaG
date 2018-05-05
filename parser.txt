@@ -1,4 +1,4 @@
-parse_ini
+ini
 
 <Ini>
 

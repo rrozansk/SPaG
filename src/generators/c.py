@@ -36,144 +36,170 @@ class C(generator.Generator):
 
         return _name
 
-    def _generate_comment_block_file_header(self, filename):
+    def _generate_file_header(self, filename, author, source, message, libs):
         time = datetime.datetime.utcnow().isoformat("T") + "Z"
-        return (
-                "/******************************************************************************\n"
-                " * File:    {0: <66}*\n"
-                " * Author:  **AUTO GENERATED**                                                *\n"
-                " * Created: {1: <66}*\n"
-                " * Archive: https://github.com/rrozansk/Scanner-Parser-Generator              *\n"
-                " *                                                                            *\n"
-                " *                WARNING!! AUTO GENERATED FILE, DO NOT EDIT!                 *\n"
-                " ******************************************************************************/\n"
-               ).format(filename, time)
+        libs = ['#include <{0}.h>'.format(lib) for lib in libs]
+        return """\
+/******************************************************************************
+ * File:    {0: <66}*
+ * Author:  {1: <66}*
+ * Created: {2: <66}*
+ * Archive: {3: <66}*
+ *                                                                            *
+ *{4: ^76}*
+ ******************************************************************************/
 
-    def _generate_comment_block_named_header(self, name):
-        return (
-                "/******************************************************************************\n"
-                " *{0: ^76}*\n".format(name) +
-                " ******************************************************************************/\n"
-               )
+{6}{5}
 
-    def _encode_dfa(self):
-        return "" # TODO: graph encoded as GOTOs
+""".format(filename, author, time, source, message,
+           '\n'.join(libs), self._generate_section_header("imports"))
 
-    def _encode_bnf(self):
-        return "" # TODO: graph encoded as GOTOs
+    def _generate_section_header(self, name):
+        return """\
+/******************************************************************************
+ *{0: ^76}*
+ ******************************************************************************/
+""".format(name.upper())
 
-    def _output_header(self, filename):
-        """
-        Generate the c header file (.h).
-        """
-        header = self._generate_comment_block_file_header(filename+".h")
-        header += "#include <stdio.h>\n\n"
 
-        if self._scanner is not None:
-            scan_func = self._sanatize(self._scanner.name())
-            token_rows = ""
-            for name, pattern in self._scanner.expressions().items():
-                token_rows += "// {0: <27}{1: <48}\n".format(name.upper(), pattern)
-            header += (
-                       "// Token's abstract over the character input stream.\n"
-                       "typedef struct token token_t;\n"
-                       "\n"
-                       "// Query for the string representation of the token.\n"
-                       "char *text(token_t token);\n"
-                       "\n"
-                       "// Query for the file in which the token was read.\n"
-                       "char *source(token_t token);\n"
-                       "\n"
-                       "// Query for the starting line on which the token was read.\n"
-                       "unsigned long line(token_t token);\n"
-                       "\n"
-                       "// Query for the starting column on which the token was read.\n"
-                       "unsigned long column(token_t token);\n"
-                       "\n"
-                       "// Query for the tokens associated type.\n"
-                       "unsigned int type(token_t token);\n"
-                       "\n"
-                       + self._generate_comment_block_named_header("::TOKENS::")
-                       + token_rows +
-                       "\n"
-                       "// Attempt to scan a token from the file. 1 if successful, otherwise 0.\n"
-                       "// If failure occurs the token will still contain the relevant details of the\n"
-                       "// unrecognized token except for its type.\n"
-                       "int {0}(FILE *f, token_t *token);\n".format(scan_func)
-                     )
+    def _generate_token_api(self, name):
+        types = []
+        for token_name, pattern in self._scanner.expressions().items():
+            types.append('  {0: <23} // {1}'.format(token_name.upper()+",", pattern))
+        return """\
+{2}
+// Token's abstract over the character input stream.
+typedef struct {0}_token {0}_token_t;
 
-        if self._parser is not None:
-            parse_func = self._sanatize(self._parser.name())
-            start_production = "// Start production ::= " + self._parser.start() + "\n"
-            production_rules = ""
-            for nonterm, rule in self._parser.rules():
-                production_rules += "// {0: <30} ::= {1}\n".format(nonterm, " ".join(rule))
-            header += (
-                       # TODO: define AST API
-                       "\n"
-                       + self._generate_comment_block_named_header("::BNF GRAMMMAR::")
-                       + start_production +
-                       "\n"
-                       + production_rules +
-                       "\n"
-                       "// Attempt to parse into an AST of tokens. 1 if successful, otherwise 0.\n"
-                       "int {0}(FILE *f);\n".format(parse_func)
-                      )
+// Token's are associated to one of the types below.
+typedef enum {{
+{1}
+}} {0}_token_type_t;
 
-        return header
+// Query for the tokens associated type.
+{0}_token_type_t type({0}_token_t *{0}_token);
 
-    def _output_source(self, filename):
-        """
-        Generate the c source file (.c).
-        """
-        source = self._generate_comment_block_file_header(filename+".c")
-        source += "#include <stdio.h>\n\n"
+// Query for the string representation of the token.
+const char *text({0}_token_t *{0}_token);
 
-        if self._scanner is not None:
-            scan_func = self._sanatize(self._scanner.name())
+// Query for the file in which the token was read.
+const char *source({0}_token_t *{0}_token);
 
-            types = ""
-            for type in self._scanner.types():
-                types += ("    " + type.upper() + ",\n")
-            source += (
-                       "typedef struct token {\n"
-                       "  char *text;\n"
-                       "  char *source;\n"
-                       "  unsigned long line;\n"
-                       "  unsigned long column;\n"
-                       "  enum {\n"
-                       + types +
-                       "  } type;\n"
-                       "} token_t;\n"
-                       "\n"
-                       "char *text(token_t token) { return token.text; }\n"
-                       "\n"
-                       "char *source(token_t token) { return token.source; }\n"
-                       "\n"
-                       "unsigned long line(token_t token) { return token.line; }\n"
-                       "\n"
-                       "unsigned long column(token_t token) { return token.column; }\n"
-                       "\n"
-                       "unsigned int type(token_t token) { return token.type; }\n"
-                       "\n"
-                       "int " + scan_func + "(FILE *f, token_t *token) {\n"
-                       + self._encode_dfa() +
-                       "  return 0; // fail\n"
-                       "}\n"
-                      )
+// Query for the starting line on which the token was read.
+unsigned long line({0}_token_t *{0}_token);
 
-        if self._parser is not None:
-            parse_func = self._sanatize(self._parser.name())
-            source += (
-                       # TODO: typedef AST struct
-                       # TODO: define AST API implementation
-                       "\n"
-                       "void " + parse_func + "(FILE *f) {\n"
-                       + self._encode_bnf() +
-                       "}\n"
-                      )
+// Query for the starting column on which the token was read.
+unsigned long column({0}_token_t *{0}_token);
 
-        return source
+""".format(name, "\n".join(types), self._generate_section_header("tokens")), """\
+{1}
+typedef struct {0}_token {{
+  {0}_token_type_t type;
+  const char *text;
+  const char *source;
+  unsigned long line;
+  unsigned long column;
+}} {0}_token_t;
+
+const char *text({0}_token_t *{0}_token) {{ return {0}_token->text; }}
+
+const char *source({0}_token_t *{0}_token) {{ return {0}_token->source; }}
+
+unsigned long line({0}_token_t *{0}_token) {{ return {0}_token->line; }}
+
+unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
+
+{0}_token_type_t type({0}_token_t *{0}_token) {{ return {0}_token->type; }}
+
+""".format(name, self._generate_section_header("tokens"))
+
+    def _encode_dfa(self): # TODO: encode DFA as GOTOs with switch-case/if stmts
+        return ""
+
+    def _generate_scanner_api(self, name):
+        return """\
+{1}
+// Abstract over the reading of {0}_token_t's.
+typedef struct {0}_scanner {0}_scanner_t;
+
+// Attempt the creation of a new scanner given a file.
+{0}_scanner_t *new_{0}_scanner(FILE *f);
+
+// Free the scanner. Note: file closing is not handled.
+void free_ini_scanner({0}_scanner_t *{0}_scanner);
+
+// Attempt to scan a token from the file. 1 if successful, otherwise 0.
+// If failure occurs the token will still contain the relevant details of the
+// unrecognized token except for its type.
+int {0}_scan({0}_scanner_t *{0}_scanner);
+
+// Return most recently read token of the given scanner.
+{0}_token_t *token({0}_scanner_t ini_scanner);
+
+""".format(name, self._generate_section_header("scanner")), """\
+{2}
+typedef struct {0}_scanner {{
+  FILE *input;
+  char peek;
+  //long token_offset;
+  //unsigned long token_length;
+  {0}_token_t *token;
+}} {0}_scanner_t;
+
+{0}_scanner_t *new_{0}_scanner(FILE *f) {{
+  if(!f) {{ return NULL; }}
+
+  {0}_scanner_t *{0}_scanner = malloc(sizeof({0}_scanner_t));
+  if(!{0}_scanner) {{ return NULL; }}
+
+  {0}_scanner->input = f;
+  {0}_scanner->peek = fgetc(f);
+  {0}_scanner->token = malloc(sizeof({0}_token_t));
+
+  if(!{0}_scanner->token) {{
+      free({0}_scanner);
+      return NULL;
+  }}
+
+  return {0}_scanner;
+}}
+
+void free_ini_scanner({0}_scanner_t *{0}_scanner) {{
+  free({0}_scanner);
+}}
+
+int {0}_scan({0}_scanner_t *{0}_scanner) {{
+  {1}
+}}
+
+{0}_token_t *{0}_token({0}_scanner_t *{0}_scanner) {{
+  return {0}_scanner->token;
+}}
+
+""".format(name, self._encode_dfa(), self._generate_section_header("scanner"))
+
+    def _generate_ast_api(self, parser_func): # TODO: define AST prototypes and defs
+        ast_header, ast_source = "", ""
+        return ast_header, ast_source
+
+    def _encode_bnf(self):  # TODO: graph encoded as GOTOs
+        return ""
+        #production_rules = ""
+        #for nonterm, rule in self._parser.rules():
+        #    production_rules += "// {0: <30} ::= {1}\n".format(nonterm, " ".join(rule))
+        # """\
+        # // Start production ::= {2}
+        #
+        # {3}
+        #
+        # // Attempt to parse into an AST of tokens. 1 if successful, otherwise 0.
+        # int {0}(FILE *f);
+        # """.format(parse_func, self._generate_section_header("::BNF GRAMMMAR::"),
+        #            self._parser.start(), production_rules)
+
+    def _generate_parser_api(self, parser_func): # TODO: define parser prototypes and defs
+        parser_header, parser_source = "", ""
+        return parser_header, parser_source
 
     def output(self, filename):
         """
@@ -186,8 +212,48 @@ class C(generator.Generator):
         if filename == "":
             raise ValueError('Invalid Input: filename must be non empty')
 
-        with open(filename+".h", 'w') as _file:
-            _file.write(self._output_header(filename))
+        author = '**AUTO GENERATED**'
+        source = 'https://github.com/rrozansk/Scanner-Parser-Generator'
+        warning = 'WARNING!! AUTO GENERATED FILE, DO NOT EDIT!'
+        libs = ["stdio"]
 
-        with open(filename+".c", 'w') as _file:
-            _file.write(self._output_source(filename))
+        header = self._generate_file_header(filename+".h",
+                                            author,
+                                            source,
+                                            warning,
+                                            libs)
+
+        libs.extend(["stdlib", filename])
+        source = self._generate_file_header(filename+".c",
+                                            author,
+                                            source,
+                                            warning,
+                                            libs)
+
+        if self._scanner is not None:
+            scan_func = self._sanatize(self._scanner.name())
+            token_header, token_source = self._generate_token_api(scan_func)
+            scanner_header, scanner_source = self._generate_scanner_api(scan_func)
+
+            header += token_header + scanner_header
+            source += token_source + scanner_source
+
+        if self._parser is not None:
+            parse_func = self._sanatize(self._parser.name())
+            ast_header, ast_source = self._generate_ast_api(parse_func)
+            parser_header, parser_source = self._generate_parser_api(parse_func)
+
+            header += ast_header + parser_header
+            source += ast_source + parser_source
+
+        header = """\
+#ifndef {0}
+#define {0}
+
+{1}
+
+#endif
+""".format(filename, header)
+
+        with open(filename+".h", 'w') as _file: _file.write(header)
+        with open(filename+".c", 'w') as _file: _file.write(source)
