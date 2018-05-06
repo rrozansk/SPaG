@@ -80,10 +80,10 @@ typedef enum {{
 {0}_token_type_t type({0}_token_t *{0}_token);
 
 // Query for the string representation of the token.
-const char *text({0}_token_t *{0}_token);
+char *text({0}_token_t *{0}_token);
 
 // Query for the file in which the token was read.
-const char *source({0}_token_t *{0}_token);
+char *source({0}_token_t *{0}_token);
 
 // Query for the starting line on which the token was read.
 unsigned long line({0}_token_t *{0}_token);
@@ -95,15 +95,15 @@ unsigned long column({0}_token_t *{0}_token);
 {1}
 typedef struct {0}_token {{
   {0}_token_type_t type;
-  const char *text;
-  const char *source;
+  char *text;
+  char *source;
   unsigned long line;
   unsigned long column;
 }} {0}_token_t;
 
-const char *text({0}_token_t *{0}_token) {{ return {0}_token->text; }}
+char *text({0}_token_t *{0}_token) {{ return {0}_token->text; }}
 
-const char *source({0}_token_t *{0}_token) {{ return {0}_token->source; }}
+char *source({0}_token_t *{0}_token) {{ return {0}_token->source; }}
 
 unsigned long line({0}_token_t *{0}_token) {{ return {0}_token->line; }}
 
@@ -117,6 +117,7 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
         state, symbol, T = self._scanner.transitions()
 
         final_states = self._scanner.accepting()
+        final_types = {frozenset(finals):pattern for pattern,finals in self._scanner.types().items()}
 
         labels, label = {}, 0
         for state_id in state.keys():
@@ -125,29 +126,66 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
 
         program = ""
         for in_state, state_key in state.items():
-            cases = ""
+            fallthrough = {}
             for char, sym_key in symbol.items():
                 _char = ord(char)
                 if _char < 0 or _char > 255:
                     raise ValueError("Invalid Input: encountered non ascii character\n")
                 _char = hex(_char)
                 end_state = T[sym_key][state_key]
-                if end_state in final_states:
+                if end_state in fallthrough:
+                    fallthrough[end_state].append(_char)
+                else:
+                    fallthrough[end_state] = [_char]
+
+            cases = ""
+            for end_state, char_list in fallthrough.items():
+                for char in char_list:
                     cases += """\
-    case {0}:
-      return 0; // FINAL STATE
-""".format(_char)
+    case {0: <5} // {1}
+""".format("{0}:".format(char), repr(chr(int(char, base=16))))
+                if end_state in final_states:
+                    _type = None
+                    for finals, pattern in final_types.items():
+                        if end_state in finals:
+                            _type = pattern
+                            break
+                    cases += """\
+      {0}_scanner->token->type = {1};
+      {0}_scanner->length = ftell({0}_scanner->input) - {0}_scanner->offset;
+      {0}_scanner->token->text = calloc({0}_scanner->length+1, sizeof(char));
+      if(!{0}_scanner->token->text) {{
+        fflush(stdout);
+        fprintf(stderr, "out of memory\\n");
+        fflush(stderr);
+        exit(1);
+      }}
+      fseek({0}_scanner->input, {0}_scanner->offset, SEEK_SET);
+      if(fread({0}_scanner->token->text, sizeof(char), sizeof(char)*{0}_scanner->length, {0}_scanner->input) != sizeof(char)*{0}_scanner->length) {{
+        fflush(stdout);
+        fprintf(stderr, "unknown memory while reading\\n");
+        fflush(stderr);
+        exit(1);
+      }}
+      {0}_scanner->token->line = {0}_scanner->line;
+      {0}_scanner->token->column = {0}_scanner->column;
+      return 0;
+""".format(name, _type.upper())
                 else:
                     cases += """\
-    case {0}:
-      goto {1};
-""".format(_char, labels[end_state])
+      goto {0};
+""".format(labels[end_state])
                 # FIXME:
                 # - longest match
-                # - build token when done
+                # - selecting correct token if multiple possible.
+                # - abstract token creation/deletion into new/free to API functions
+                # - switch to internal buffer, allowing for pipes.
             program += """\
 {0}:
-  switch(({1}_scanner->peek = fgetc({1}_scanner->input))) {{
+  {1}_scanner->peek = fgetc({1}_scanner->input);
+  {1}_scanner->column++;
+  if({1}_scanner->peek == '\\n') {{ {1}_scanner->line++; }}
+  switch({1}_scanner->peek) {{
 {2}   default:
       return 1;
   }}
@@ -180,7 +218,10 @@ int {0}_scan({0}_scanner_t *{0}_scanner);
 typedef struct {0}_scanner {{
   FILE *input;
   char peek;
-  long offset;
+  long int offset;
+  unsigned int length;
+  unsigned int line;
+  unsigned int column;
   {0}_token_t *token;
 }} {0}_scanner_t;
 
@@ -191,7 +232,6 @@ typedef struct {0}_scanner {{
   if(!{0}_scanner) {{ return NULL; }}
 
   {0}_scanner->input = f;
-  {0}_scanner->peek = fgetc(f);
   {0}_scanner->token = malloc(sizeof({0}_token_t));
 
   if(!{0}_scanner->token) {{
