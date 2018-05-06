@@ -113,8 +113,48 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
 
 """.format(name, self._generate_section_header("tokens"))
 
-    def _encode_dfa(self): # TODO: encode DFA as GOTOs with switch-case/if stmts
-        return ""
+    def _encode_dfa(self, name):
+        state, symbol, T = self._scanner.transitions()
+
+        final_states = self._scanner.accepting()
+
+        labels, label = {}, 0
+        for state_id in state.keys():
+            label += 1
+            labels[state_id] = "L{0}".format(label)
+
+        program = ""
+        for in_state, state_key in state.items():
+            cases = ""
+            for char, sym_key in symbol.items():
+                _char = ord(char)
+                if _char < 0 or _char > 255:
+                    raise ValueError("Invalid Input: encountered non ascii character\n")
+                _char = hex(_char)
+                end_state = T[sym_key][state_key]
+                if end_state in final_states:
+                    cases += """\
+    case {0}:
+      return 0; // FINAL STATE
+""".format(_char)
+                else:
+                    cases += """\
+    case {0}:
+      goto {1};
+""".format(_char, labels[end_state])
+                # FIXME:
+                # - longest match
+                # - build token when done
+            program += """\
+{0}:
+  switch(({1}_scanner->peek = fgetc({1}_scanner->input))) {{
+{2}   default:
+      return 1;
+  }}
+
+""".format(labels[in_state], name, cases)
+
+        return program
 
     def _generate_scanner_api(self, name):
         return """\
@@ -126,23 +166,21 @@ typedef struct {0}_scanner {0}_scanner_t;
 {0}_scanner_t *new_{0}_scanner(FILE *f);
 
 // Free the scanner. Note: file closing is not handled.
-void free_ini_scanner({0}_scanner_t *{0}_scanner);
+void free_{0}_scanner({0}_scanner_t *{0}_scanner);
+
+// Return most recently read token of the given scanner.
+{0}_token_t *{0}_token({0}_scanner_t *{0}_scanner);
 
 // Attempt to scan a token from the file. 1 if successful, otherwise 0.
 // If failure occurs the token will still contain the relevant details of the
 // unrecognized token except for its type.
 int {0}_scan({0}_scanner_t *{0}_scanner);
-
-// Return most recently read token of the given scanner.
-{0}_token_t *token({0}_scanner_t ini_scanner);
-
 """.format(name, self._generate_section_header("scanner")), """\
 {2}
 typedef struct {0}_scanner {{
   FILE *input;
   char peek;
-  //long token_offset;
-  //unsigned long token_length;
+  long offset;
   {0}_token_t *token;
 }} {0}_scanner_t;
 
@@ -164,25 +202,28 @@ typedef struct {0}_scanner {{
   return {0}_scanner;
 }}
 
-void free_ini_scanner({0}_scanner_t *{0}_scanner) {{
+void free_{0}_scanner({0}_scanner_t *{0}_scanner) {{
   free({0}_scanner);
-}}
-
-int {0}_scan({0}_scanner_t *{0}_scanner) {{
-  {1}
 }}
 
 {0}_token_t *{0}_token({0}_scanner_t *{0}_scanner) {{
   return {0}_scanner->token;
 }}
 
-""".format(name, self._encode_dfa(), self._generate_section_header("scanner"))
+int {0}_scan({0}_scanner_t *{0}_scanner) {{
+  {0}_scanner->offset = ftell({0}_scanner->input);
 
-    def _generate_ast_api(self, parser_func): # TODO: define AST prototypes and defs
+{1}}}
+""".format(name, self._encode_dfa(name), self._generate_section_header("scanner"))
+
+    def _generate_ast_api(self, name):
+        # TODO: define AST prototypes and defs
         ast_header, ast_source = "", ""
         return ast_header, ast_source
 
-    def _encode_bnf(self):  # TODO: graph encoded as GOTOs
+    def _encode_bnf(self, name):
+        # TODO: graph encoded as GOTOs;
+        # automatically throw away tokens not in the bnf (whitespace, comments, etc)
         return ""
         #production_rules = ""
         #for nonterm, rule in self._parser.rules():
@@ -197,8 +238,11 @@ int {0}_scan({0}_scanner_t *{0}_scanner) {{
         # """.format(parse_func, self._generate_section_header("::BNF GRAMMMAR::"),
         #            self._parser.start(), production_rules)
 
-    def _generate_parser_api(self, parser_func): # TODO: define parser prototypes and defs
-        parser_header, parser_source = "", ""
+    def _generate_parser_api(self, name):
+        # TODO: define parser prototypes and defs
+        parser_header, parser_source = "", """\
+        {2}
+        """.format(name, self._encode_bnf(name), self._generate_section_header("parser"))
         return parser_header, parser_source
 
     def output(self, filename):
@@ -251,7 +295,6 @@ int {0}_scan({0}_scanner_t *{0}_scanner) {{
 #define {0}
 
 {1}
-
 #endif
 """.format(filename, header)
 
