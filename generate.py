@@ -46,7 +46,7 @@ GENERATOR = GENERATORS[ARGS['output']]()
 
 if ARGS['scanner'] is not None:
     NAME = None
-    TOKENS = {}
+    TOKENS = []
     for line in ARGS['scanner']:
         items = line.split(None, 1)
         if len(items) == 0:
@@ -61,7 +61,7 @@ if ARGS['scanner'] is not None:
         if len(items) != 2:
             raise ValueError('Error: Invalid file format - scanner token')
 
-        TOKENS[items[0]] = items[1].rstrip()
+        TOKENS.append((items[0], items[1].rstrip()))
     try:
         SCANNER = scanner.RegularGrammar(NAME, TOKENS)
         GENERATOR.set_scanner(SCANNER)
