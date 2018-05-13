@@ -104,7 +104,7 @@ class RegularGrammar(object):
 
         Input Types:
           name:        String
-          expressions: Dict[String, String]
+          expressions: List[Tuple[String, String]]
 
         Output Type: None | raise ValueError
         """
@@ -113,19 +113,24 @@ class RegularGrammar(object):
 
         self._name = name
 
-        if type(expressions) is not dict:
-            raise ValueError('Invalid Input: expressions must be a dictionary')
+        if type(expressions) is not list:
+            raise ValueError('Invalid Input: expressions must be a list')
 
         NFAs = []
-        self._exprs = dict()
-        for name, pattern in expressions.items():
+        self._exprs = []
+        for element in expressions:
+            if type(element) is not tuple:
+                raise ValueError('Invalid Input: items in expressions must be tuples')
+
+            name, pattern = element
+
             if type(name) is not str:
                 raise ValueError('Invalid Input: name must be a string')
 
             if type(pattern) is not str:
                 raise ValueError('Invalid Input: pattern must be a string')
 
-            self._exprs[name] = pattern
+            self._exprs.append((name, pattern))
 
             pattern = self._scan(pattern)
             pattern = self._expand_char_class_range(pattern)
@@ -156,7 +161,7 @@ class RegularGrammar(object):
         """
         Query for the patterns recognized by the grammar.
 
-        Output Type: Dict[String, String]
+        Output Type: List[Tuple[String, String]]
         """
         return deepcopy(self._exprs)
 
@@ -779,9 +784,9 @@ if __name__ == '__main__':
         {
             'name': 'Single Alpha',
             'valid': True,
-            'expressions': {
-                'alpha': 'a'
-            },
+            'expressions': [
+                ('alpha', 'a')
+            ],
             'DFA': {
                 'Q': set(['S', 'A', 'Err']),
                 'V': set('a'),
@@ -799,9 +804,9 @@ if __name__ == '__main__':
         {
             'name': 'Explicit Concatenation',
             'valid': True,
-            'expressions': {
-                'concat': 'a.b'
-            },
+            'expressions': [
+                ('concat', 'a.b')
+            ],
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
@@ -820,9 +825,9 @@ if __name__ == '__main__':
         {
             'name': 'Alternation',
             'valid': True,
-            'expressions': {
-                'alt': 'a|b'
-            },
+            'expressions': [
+                ('alt', 'a|b')
+            ],
             'DFA': {
                 'Q': set(['S', 'AB', 'Err']),
                 'V': set('ab'),
@@ -841,9 +846,9 @@ if __name__ == '__main__':
         {
             'name': 'Kleene Star',
             'valid': True,
-            'expressions': {
-                'star': 'a*'
-            },
+            'expressions': [
+                ('star', 'a*')
+            ],
             'DFA': {
                 'Q': set(['A']),
                 'V': set('a'),
@@ -861,9 +866,9 @@ if __name__ == '__main__':
         {
             'name': 'Kleene Plus',
             'valid': True,
-            'expressions': {
-                'plus': 'a+'
-            },
+            'expressions': [
+                ('plus', 'a+')
+            ],
             'DFA': {
                 'Q': set(['S', 'A']),
                 'V': set('a'),
@@ -881,9 +886,9 @@ if __name__ == '__main__':
         {
             'name': 'Choice',
             'valid': True,
-            'expressions': {
-                'maybe': 'a?'
-            },
+            'expressions': [
+                ('maybe', 'a?')
+            ],
             'DFA': {
                 'Q': set(['S', 'A', 'Err']),
                 'V': set('a'),
@@ -901,9 +906,9 @@ if __name__ == '__main__':
         {
             'name': 'Grouping',
             'valid': True,
-            'expressions': {
-                'group': '(a|b)*'
-            },
+            'expressions': [
+                ('group', '(a|b)*')
+            ],
             'DFA': {
                 'Q': set(['AB*']),
                 'V': set('ab'),
@@ -922,9 +927,9 @@ if __name__ == '__main__':
         {
             'name': 'Association',
             'valid': True,
-            'expressions': {
-                'assoc': 'a|b*'
-            },
+            'expressions': [
+                ('assoc', 'a|b*')
+            ],
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
@@ -943,18 +948,18 @@ if __name__ == '__main__':
         {
             'name': 'Operator Alpha Literals',
             'valid': True,
-            'expressions': {
-                'concat': '\.',
-                'alt': '\|',
-                'star': '\*',
-                'question': '\?',
-                'plus': '\+',
-                'slash': '\\\\',
-                'lparen': '\(',
-                'rparen': '\)',
-                'lbracket': '\[',
-                'rbracket': '\]'
-            },
+            'expressions': [
+                ('concat', '\.'),
+                ('alt', '\|'),
+                ('star', '\*'),
+                ('question', '\?'),
+                ('plus', '\+'),
+                ('slash', '\\\\'),
+                ('lparen', '\('),
+                ('rparen', '\)'),
+                ('lbracket', '\['),
+                ('rbracket', '\]')
+            ],
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('.|*?+\\()[]'),
@@ -990,12 +995,12 @@ if __name__ == '__main__':
         {
             'name': 'Implicit Concatenation Characters',
             'valid': True,
-            'expressions': {
-                'permutation1': 'ab',
-                'permutation2': 'a(b)',
-                'permutation3': '(a)b',
-                'permutation4': '(a)(b)'
-            },
+            'expressions': [
+                ('permutation1', 'ab'),
+                ('permutation2', 'a(b)'),
+                ('permutation3', '(a)b'),
+                ('permutation4', '(a)(b)')
+            ],
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
@@ -1017,12 +1022,12 @@ if __name__ == '__main__':
         {
             'name': 'Implicit Concatenation Star Operator',
             'valid': True,
-            'expressions': {
-                'permutation1': 'a*b',
-                'permutation2': 'a*(b)',
-                'permutation3': '(a)*b',
-                'permutation4': '(a)*(b)'
-            },
+            'expressions': [
+                ('permutation1', 'a*b'),
+                ('permutation2', 'a*(b)'),
+                ('permutation3', '(a)*b'),
+                ('permutation4', '(a)*(b)')
+            ],
             'DFA': {
                 'Q': set(['A', 'B', 'Err']),
                 'V': set('ab'),
@@ -1044,12 +1049,12 @@ if __name__ == '__main__':
         {
             'name': 'Implicit Concatenation Plus Operator',
             'valid': True,
-            'expressions': {
-                'permutation1': 'a+b',
-                'permutation2': 'a+(b)',
-                'permutation3': '(a)+b',
-                'permutation4': '(a)+(b)'
-            },
+            'expressions': [
+                ('permutation1', 'a+b'),
+                ('permutation2', 'a+(b)'),
+                ('permutation3', '(a)+b'),
+                ('permutation4', '(a)+(b)')
+            ],
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
@@ -1071,12 +1076,12 @@ if __name__ == '__main__':
         {
             'name': 'Implicit Concatenation Question Operator',
             'valid': True,
-            'expressions': {
-                'permutation1': 'a?b',
-                'permutation2': 'a?(b)',
-                'permutation3': '(a)?b',
-                'permutation4': '(a)?(b)'
-            },
+            'expressions': [
+                ('permutation1', 'a?b'),
+                ('permutation2', 'a?(b)'),
+                ('permutation3', '(a)?b'),
+                ('permutation4', '(a)?(b)')
+            ],
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
@@ -1098,9 +1103,9 @@ if __name__ == '__main__':
         {
             'name': 'Implicit Concatenation 10 - Mixed',
             'valid': True,
-            'expressions': {
-                'concat': 'a.bc.de'
-            },
+            'expressions': [
+                ('concat', 'a.bc.de')
+            ],
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'C', 'D', 'E', 'Err']),
                 'V': set('abcde'),
@@ -1122,9 +1127,9 @@ if __name__ == '__main__':
         {
             'name': 'Randomness 1',
             'valid': True,
-            'expressions': {
-                'random': 'a*(b|cd)*'
-            },
+            'expressions': [
+                ('random', 'a*(b|cd)*')
+            ],
             'DFA': {
                 'Q': set(['AC', 'B', 'DE', 'Err']),
                 'V': set('abcd'),
@@ -1145,9 +1150,9 @@ if __name__ == '__main__':
         {
             'name': 'Randomness 2',
             'valid': True,
-            'expressions': {
-                'random': 'a?b*'
-            },
+            'expressions': [
+                ('random', 'a?b*')
+            ],
             'DFA': {
                 'Q': set(['A', 'B', 'Err']),
                 'V': set('ab'),
@@ -1166,9 +1171,9 @@ if __name__ == '__main__':
         {
             'name': 'Randomness 3',
             'valid': True,
-            'expressions': {
-                'random': '(a*b)|(a.bcd.e)'
-            },
+            'expressions': [
+                ('random', '(a*b)|(a.bcd.e)')
+            ],
             'DFA': {
                 'Q': set(['S', 'A', 'A*', 'B', 'C', 'D', 'F', 'Err']),
                 'V': set('abcde'),
@@ -1190,9 +1195,9 @@ if __name__ == '__main__':
         {
             'name': 'Randomness 4',
             'valid': True,
-            'expressions': {
-                'random': '(foo)?(bar)+'
-            },
+            'expressions': [
+                ('random', '(foo)?(bar)+')
+            ],
             'DFA': {
                 'Q': set(['S', 'F', 'FO', 'FOO', 'B', 'BA', 'BAR', 'Err']),
                 'V': set('fobar'),
@@ -1214,9 +1219,9 @@ if __name__ == '__main__':
         {
             'name': 'Forward Character Range',
             'valid': True,
-            'expressions': {
-                'range': '[a-c]',
-            },
+            'expressions': [
+                ('range', '[a-c]')
+            ],
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('abc'),
@@ -1236,9 +1241,9 @@ if __name__ == '__main__':
         {
             'name': 'Backward Character Range',
             'valid': True,
-            'expressions': {
-                'range': '[c-a]',
-            },
+            'expressions': [
+                ('range', '[c-a]')
+            ],
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('abc'),
@@ -1258,9 +1263,9 @@ if __name__ == '__main__':
         {
             'name': 'Literal Negation Character Range',
             'valid': True,
-            'expressions': {
-                'range': '[a-^]',
-            },
+            'expressions': [
+                ('range', '[a-^]')
+            ],
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('^_`a'),
@@ -1281,9 +1286,9 @@ if __name__ == '__main__':
         {
             'name': 'Negated Character Range',
             'valid': True,
-            'expressions': {
-                'range': '[^!-~]*',
-            },
+            'expressions': [
+                ('range', '[^!-~]*')
+            ],
             'DFA': {
                 'Q': set(['S']),
                 'V': set(' \t\n\r\f\v'),
@@ -1306,9 +1311,9 @@ if __name__ == '__main__':
         {
             'name': 'Character Class',
             'valid': True,
-            'expressions': {
-                'class': '[abc]',
-            },
+            'expressions': [
+                ('class', '[abc]')
+            ],
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('abc'),
@@ -1328,9 +1333,9 @@ if __name__ == '__main__':
         {
             'name': 'Character Class with Copies',
             'valid': True,
-            'expressions': {
-                'class': '[aaa]',
-            },
+            'expressions': [
+                ('class', '[aaa]')
+            ],
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('a'),
@@ -1348,9 +1353,9 @@ if __name__ == '__main__':
         {
             'name': 'Character Class with Literal Right Bracket',
             'valid': True,
-            'expressions': {
-                'class': '[\]]*',
-            },
+            'expressions': [
+                ('class', '[\]]*')
+            ],
             'DFA': {
                 'Q': set(['S']),
                 'V': set(']'),
@@ -1368,9 +1373,9 @@ if __name__ == '__main__':
         {
             'name': 'Negated Character Class',
             'valid': True,
-            'expressions': {
-                'class': '[^^!"#$%&\'()*+,./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\\]_`abcdefghijklmnopqrstuvwxyz{|}~-]*',
-            },
+            'expressions': [
+                ('class', '[^^!"#$%&\'()*+,./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\\]_`abcdefghijklmnopqrstuvwxyz{|}~-]*')
+            ],
             'DFA': {
                 'Q': set(['S']),
                 'V': set(' \t\n\r\f\v'),
@@ -1393,9 +1398,9 @@ if __name__ == '__main__':
         {
             'name': 'Character Class Range Combo',
             'valid': True,
-            'expressions': {
-                'class': '[abc-e]*',
-            },
+            'expressions': [
+                ('class', '[abc-e]*')
+            ],
             'DFA': {
                 'Q': set(['S']),
                 'V': set('abcde'),
@@ -1417,9 +1422,9 @@ if __name__ == '__main__':
         {
             'name': 'Character Range Class Combo',
             'valid': True,
-            'expressions': {
-                'class': '[a-cde]*',
-            },
+            'expressions': [
+                ('class', '[a-cde]*')
+            ],
             'DFA': {
                 'Q': set(['S']),
                 'V': set('abcde'),
@@ -1441,9 +1446,9 @@ if __name__ == '__main__':
         {
             'name': 'Integer',
             'valid': True,
-            'expressions': {
-                'int': "0|([-+]?[1-9][0-9]*)",
-            },
+            'expressions': [
+                ('int', "0|([-+]?[1-9][0-9]*)")
+            ],
             'DFA': {
                 'Q': set(['S', 'Zero', 'Sign', 'Int', 'Err']),
                 'V': set('+-0123456789'),
@@ -1472,9 +1477,9 @@ if __name__ == '__main__':
         {
             'name': 'Float',
             'valid': True,
-            'expressions': {
-                'float': '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?',
-            },
+            'expressions': [
+                ('float', '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?')
+            ],
             'DFA': {
                 'Q': set(['S', 'WholePart', 'ExpPart', 'FractionPart', 'eSignum', 'Sigfrac', 'Sigexp', 'Signum', 'Err']),
                 'V': set('+-.0123456789eE'),
@@ -1506,9 +1511,9 @@ if __name__ == '__main__':
         {
             'name': 'White Space',
             'valid': True,
-            'expressions': {
-                'white': '( |\t|\n|\r|\f|\v)*',
-            },
+            'expressions': [
+                ('white', '( |\t|\n|\r|\f|\v)*')
+            ],
             'DFA': {
                 'Q': set(['S']),
                 'V': set(' \t\n\r\f\v'),
@@ -1531,9 +1536,9 @@ if __name__ == '__main__':
         {
             'name': 'Boolean',
             'valid': True,
-            'expressions': {
-                'bool': '(true)|(false)',
-            },
+            'expressions': [
+                ('bool', '(true)|(false)')
+            ],
             'DFA': {
                 'Q': set(['S', 'T', 'R', 'F', 'A', 'L', 'US', 'E', 'Err']),
                 'V': set('truefals'),
@@ -1558,9 +1563,9 @@ if __name__ == '__main__':
         {
             'name': 'Line Comment',
             'valid': True,
-            'expressions': {
-                'comment': '(#|;)[^\n]*\n',
-            },
+            'expressions': [
+                ('comment', '(#|;)[^\n]*\n')
+            ],
             'DFA': {
                 'Q': set(['S', '_', 'F', 'Err']),
                 'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
@@ -1677,9 +1682,9 @@ if __name__ == '__main__':
         {
             'name': 'Block Comment',
             'valid': True,
-            'expressions': {
-                'comment': '/[*][^]*[*]/',
-            },
+            'expressions': [
+                ('comment', '/[*][^]*[*]/')
+            ],
             'DFA': {
                 'Q': set(['BEGIN', 'SINK', 'FSLASH', 'SIGEND', 'END', 'ERR']),
                 'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
@@ -1796,9 +1801,9 @@ if __name__ == '__main__':
         {
             'name': 'Character',
             'valid': True,
-            'expressions': {
-                'char': "'[^]'",
-            },
+            'expressions': [
+                ('char', "'[^]'")
+            ],
             'DFA': {
                 'Q': set(['S', '_1', '_2', 'F', 'Err']),
                 'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
@@ -1915,9 +1920,9 @@ if __name__ == '__main__':
         {
             'name': 'String',
             'valid': True,
-            'expressions': {
-                'str': '"[^"]*"',
-            },
+            'expressions': [
+                ('str', '"[^"]*"')
+            ],
             'DFA': {
                 'Q': set(['S', '_', 'F', 'Err']),
                 'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
@@ -2034,9 +2039,9 @@ if __name__ == '__main__':
         {
             'name': 'Identifiers',
             'valid': True,
-            'expressions': {
-                'id': '[_a-zA-Z][_a-zA-Z0-9]*',
-            },
+            'expressions': [
+                ('id', '[_a-zA-Z][_a-zA-Z0-9]*')
+            ],
             'DFA': {
                 'Q': set(['Char', 'DigitOrChar', 'Err']),
                 'V': set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'),
@@ -2116,65 +2121,65 @@ if __name__ == '__main__':
         {
             'name': 'Unbalanced Left Paren',
             'valid': False,
-            'expressions': {
-                'invalid': '(foo|bar',
-            },
+            'expressions': [
+                ('invalid', '(foo|bar')
+            ],
             'DFA': {}
         },
         {
             'name': 'Unbalanced Right Paren',
             'valid': False,
-            'expressions': {
-                'invalid': 'foo|bar)',
-            },
+            'expressions': [
+                ('invalid', 'foo|bar)')
+            ],
             'DFA': {}
         },
         {
             'name': 'Invalid Escape Sequence',
             'valid': False,
-            'expressions': {
-                'invalid': '\j',
-            },
+            'expressions': [
+                ('invalid', '\j')
+            ],
             'DFA': {}
         },
         {
             'name': 'Empty Escape Sequence',
             'valid': False,
-            'expressions': {
-                'invalid': '\\',
-            },
+            'expressions': [
+                ('invalid', '\\')
+            ],
             'DFA': {}
         },
         {
             'name': 'Empty Expression',
             'valid': False,
-            'expressions': {
-                'invalid': '',
-            },
+            'expressions': [
+                ('invalid', '')
+            ],
             'DFA': {}
         },
         {
             'name': 'Empty Character Range/Class',
             'valid': False,
-            'expressions': {
-                'class/range': '[]',
-            },
+            'expressions': [
+                ('class/range', '[]')
+            ],
             'DFA': {}
         },
         {
             'name': 'Invalid Character',
             'valid': False,
-            'expressions': {
-                'invalid': '\x99',
-            },
+            'expressions': [
+                ('invalid', '\x99')
+            ],
             'DFA': {}
         },
         {
             'name': ['Invalid Scanner Name'],
             'valid': False,
-            'expressions': {
-                'invalid': 'foo',
-            },
+            'expressions': [
+                ('invalid', 'foo')
+            ],
             'DFA': {}
         },
         {
@@ -2186,57 +2191,57 @@ if __name__ == '__main__':
         {
             'name': 'Invalid Scanner Token Key',
             'valid': False,
-            'expressions': {
-                True: 'invalid',
-            },
+            'expressions': [
+                (True, 'invalid')
+            ],
             'DFA': {}
         },
         {
             'name': 'Invalid Scanner Token Value',
             'valid': False,
-            'expressions': {
-                'invalid': True,
-            },
+            'expressions': [
+                ('invalid', True)
+            ],
             'DFA': {}
         },
         {
             'name': 'Invalid Expression * Arity',
             'valid': False,
-            'expressions': {
-                'invalid': '*',
-            },
+            'expressions': [
+                ('invalid', '*')
+            ],
             'DFA': {}
         },
         {
             'name': 'Invalid Expression + Arity',
             'valid': False,
-            'expressions': {
-                'invalid': '+',
-            },
+            'expressions': [
+                ('invalid', '+')
+            ],
             'DFA': {}
         },
         {
             'name': 'Invalid Expression ? Arity',
             'valid': False,
-            'expressions': {
-                'invalid': '?',
-            },
+            'expressions': [
+                ('invalid', '?')
+            ],
             'DFA': {}
         },
         {
             'name': 'Invalid Expression | Arity',
             'valid': False,
-            'expressions': {
-                'invalid': 'a|',
-            },
+            'expressions': [
+                ('invalid', 'a|')
+            ],
             'DFA': {}
         },
         {
             'name': 'Invalid Expression . Arity',
             'valid': False,
-            'expressions': {
-                'invalid': 'a.',
-            },
+            'expressions': [
+                ('invalid', 'a.')
+            ],
             'DFA': {}
         },
     ]
@@ -2264,9 +2269,13 @@ if __name__ == '__main__':
         if len(expressions) != len(test['expressions']):
             raise ValueError('Error: Incorrect expression count in grammar')
 
-        for name, pattern in test['expressions'].items():
-            _pattern = expressions.get(name, None)
-            if _pattern is None or _pattern != pattern:
+        idx = 0
+        expressions = sorted(expressions, key=lambda x: x[0])
+        test['expressions'] = sorted(test['expressions'], key=lambda x: x[0])
+        for name, pattern in test['expressions']:
+            _name, _pattern = expressions[idx]
+            idx += 1
+            if _name != name or _pattern != pattern:
                 raise ValueError('Error: Incorrect token name/pattern created')
 
         _DFA = test['DFA']
