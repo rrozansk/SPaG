@@ -64,7 +64,7 @@ class C(generator.Generator):
 
     def _generate_token_api(self, name):
         types = []
-        for token_name, pattern in self._scanner.expressions().items():
+        for token_name, pattern in self._scanner.expressions():
             types.append('  {0: <23} // {1}'.format(token_name.upper()+",", pattern))
         return """\
 {2}
@@ -75,6 +75,18 @@ typedef struct {0}_token {0}_token_t;
 typedef enum {{
 {1}
 }} {0}_token_type_t;
+
+// Attempt construction of a new {0} token.
+{0}_token_t *new_{0}_token({0}_token_type_t type,
+                           char *text,
+                           unsigned long text_len,
+                           char *source,
+                           unsigned long source_len,
+                           unsigned long line,
+                           unsigned long column);
+
+// Free a token constructed using new_{0}_token.
+void free_{0}_token({0}_token_t *{0}_token);
 
 // Query for the tokens associated type.
 {0}_token_type_t type({0}_token_t *{0}_token);
@@ -101,6 +113,40 @@ typedef struct {0}_token {{
   unsigned long column;
 }} {0}_token_t;
 
+{0}_token_t *new_{0}_token({0}_token_type_t type,
+                           char *text,
+                           unsigned long text_len,
+                           char *source,
+                           unsigned long source_len,
+                           unsigned long line,
+                           unsigned long column) {{
+  {0}_token_t *{0}_token;
+  if(!(({0}_token = calloc(1, sizeof({0}_token_t))) &&
+       ({0}_token->text = malloc(sizeof(char)*(text_len+1))) &&
+       ({0}_token->source = malloc(sizeof(char)*(source_len+1))))) {{
+    free({0}_token->source);
+    free({0}_token->text);
+    free({0}_token);
+    return NULL;
+  }}
+
+  {0}_token->type = type;
+  {0}_token->line = line;
+  {0}_token->column = column;
+  strncpy({0}_token->text, text, sizeof(char)*text_len);
+  {0}_token->text[text_len] = 0;
+  strncpy({0}_token->source, source, sizeof(char)*source_len);
+  {0}_token->source[source_len] = 0;
+
+  return {0}_token;
+}}
+
+void free_{0}_token({0}_token_t *{0}_token) {{
+  free({0}_token->text);
+  free({0}_token->source);
+  free({0}_token);
+}}
+
 char *text({0}_token_t *{0}_token) {{ return {0}_token->text; }}
 
 char *source({0}_token_t *{0}_token) {{ return {0}_token->source; }}
@@ -115,79 +161,65 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
 
     def _encode_dfa(self, name):
         state, symbol, T = self._scanner.transitions()
-
         final_states = self._scanner.accepting()
-        final_types = {frozenset(finals):pattern for pattern,finals in self._scanner.types().items()}
+        expressions = self._scanner.expressions()
+        types = self._scanner.types()
 
         labels, label = {}, 0
         for state_id in state.keys():
             label += 1
             labels[state_id] = "L{0}".format(label)
 
-        program = ""
+        program = """\
+  goto {0};
+
+""".format(labels[self._scanner.start()])
+
         for in_state, state_key in state.items():
-            fallthrough = {}
+            fallthrough = dict()
             for char, sym_key in symbol.items():
                 _char = ord(char)
                 if _char < 0 or _char > 255:
                     raise ValueError("Invalid Input: encountered non ascii character\n")
-                _char = hex(_char)
                 end_state = T[sym_key][state_key]
                 if end_state in fallthrough:
-                    fallthrough[end_state].append(_char)
+                    fallthrough[end_state].append(char)
                 else:
-                    fallthrough[end_state] = [_char]
+                    fallthrough[end_state] = [char]
 
             cases = ""
             for end_state, char_list in fallthrough.items():
-                for char in char_list:
+                char_list = [(hex(ord(char)), repr(char)) for char in char_list]
+                for hex_repr, char_repr in sorted(char_list, key=lambda x: chr(int(x[0], base=16))):
                     cases += """\
     case {0: <5} // {1}
-""".format("{0}:".format(char), repr(chr(int(char, base=16))))
+""".format("{0}:".format(hex_repr), char_repr)
                 if end_state in final_states:
                     _type = None
-                    for finals, pattern in final_types.items():
-                        if end_state in finals:
-                            _type = pattern
+                    for pname, _ in expressions:
+                        if end_state in types[pname]:
+                            _type = pname
                             break
                     cases += """\
-      {0}_scanner->token->type = {1};
-      {0}_scanner->length = ftell({0}_scanner->input) - {0}_scanner->offset;
-      {0}_scanner->token->text = calloc({0}_scanner->length+1, sizeof(char));
-      if(!{0}_scanner->token->text) {{
-        fflush(stdout);
-        fprintf(stderr, "out of memory\\n");
-        fflush(stderr);
-        exit(1);
-      }}
-      fseek({0}_scanner->input, {0}_scanner->offset, SEEK_SET);
-      if(fread({0}_scanner->token->text, sizeof(char), sizeof(char)*{0}_scanner->length, {0}_scanner->input) != sizeof(char)*{0}_scanner->length) {{
-        fflush(stdout);
-        fprintf(stderr, "unknown memory while reading\\n");
-        fflush(stderr);
-        exit(1);
-      }}
-      {0}_scanner->token->line = {0}_scanner->line;
-      {0}_scanner->token->column = {0}_scanner->column;
-      return 0;
-""".format(name, _type.upper())
+      {0}_scanner->last_final_pos = ftell({0}_scanner->input);
+      {0}_scanner->last_final_type = {1};
+      //return {0}_read_token({0}_scanner, {1});
+      goto {2};
+""".format(name, _type.upper(), labels[end_state])
                 else:
                     cases += """\
       goto {0};
 """.format(labels[end_state])
                 # FIXME:
-                # - longest match
-                # - selecting correct token if multiple possible.
-                # - abstract token creation/deletion into new/free to API functions
+                # - longest match -> keep going and unwinding properly
                 # - switch to internal buffer, allowing for pipes.
             program += """\
 {0}:
-  {1}_scanner->peek = fgetc({1}_scanner->input);
-  {1}_scanner->column++;
-  if({1}_scanner->peek == '\\n') {{ {1}_scanner->line++; }}
-  switch({1}_scanner->peek) {{
+  if(feof({1}_scanner->input)) {{ return {1}_EOF; }}
+
+  switch({1}_peek({1}_scanner)) {{
 {2}   default:
-      return 1;
+      return {1}_INVALID_INPUT;
   }}
 
 """.format(labels[in_state], name, cases)
@@ -200,49 +232,74 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
 // Abstract over the reading of {0}_token_t's.
 typedef struct {0}_scanner {0}_scanner_t;
 
-// Attempt the creation of a new scanner given a file.
-{0}_scanner_t *new_{0}_scanner(FILE *f);
+// Attempt the creation of a new scanner given the path to a file.
+{0}_scanner_t *new_{0}_scanner(char *fpath);
 
-// Free the scanner. Note: file closing is not handled.
+// Free the scanner and close the associated file.
 void free_{0}_scanner({0}_scanner_t *{0}_scanner);
 
 // Return most recently read token of the given scanner.
 {0}_token_t *{0}_token({0}_scanner_t *{0}_scanner);
 
+// Errors associated with scanning.
+typedef enum {{
+  {0}_NIL,                 // no error.
+  {0}_EOF,                 // end of file.
+  {0}_INVALID_INPUT,       // input not recognized by scanner.
+  {0}_OUT_OF_MEMORY,       // failed to allocate memory.
+  {0}_UNKNOWN_ERROR,       // error not known.
+}} {0}_scan_error_t;
+
 // Attempt to scan a token from the file. 1 if successful, otherwise 0.
 // If failure occurs the token will still contain the relevant details of the
 // unrecognized token except for its type.
-int {0}_scan({0}_scanner_t *{0}_scanner);
+{0}_scan_error_t {0}_scan({0}_scanner_t *{0}_scanner);
 """.format(name, self._generate_section_header("scanner")), """\
 {2}
 typedef struct {0}_scanner {{
   FILE *input;
-  char peek;
+  int peek;
   long int offset;
+  char *text;
+  char *source;
   unsigned int length;
   unsigned int line;
   unsigned int column;
   {0}_token_t *token;
+  long int last_final_pos;
+  {0}_token_type_t last_final_type;
 }} {0}_scanner_t;
 
-{0}_scanner_t *new_{0}_scanner(FILE *f) {{
+{0}_scanner_t *new_{0}_scanner(char *fpath) {{
+  FILE *f = fopen(fpath, "r");
   if(!f) {{ return NULL; }}
 
-  {0}_scanner_t *{0}_scanner = malloc(sizeof({0}_scanner_t));
-  if(!{0}_scanner) {{ return NULL; }}
+  {0}_scanner_t *{0}_scanner;
+  if(!({0}_scanner = calloc(1, sizeof({0}_scanner_t))) &&
+      ({0}_scanner->token = malloc(sizeof({0}_token_t)))) {{
+    free({0}_scanner->token);
+    free({0}_scanner);
+    return NULL;
+  }}
 
   {0}_scanner->input = f;
-  {0}_scanner->token = malloc(sizeof({0}_token_t));
-
-  if(!{0}_scanner->token) {{
-      free({0}_scanner);
-      return NULL;
-  }}
+  //{0}_scanner->peek = fgetc(f);
+  {0}_scanner->offset = 0;
+  {0}_scanner->text = NULL;
+  {0}_scanner->source = fpath;
+  {0}_scanner->length = 0;
+  {0}_scanner->line = 0;
+  {0}_scanner->column = 0;
+  {0}_scanner->last_final_pos = -1;
+  //{0}_scanner->last_final_type = 0;
 
   return {0}_scanner;
 }}
 
 void free_{0}_scanner({0}_scanner_t *{0}_scanner) {{
+  fclose({0}_scanner->input);
+  free({0}_scanner->text);
+  free({0}_scanner->token);
   free({0}_scanner);
 }}
 
@@ -250,7 +307,45 @@ void free_{0}_scanner({0}_scanner_t *{0}_scanner) {{
   return {0}_scanner->token;
 }}
 
-int {0}_scan({0}_scanner_t *{0}_scanner) {{
+int {0}_peek({0}_scanner_t *{0}_scanner) {{
+  {0}_scanner->peek = fgetc({0}_scanner->input);
+  {0}_scanner->column++;
+  if({0}_scanner->peek == '\\n') {{
+    {0}_scanner->line++;
+    {0}_scanner->column = 0;
+  }}
+  return {0}_scanner->peek;
+}}
+
+{0}_scan_error_t {0}_read_token({0}_scanner_t *{0}_scanner,
+                                {0}_token_type_t {0}_type) {{
+  {0}_scanner->length = ftell({0}_scanner->input) - {0}_scanner->offset;
+
+  {0}_scanner->text = realloc({0}_scanner->text, sizeof(char)*{0}_scanner->length);
+  if(!{0}_scanner->text) {{ return {0}_OUT_OF_MEMORY; }}
+
+  fseek({0}_scanner->input, {0}_scanner->offset, SEEK_SET);
+  if(fread({0}_scanner->text,
+           sizeof(char),
+           sizeof(char)*{0}_scanner->length,
+           {0}_scanner->input) != sizeof(char)*{0}_scanner->length) {{
+    return {0}_UNKNOWN_ERROR;
+  }}
+
+  if(!({0}_scanner->token = new_{0}_token({0}_type,
+                                          {0}_scanner->text,
+                                          {0}_scanner->length,
+                                          {0}_scanner->source,
+                                          0,
+                                          {0}_scanner->line,
+                                          {0}_scanner->column))) {{
+    return {0}_OUT_OF_MEMORY;
+  }}
+
+  return {0}_NIL;
+}}
+
+{0}_scan_error_t {0}_scan({0}_scanner_t *{0}_scanner) {{
   {0}_scanner->offset = ftell({0}_scanner->input);
 
 {1}}}
@@ -307,7 +402,7 @@ int {0}_scan({0}_scanner_t *{0}_scanner) {{
                                             warning,
                                             libs)
 
-        libs.extend(["stdlib", filename])
+        libs.extend(["stdlib", "string", filename])
         source = self._generate_file_header(filename+".c",
                                             author,
                                             source,
