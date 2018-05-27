@@ -614,7 +614,9 @@ class RegularGrammar(object):
         """
         Make the DFA's delta function total, if not already, by adding a
         sink/error state. All unspecified state transitions are then specified
-        by adding a transition to the new sink/error state.
+        by adding a transition to the new sink/error state. A new entry is also
+        made into G to track this new sink/error type which is accessible as
+        '_sink'.
 
         Runtime: O(n) - linear in the number of states and transitions.
 
@@ -623,7 +625,7 @@ class RegularGrammar(object):
           V: Set[String]
           T: Set[Tuple[Frozenset[String], String, Frozenset[String]]]
           S: Frozenset[String]
-          F: Set[Frozenset[String]
+          F: Set[Frozenset[String]]
           G: Dict[String, Set[Frozenset[String]]]
 
         Output Types:
@@ -639,7 +641,9 @@ class RegularGrammar(object):
           x Dict[String, Set[Frozenset[String]]]
         """
         q_err = frozenset([self._state()])
-        if len(T) != len(Q) * len(V): Q.add(q_err)
+        if len(T) != len(Q) * len(V):
+            Q.add(q_err)
+            G['_sink'] = set([q_err])
 
         states = {v:k for k,v in enumerate(Q)}
         symbols = {v:k for k,v in enumerate(V)}
@@ -732,7 +736,11 @@ class RegularGrammar(object):
         Fp = {part for part in P if part & F}
 
         Gp = dict()
+
         for type, DFA_finals in G.items():
+            if type == '_sink': # special case (i.e not a final state)
+                Gp[type] = {part for part in P if part & G['_sink']}
+                continue
             for DFA_final in DFA_finals:
                 for DFA_merged_final in Fp:
                     if DFA_final in DFA_merged_final:
@@ -797,7 +805,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['A']),
                 'G': {
-                  'alpha': set(['A'])
+                    'alpha': set(['A']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -818,7 +827,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['B']),
                 'G': {
-                  'concat': set(['B'])
+                    'concat': set(['B']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -839,7 +849,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['AB']),
                 'G': {
-                  'alt': set(['AB'])
+                    'alt': set(['AB']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -859,7 +870,7 @@ if __name__ == '__main__':
                 'S': 'A',
                 'F': set(['A']),
                 'G': {
-                  'star': set(['A'])
+                    'star': set(['A'])
                 }
             }
         },
@@ -879,7 +890,7 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['A']),
                 'G': {
-                  'plus': set(['A'])
+                    'plus': set(['A'])
                 }
             }
         },
@@ -899,7 +910,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['S', 'A']),
                 'G': {
-                  'maybe': set(['S', 'A'])
+                    'maybe': set(['S', 'A']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -920,7 +932,7 @@ if __name__ == '__main__':
                 'S': 'AB*',
                 'F': set(['AB*']),
                 'G': {
-                  'group': set(['AB*'])
+                    'group': set(['AB*'])
                 }
             }
         },
@@ -941,7 +953,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['S', 'A', 'B']),
                 'G': {
-                  'assoc': set(['S', 'A', 'B'])
+                    'assoc': set(['S', 'A', 'B']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -988,7 +1001,8 @@ if __name__ == '__main__':
                     'lparen': set(['F']),
                     'rparen': set(['F']),
                     'lbracket': set(['F']),
-                    'rbracket': set(['F'])
+                    'rbracket': set(['F']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1015,7 +1029,8 @@ if __name__ == '__main__':
                     'permutation1': set(['B']),
                     'permutation2': set(['B']),
                     'permutation3': set(['B']),
-                    'permutation4': set(['B'])
+                    'permutation4': set(['B']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1042,7 +1057,8 @@ if __name__ == '__main__':
                     'permutation1': set(['B']),
                     'permutation2': set(['B']),
                     'permutation3': set(['B']),
-                    'permutation4': set(['B'])
+                    'permutation4': set(['B']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1069,7 +1085,8 @@ if __name__ == '__main__':
                     'permutation1': set(['B']),
                     'permutation2': set(['B']),
                     'permutation3': set(['B']),
-                    'permutation4': set(['B'])
+                    'permutation4': set(['B']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1096,7 +1113,8 @@ if __name__ == '__main__':
                     'permutation1': set(['B']),
                     'permutation2': set(['B']),
                     'permutation3': set(['B']),
-                    'permutation4': set(['B'])
+                    'permutation4': set(['B']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1120,7 +1138,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['E']),
                 'G': {
-                    'concat': set(['E'])
+                    'concat': set(['E']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1143,7 +1162,8 @@ if __name__ == '__main__':
                 'S': 'AC',
                 'F': set(['AC', 'DE']),
                 'G': {
-                    'random': set(['AC', 'DE'])
+                    'random': set(['AC', 'DE']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1164,7 +1184,8 @@ if __name__ == '__main__':
                 'S': 'A',
                 'F': set(['A', 'B']),
                 'G': {
-                    'random': set(['A', 'B'])
+                    'random': set(['A', 'B']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1188,7 +1209,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['F', 'B']),
                 'G': {
-                    'random': set(['F', 'B'])
+                    'random': set(['F', 'B']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1212,7 +1234,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['BAR']),
                 'G': {
-                    'random': set(['BAR'])
+                    'random': set(['BAR']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1234,7 +1257,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
-                    'range': set(['F'])
+                    'range': set(['F']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1256,7 +1280,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
-                    'range': set(['F'])
+                    'range': set(['F']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1279,7 +1304,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
-                    'range': set(['F'])
+                    'range': set(['F']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1326,7 +1352,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
-                    'class': set(['F'])
+                    'class': set(['F']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1346,7 +1373,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
-                    'class': set(['F'])
+                    'class': set(['F']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1470,7 +1498,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['Zero', 'Int']),
                 'G': {
-                    'int': set(['Zero', 'Int'])
+                    'int': set(['Zero', 'Int']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1504,7 +1533,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['WholePart', 'ExpPart', 'FractionPart']),
                 'G': {
-                    'float': set(['WholePart', 'ExpPart', 'FractionPart'])
+                    'float': set(['WholePart', 'ExpPart', 'FractionPart']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1556,7 +1586,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['E']),
                 'G': {
-                    'bool': set(['E'])
+                    'bool': set(['E']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1675,7 +1706,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
-                    'comment': set(['F'])
+                    'comment': set(['F']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -1794,7 +1826,8 @@ if __name__ == '__main__':
                 'S': 'BEGIN',
                 'F': set(['END']),
                 'G': {
-                    'comment': set(['END'])
+                    'comment': set(['END']),
+                    '_sink': set(['ERR'])
                 }
             }
         },
@@ -1913,7 +1946,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
-                    'char': set(['F'])
+                    'char': set(['F']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -2032,7 +2066,8 @@ if __name__ == '__main__':
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
-                    'str': set(['F'])
+                    'str': set(['F']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -2114,7 +2149,8 @@ if __name__ == '__main__':
                 'S': 'Char',
                 'F': set(['DigitOrChar']),
                 'G': {
-                    'id': set(['DigitOrChar'])
+                    'id': set(['DigitOrChar']),
+                    '_sink': set(['Err'])
                 }
             }
         },
@@ -2294,6 +2330,7 @@ if __name__ == '__main__':
 
         G = grammar.types()
         if len(G) != len(_DFA['G']):
+            print grammar.name()
             raise ValueError('Error: Incorrect number of types')
 
         state, symbol, T = grammar.transitions()
