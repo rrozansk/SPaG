@@ -176,6 +176,8 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
 """.format(labels[self._scanner.start()])
 
         for in_state, state_key in state.items():
+            if in_state in types.get('_sink', set()):
+                continue  # NOTE: Don't encode error state explicitly.
             fallthrough = dict()
             for char, sym_key in symbol.items():
                 _char = ord(char)
@@ -189,6 +191,8 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
 
             cases = ""
             for end_state, char_list in fallthrough.items():
+                if end_state in types.get('_sink', set()):
+                    continue  # NOTE: Don't encode error transitions explicitly.
                 char_list = [(hex(ord(char)), repr(char)) for char in char_list]
                 for hex_repr, char_repr in sorted(char_list, key=lambda x: chr(int(x[0], base=16))):
                     cases += """\
@@ -203,22 +207,25 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
                     cases += """\
       {0}_scanner->last_final_pos = ftell({0}_scanner->input);
       {0}_scanner->last_final_type = {1};
-      //return {0}_read_token({0}_scanner, {1});
       goto {2};
 """.format(name, _type.upper(), labels[end_state])
                 else:
                     cases += """\
       goto {0};
 """.format(labels[end_state])
-                # FIXME:
-                # - longest match -> keep going and unwinding properly
-                # - switch to internal buffer, allowing for pipes.
+            # NOTE: Uses 'default' as catch all to revert to last valid final state.
+            # This implementes maximal munch. If not final state was found an
+            # error is returned which means 1 of 2 possibilities: unrecognized or invalid input.
             program += """\
 {0}:
   if(feof({1}_scanner->input)) {{ return {1}_EOF; }}
 
   switch({1}_peek({1}_scanner)) {{
-{2}   default:
+{2}    default:
+      if({1}_scanner->last_final_pos) {{
+        fprintf(stdout, "TYPE: %d @%ld\\n", {1}_scanner->last_final_type, {1}_scanner->last_final_pos);
+        return {1}_read_token({1}_scanner, {1}_scanner->last_final_type);
+      }}
       return {1}_INVALID_INPUT;
   }}
 
@@ -226,6 +233,8 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
 
         return program
 
+    # FIXME:
+    # - switch to internal buffer, allowing for pipes.
     def _generate_scanner_api(self, name):
         return """\
 {1}
