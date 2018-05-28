@@ -12,14 +12,6 @@ import src.scanner as scanner
 import src.parser as parser
 import src.generators
 
-GENERATORS = {}
-for module in src.generators.__all__:
-  generator = import_module('src.generators.' + module)
-  generator = getattr(generator, module.capitalize(), None)
-  if not generator:
-      raise ValueError('Error: Expected generator not found: ', module)
-  GENERATORS[module] = generator
-
 CLI = ArgumentParser(description='''
 Simple CLI (Command Line Interface) program to generate lexer(s) and/or
 parser(s) for a given input specification. For information on data input,
@@ -35,14 +27,20 @@ CLI.add_argument('-s', '--scanner', action='store', type=open,
 CLI.add_argument('-p', '--parser', action='store', type=open,
                  help='file containing parser name and LL(1) BNF grammar')
 CLI.add_argument('-o', '--output', action='store', required=True, type=str,
-                 choices=GENERATORS.keys(),
+                 choices=src.generators.__all__,
                  help='code generation target language')
 CLI.add_argument('-f', '--filename', action='store', required=True, type=str,
                  help='base filename to use for generated output')
 
 ARGS = vars(CLI.parse_args())
 
-GENERATOR = GENERATORS[ARGS['output']]()
+OUT = ARGS['output']
+
+GENERATOR = getattr(import_module('src.generators.' + OUT), OUT.capitalize(), None)
+if not GENERATOR:
+    raise ValueError('Error: Expected generator not found: ', OUT)
+
+GENERATOR = GENERATOR()
 
 if ARGS['scanner'] is not None:
     NAME = None
