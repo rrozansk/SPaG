@@ -56,7 +56,8 @@ class C(Generator):
 """.format(filename, author, time, source, message,
            '\n'.join(libs), self._generate_section_header("imports"))
 
-    def _generate_section_header(self, name):
+    @staticmethod
+    def _generate_section_header(name):
         return """\
 /******************************************************************************
  *{0: ^76}*
@@ -367,12 +368,16 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
 
     def _generate_ast_api(self, name):
         # TODO: define AST prototypes and defs
+        _ = name
+        _ = self
         ast_header, ast_source = "", ""
         return ast_header, ast_source
 
     def _encode_bnf(self, name):
         # TODO: graph encoded as GOTOs;
         # automatically throw away tokens not in the bnf (whitespace, comments, etc)
+        _ = name
+        _ = self
         return ""
         #production_rules = ""
         #for nonterm, rule in self._parser.rules():
@@ -390,7 +395,7 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
     def _generate_parser_api(self, name):
         # TODO: define parser prototypes and defs
         parser_header, parser_source = "", """\
-        {2}
+        {0} {1} {2}
         """.format(name, self._encode_bnf(name), self._generate_section_header("parser"))
         return parser_header, parser_source
 
@@ -399,7 +404,7 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
         Attempt to generate and write the c source(.c) and header(.h) files for
         the corresponding scanner and/or parser currently set in the object.
         """
-        if type(filename) is not str:
+        if not isinstance(filename, str):
             raise ValueError('Invalid Input: filename must be a string')
 
         if filename == "":

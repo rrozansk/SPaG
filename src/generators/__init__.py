@@ -40,7 +40,7 @@ class Generator(object):
 
         Output Type: None | ValueError
         """
-        if scanner and type(scanner) is not scan.RegularGrammar:
+        if not isinstance(scanner, scan.RegularGrammar):
             raise ValueError('Invalid Input: scanner not a RegularGrammar')
 
         self._scanner = scanner
@@ -66,7 +66,7 @@ class Generator(object):
 
         Output Type: None | ValueError
         """
-        if parser and type(parser) is not parse.ContextFreeGrammar:
+        if not isinstance(parser, parse.ContextFreeGrammar):
             raise ValueError('Invalid Input: parser not a ContextFreeGrammar')
 
         self._parser = parser
@@ -81,7 +81,8 @@ class Generator(object):
         """
         return self._parser
 
-    def output(self, filename):
+    @staticmethod
+    def output(filename):
         """
         Override this method in subclasses to write the necessary files for the
         specific language to be generated.
@@ -93,7 +94,7 @@ class Generator(object):
 
         Output Type: ValueError
         """
-        if type(filename) is not str:
+        if not isinstance(filename, str):
             raise ValueError('Invalid Input: filename not a string')
 
         raise ValueError('Error: output not implemented for Generator')

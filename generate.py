@@ -47,7 +47,7 @@ if ARGS['scanner'] is not None:
     TOKENS = []
     for line in ARGS['scanner']:
         items = line.split(None, 1)
-        if len(items) == 0:
+        if not items:
             continue
 
         if NAME is None:
@@ -72,7 +72,7 @@ if ARGS['parser'] is not None:
     PRODUCTIONS = {}
     for line in ARGS['parser']:
         items = line.split(None, 1)
-        if len(items) == 0:
+        if not items:
             continue
 
         if NAME is None:

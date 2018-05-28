@@ -68,7 +68,7 @@ class RegularGrammar(object):
     _literals = dict(enumerate('*|.+?()[]'))
 
     # Map operator literals -> internal representation
-    _operators = {v:k for k,v in _literals.items()}
+    _operators = {v:k for k, v in _literals.items()}
 
     # Set of acceptable input characters (printable ascii) including:
     # uppercase, lowercase, digits, punctuation, whitespace
@@ -86,14 +86,6 @@ class RegularGrammar(object):
         _operators['|']: (0, True),   # left-associative
     }
 
-    _name   = None
-    _exprs  = None
-    _states = None
-    _alphas = None
-    _deltas = None
-    _starts = None
-    _finals = None
-
     def __init__(self, name, expressions):
         """
         Attempt to initialize a RegularGrammar object with the specified name,
@@ -108,26 +100,26 @@ class RegularGrammar(object):
 
         Output Type: None | raise ValueError
         """
-        if type(name) is not str:
+        if not isinstance(name, str):
             raise ValueError('Invalid Input: name must be a string')
 
         self._name = name
 
-        if type(expressions) is not list:
+        if not isinstance(expressions, list):
             raise ValueError('Invalid Input: expressions must be a list')
 
         NFAs = []
         self._exprs = []
         for element in expressions:
-            if type(element) is not tuple:
+            if not isinstance(element, tuple):
                 raise ValueError('Invalid Input: items in expressions must be tuples')
 
             name, pattern = element
 
-            if type(name) is not str:
+            if not isinstance(name, str):
                 raise ValueError('Invalid Input: name must be a string')
 
-            if type(pattern) is not str:
+            if not isinstance(pattern, str):
                 raise ValueError('Invalid Input: pattern must be a string')
 
             self._exprs.append((name, pattern))
@@ -645,8 +637,8 @@ class RegularGrammar(object):
             Q.add(q_err)
             G['_sink'] = set([q_err])
 
-        states = {v:k for k,v in enumerate(Q)}
-        symbols = {v:k for k,v in enumerate(V)}
+        states = {v:k for k, v in enumerate(Q)}
+        symbols = {v:k for k, v in enumerate(V)}
         table = [[q_err for _ in states] for _ in symbols]
         for (state, symbol, dest) in T:
             table[symbols[symbol]][states[state]] = dest
@@ -694,7 +686,7 @@ class RegularGrammar(object):
         while W:
             A = W.pop()
             for vIdx in symbols.values():
-                X = frozenset({q for q,qIdx in states.items() if T[vIdx][qIdx] in A})
+                X = frozenset({q for q, qIdx in states.items() if T[vIdx][qIdx] in A})
                 _P = set()
                 for Y in P:
                     s1 = X & Y
@@ -713,7 +705,7 @@ class RegularGrammar(object):
                 P = _P
 
         _states = dict(zip(P, range(len(P))))
-        Tp = [[None for state in P] for symbol in V]
+        Tp = [[None for _ in P] for symbol in V]
         for source in states:
             for symbol in V:
                 dest = T[symbols[symbol]][states[source]]
@@ -778,11 +770,11 @@ class RegularGrammar(object):
         rename = {q: self._state() for q in Q}
         Qp = set(rename.values())
         (states, symbols, table) = T
-        states = {rename[state]:idx for state,idx in states.items()}
+        states = {rename[state]:idx for state, idx in states.items()}
         Tp = (states, symbols, [[rename[col] for col in row] for row in table])
         Sp = rename[S]
         Fp = {rename[f] for f in F}
-        Gp = {g:set([rename[s] for s in states]) for g,states in G.items()}
+        Gp = {g:set([rename[s] for s in states]) for g, states in G.items()}
         return Qp, V, Tp, Sp, Fp, Gp
 
 
@@ -2286,7 +2278,7 @@ if __name__ == '__main__':
 
     for test in TESTS:
         try:
-            grammar = RegularGrammar(test['name'], test['expressions'])
+            regular_grammar = RegularGrammar(test['name'], test['expressions'])
         except ValueError as e:
             if test['valid']:  # test type (input output)
                 raise e        # Unexpected Failure (+-)
@@ -2297,10 +2289,10 @@ if __name__ == '__main__':
 
         # Failure checking for:  Expected Pass      (++)
 
-        if grammar.name() != test['name']:
+        if regular_grammar.name() != test['name']:
             raise ValueError('Error: Incorrect DFA name returned')
 
-        expressions = grammar.expressions()
+        expressions = regular_grammar.expressions()
 
         if len(expressions) != len(test['expressions']):
             raise ValueError('Error: Incorrect expression count in grammar')
@@ -2316,24 +2308,24 @@ if __name__ == '__main__':
 
         _DFA = test['DFA']
 
-        V = grammar.alphabet()
+        V = regular_grammar.alphabet()
         if V != _DFA['V']:
             raise ValueError('Error: Incorrect alphabet produced')
 
-        Q = grammar.states()
+        Q = regular_grammar.states()
         if len(Q) != len(_DFA['Q']):
             raise ValueError('Error: Incorrect number of states produced')
 
-        F = grammar.accepting()
+        F = regular_grammar.accepting()
         if len(F) != len(_DFA['F']):
             raise ValueError('Error: Incorrect number of finish states')
 
-        G = grammar.types()
+        G = regular_grammar.types()
         if len(G) != len(_DFA['G']):
-            print grammar.name()
+            print regular_grammar.name()
             raise ValueError('Error: Incorrect number of types')
 
-        state, symbol, T = grammar.transitions()
+        state, symbol, T = regular_grammar.transitions()
         if len(T) != len(_DFA['T'])-1 or \
            (T and len(T[0]) != len(_DFA['T'][0])-1):
             raise ValueError('Error: Incorrect number of transitions produced')
@@ -2341,12 +2333,12 @@ if __name__ == '__main__':
         # Check if DFA's are isomorphic by attempting to find a bijection
         # between them since they both already look very 'similar'.
         _Q = _DFA['Q']
-        S = grammar.start()
+        S = regular_grammar.start()
 
         _state, _symbol, _T = dict(), dict(), list()
         if T:
-            _state = {s:idx for idx,s in enumerate(_DFA['T'].pop(0)[1:])}
-            _symbol = {s:idx for idx,s in enumerate([row.pop(0) for row in _DFA['T']])}
+            _state = {s:idx for idx, s in enumerate(_DFA['T'].pop(0)[1:])}
+            _symbol = {s:idx for idx, s in enumerate([row.pop(0) for row in _DFA['T']])}
             _T = _DFA['T']
 
         found = False
@@ -2354,7 +2346,7 @@ if __name__ == '__main__':
             if _map[S] == _DFA['S'] and \
                all(map(lambda f: _map[f] in _DFA['F'], F)) and \
                all(map(lambda elem: {_map[s] for s in elem[1]} == _DFA['G'].get(elem[0], set()), G.items())) and \
-               all(map(lambda v: all(map(lambda q: _map[T[symbol[v]][state[q]]] == _T[_symbol[v]][_state[_map[q]]], Q)) , V)):
+               all(map(lambda v: all(map(lambda q: _map[T[symbol[v]][state[q]]] == _T[_symbol[v]][_state[_map[q]]], Q)), V)):
                 found = True
                 break
 

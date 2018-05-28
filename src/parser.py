@@ -38,17 +38,6 @@ class ContextFreeGrammar(object):
     EOI = 0  # end of input marker ($)
     EPS = 1  # Epsilon marker
 
-    _name = None
-    _start = None
-    _terminals = None
-    _nonterminals = None
-    _first = None
-    _follow = None
-    _rules = None
-    _table = None
-    _rows = None
-    _cols = None
-
     def __init__(self, name, productions, start):
         """
         Attempt to initialize a ContextFreeGramamr object with the specified
@@ -67,36 +56,37 @@ class ContextFreeGrammar(object):
 
         Output Type: None | raise ValueError
         """
-        if type(name) is not str:
+        if not isinstance(name, str):
             raise ValueError('Invalid Input: name must be a string')
 
         self._name = name
 
-        if type(start) is not str:
+        if not isinstance(start, str):
             raise ValueError('Invalid Input: starting must be a string')
 
         self._start = start
 
-        if type(productions) is not dict:
+        if not isinstance(productions, dict):
             raise ValueError('Invalid Input: productions must be a dict')
 
         self._rules = []
         for nonterminal, rhs in productions.items():
-            if type(nonterminal) is not str:
+            if not isinstance(nonterminal, str):
                 raise ValueError('Invalid Input: nonterminal must be a string')
 
-            if type(rhs) is not str:
+            if not isinstance(rhs, str):
                 raise ValueError('Invalid Input: rules must be a string')
 
             for rule in rhs.split('|'):
                 self._rules.append((nonterminal, rule.split()))
 
         self._terminals, self._nonterminals = self._symbols(self._rules)
-        self._first = self._first(self._terminals, self._nonterminals, self._rules)
-        self._follow = self._follow(self._nonterminals, self._first, self._rules)
-        self._table, self._rows, self._cols = \
+        self._first_set = self._first(self._terminals, self._nonterminals, self._rules)
+        self._follow_set = self._follow(self._nonterminals, self._start,
+                                        self._first_set, self._rules)
+        self._parse_table, self._rows, self._cols = \
           self._table(self._terminals, self._nonterminals,
-                      self._first, self._follow, self._rules)
+                      self._first_set, self._follow_set, self._rules)
 
     def name(self):
         """
@@ -136,7 +126,7 @@ class ContextFreeGrammar(object):
 
         Output Type: Dict[String, Set[String, Int]]
         """
-        return deepcopy(self._first)
+        return deepcopy(self._first_set)
 
     def follow(self):
         """
@@ -144,7 +134,7 @@ class ContextFreeGrammar(object):
 
         Output Type: Dict[String, Set[String, Int]]
         """
-        return deepcopy(self._follow)
+        return deepcopy(self._follow_set)
 
     def rules(self):
         """
@@ -160,9 +150,10 @@ class ContextFreeGrammar(object):
 
         Output Type: List[List[Set[Int]]] x Dict[String, Int] x Dict[String, Int]
         """
-        return deepcopy(self._table), deepcopy(self._rows), deepcopy(self._cols)
+        return deepcopy(self._parse_table), deepcopy(self._rows), deepcopy(self._cols)
 
-    def _symbols(self, productions):
+    @staticmethod
+    def _symbols(productions):
         """
         Report all literal terminal symbols and non terminal production symbols
         appearing  in the grammar.
@@ -181,7 +172,8 @@ class ContextFreeGrammar(object):
         terminals = terminals - nonterminals
         return terminals, nonterminals
 
-    def _first_production(self, production, first):
+    @staticmethod
+    def _first_production(production, first):
         """
         Compute the first set of a single nonterminal's rhs/production following
         the algorithm at:
@@ -195,15 +187,16 @@ class ContextFreeGrammar(object):
 
         Output Type: Set[String, Int]
         """
-        _first = set([self.EPS])
+        _first = set([ContextFreeGrammar.EPS])
         for symbol in production:
             _first.update(first[symbol])
-            if self.EPS not in first[symbol]:
-                _first.discard(self.EPS)
+            if ContextFreeGrammar.EPS not in first[symbol]:
+                _first.discard(ContextFreeGrammar.EPS)
                 break
         return _first
 
-    def _first(self, terminals, nonterminals, productions):
+    @staticmethod
+    def _first(terminals, nonterminals, productions):
         """
         Calculate the first set for each terminal and nonterminal in the grammar
         following the algorithm at:
@@ -233,7 +226,7 @@ class ContextFreeGrammar(object):
             changed = False
 
             for nonterminal, production in productions:
-                new = self._first_production(production, first) - first[nonterminal]
+                new = ContextFreeGrammar._first_production(production, first) - first[nonterminal]
                 if new:
                     first[nonterminal].update(new)
                     changed = True
@@ -241,7 +234,8 @@ class ContextFreeGrammar(object):
             if not changed:
                 return first
 
-    def _follow(self, nonterminals, first, productions):
+    @staticmethod
+    def _follow(nonterminals, start, first, productions):
         """
         Calculate the follow set for each nonterminal in the grammar following
         the algorithm at:
@@ -260,7 +254,7 @@ class ContextFreeGrammar(object):
         follow = {nonterminal: set() for nonterminal in nonterminals}
 
         # put $ (end of input marker) in follow(<Start>)
-        follow[self._start] = set([self.EOI])
+        follow[start] = set([ContextFreeGrammar.EOI])
 
         # loop until nothing new happens updating the follow sets
         while True:
@@ -269,9 +263,9 @@ class ContextFreeGrammar(object):
             for nonterminal, production in productions:
                 for (idx, elem) in enumerate(production):
                     if elem in nonterminals:
-                        new = self._first_production(production[idx+1:], first)
-                        if self.EPS in new:
-                            new.discard(self.EPS)
+                        new = ContextFreeGrammar._first_production(production[idx+1:], first)
+                        if ContextFreeGrammar.EPS in new:
+                            new.discard(ContextFreeGrammar.EPS)
                             new.update(follow[nonterminal])
 
                         new = new - follow[elem]
@@ -282,7 +276,8 @@ class ContextFreeGrammar(object):
             if not changed:
                 return follow
 
-    def _table(self, terminals, nonterminals, first, follow, productions):
+    @staticmethod
+    def _table(terminals, nonterminals, first, follow, productions):
         """
         Construct the LL(1) parse table indexed by nonterminal x terminal by
         finding the predict sets following the algorithm at:
@@ -300,14 +295,14 @@ class ContextFreeGrammar(object):
         Output Type: List[List[Set[Int]]] x Dict[String] x Dict[String, Int]
         """
         rows = {n:i for i, n in enumerate(nonterminals)}
-        cols = {t:i for i, t in enumerate(terminals | set([self.EOI]))}
+        cols = {t:i for i, t in enumerate(terminals | set([ContextFreeGrammar.EOI]))}
 
         table = [[set() for _ in cols] for _ in rows]
 
         for (rule, (nonterminal, production)) in enumerate(productions):
-            predict = self._first_production(production, first)
-            if self.EPS in predict:
-                predict.discard(self.EPS)
+            predict = ContextFreeGrammar._first_production(production, first)
+            if ContextFreeGrammar.EPS in predict:
+                predict.discard(ContextFreeGrammar.EPS)
                 predict.update(follow[nonterminal])
             for terminal in predict:
                 table[rows[nonterminal]][cols[terminal]].add(rule)
@@ -884,7 +879,7 @@ if __name__ == "__main__":
             name = test['name']
             productions = test['productions']
             start = test['start']
-            grammar = ContextFreeGrammar(name, productions, start)
+            context_free_grammar = ContextFreeGrammar(name, productions, start)
         except ValueError as e:
             if test['valid']:  # test type (input output)
                 raise e        # Unexpected Failure (+-)
@@ -895,19 +890,19 @@ if __name__ == "__main__":
 
         # Failure checking for:  Expected Pass      (++)
 
-        if grammar.name() != test['name']:
+        if context_free_grammar.name() != test['name']:
             raise ValueError('Invalid name produced')
 
-        if grammar.start() != test['start']:
+        if context_free_grammar.start() != test['start']:
             raise ValueError('Invalid start production produced')
 
-        if grammar.terminals() != test['terminals']:
+        if context_free_grammar.terminals() != test['terminals']:
             raise ValueError('Invalid terminal set produced')
 
-        if grammar.nonterminals() != test['nonterminals']:
+        if context_free_grammar.nonterminals() != test['nonterminals']:
             raise ValueError('Invalid nonterminal set produced')
 
-        first = grammar.first()
+        first = context_free_grammar.first()
         if len(first) != len(test['first']):
             raise ValueError('Invalid first set size produced')
 
@@ -915,7 +910,7 @@ if __name__ == "__main__":
             if first.get(elem, None) != test['first'][elem]:
                 raise ValueError('Invalid first set produced')
 
-        follow = grammar.follow()
+        follow = context_free_grammar.follow()
         if len(follow) != len(test['follow']):
             raise ValueError('Invalid follow set size produced')
 
@@ -923,7 +918,7 @@ if __name__ == "__main__":
             if follow.get(elem, None) != test['follow'][elem]:
                 raise ValueError('Invalid follow set produced')
 
-        rules = grammar.rules()
+        rules = context_free_grammar.rules()
         if len(rules) != len(test['rules']):
             raise ValueError('Invalid number of table rules produced')
 
@@ -944,7 +939,7 @@ if __name__ == "__main__":
         _cols = {t:i for i, t in enumerate(test['table'].pop(0)[1:])}
         _rows = {n:i for i, n in enumerate([r.pop(0) for r in test['table']])}
 
-        table, rows, cols = grammar.table()
+        table, rows, cols = context_free_grammar.table()
         if len(rows) != len(_rows) or set(rows.keys()) ^ set(_rows.keys()):
             raise ValueError('Invalid number of table row headers produced')
 
