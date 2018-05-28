@@ -221,10 +221,12 @@ class ContextFreeGrammar(object):
         first = {}
 
         # foreach elem A of TERMS do first[A] = {A}
-        for terminal in terminals: first[terminal] = set([terminal])
+        for terminal in terminals:
+            first[terminal] = set([terminal])
 
         # foreach elem A of NONTERMS do first[A] = {}
-        for nonterminal in nonterminals: first[nonterminal] = set()
+        for nonterminal in nonterminals:
+            first[nonterminal] = set()
 
         # loop until nothing new happens updating the first sets
         while True:
@@ -297,8 +299,8 @@ class ContextFreeGrammar(object):
 
         Output Type: List[List[Set[Int]]] x Dict[String] x Dict[String, Int]
         """
-        rows = {n:i for i,n in enumerate(nonterminals)}
-        cols = {t:i for i,t in enumerate(terminals | set([self.EOI]))}
+        rows = {n:i for i, n in enumerate(nonterminals)}
+        cols = {t:i for i, t in enumerate(terminals | set([self.EOI]))}
 
         table = [[set() for _ in cols] for _ in rows]
 
@@ -622,27 +624,27 @@ if __name__ == "__main__":
             'nonterminals': set(['<STMT>', '<STMTS>', '<BLOCK>', '<TERM>',
                                  '<EXPR>']),
             'first': {
-              'if': set(['if']),
-              'then': set(['then']),
-              'while': set(['while']),
-              'do': set(['do']),
-              '->': set(['->']),
-              'zero?': set(['zero?']),
-              'not': set(['not']),
-              '++': set(['++']),
-              '--': set(['--']),
-              'id': set(['id']),
-              'constant': set(['constant']),
-              '{': set(['{']),
-              '}': set(['}']),
-              '<STMT>': set(['constant', '++', 'zero?', 'while', 'not', '--',
-                             'id', 'if']),
-              '<STMTS>': set([1, 'constant', '++', 'zero?', 'while', 'not',
-                              '--', 'id', 'if']),
-              '<BLOCK>': set(['constant', '++', 'zero?', 'while', 'not', '--',
-                              '{', 'id', 'if']),
-              '<TERM>': set(['constant', 'id']),
-              '<EXPR>': set(['++', 'not', 'constant', 'zero?', '--', 'id'])
+                'if': set(['if']),
+                'then': set(['then']),
+                'while': set(['while']),
+                'do': set(['do']),
+                '->': set(['->']),
+                'zero?': set(['zero?']),
+                'not': set(['not']),
+                '++': set(['++']),
+                '--': set(['--']),
+                'id': set(['id']),
+                'constant': set(['constant']),
+                '{': set(['{']),
+                '}': set(['}']),
+                '<STMT>': set(['constant', '++', 'zero?', 'while', 'not', '--',
+                               'id', 'if']),
+                '<STMTS>': set([1, 'constant', '++', 'zero?', 'while', 'not',
+                                '--', 'id', 'if']),
+                '<BLOCK>': set(['constant', '++', 'zero?', 'while', 'not', '--',
+                                '{', 'id', 'if']),
+                '<TERM>': set(['constant', 'id']),
+                '<EXPR>': set(['++', 'not', 'constant', 'zero?', '--', 'id'])
             },
             'follow': {
                 '<STMT>': set([0, 'constant', '++', 'not', 'while', 'zero?',
@@ -694,16 +696,16 @@ if __name__ == "__main__":
             'name': 'Valid Grammar: JSON',
             'valid': True,
             'productions': {
-              '<VALUE>': 'string | number | bool | null | <OBJECT> | <ARRAY>',
-              '<OBJECT>': '{ <OBJECT\'>',
-              '<OBJECT\'>': '} | <MEMBERS> }',
-              '<MEMBERS>': '<PAIR> <MEMBERS\'>',
-              '<PAIR>': 'string : <VALUE>',
-              '<MEMBERS\'>': ', <MEMBERS> |',
-              '<ARRAY>': '[ <ARRAY\'>',
-              '<ARRAY\'>': '] | <ELEMENTS> ]',
-              '<ELEMENTS>': '<VALUE> <ELEMENTS\'>',
-              '<ELEMENTS\'>': ', <ELEMENTS> |'
+                '<VALUE>': 'string | number | bool | null | <OBJECT> | <ARRAY>',
+                '<OBJECT>': '{ <OBJECT\'>',
+                '<OBJECT\'>': '} | <MEMBERS> }',
+                '<MEMBERS>': '<PAIR> <MEMBERS\'>',
+                '<PAIR>': 'string : <VALUE>',
+                '<MEMBERS\'>': ', <MEMBERS> |',
+                '<ARRAY>': '[ <ARRAY\'>',
+                '<ARRAY\'>': '] | <ELEMENTS> ]',
+                '<ELEMENTS>': '<VALUE> <ELEMENTS\'>',
+                '<ELEMENTS\'>': ', <ELEMENTS> |'
             },
             'start': '<VALUE>',
             'terminals': set(['{', '}', ',', '[', ']', ':', 'string', 'number',
@@ -713,61 +715,61 @@ if __name__ == "__main__":
                                  '<ARRAY>', '<ARRAY\'>', '<ELEMENTS>',
                                  '<ELEMENTS\'>']),
             'first': {
-              '{': set(['{']),
-              '}': set(['}']),
-              ',': set([',']),
-              '[': set(['[']),
-              ']': set([']']),
-              ':': set([':']),
-              'string': set(['string']),
-              'number': set(['number']),
-              'bool': set(['bool']),
-              'null': set(['null']),
-              '<VALUE>': set(['string', 'number', 'bool', 'null', '{', '[']),
-              '<OBJECT>': set(['{']),
-              '<OBJECT\'>': set(['}', 'string']),
-              '<MEMBERS>': set(['string']),
-              '<PAIR>': set(['string']),
-              '<MEMBERS\'>': set([1, ',']),
-              '<ARRAY>': set(['[']),
-              '<ARRAY\'>': set([']', 'string', 'number', 'bool', 'null', '{',
-                                '[']),
-              '<ELEMENTS>': set(['string', 'number', 'bool', 'null', '{',
-                                 '[']),
-              '<ELEMENTS\'>': set([1, ','])
+                '{': set(['{']),
+                '}': set(['}']),
+                ',': set([',']),
+                '[': set(['[']),
+                ']': set([']']),
+                ':': set([':']),
+                'string': set(['string']),
+                'number': set(['number']),
+                'bool': set(['bool']),
+                'null': set(['null']),
+                '<VALUE>': set(['string', 'number', 'bool', 'null', '{', '[']),
+                '<OBJECT>': set(['{']),
+                '<OBJECT\'>': set(['}', 'string']),
+                '<MEMBERS>': set(['string']),
+                '<PAIR>': set(['string']),
+                '<MEMBERS\'>': set([1, ',']),
+                '<ARRAY>': set(['[']),
+                '<ARRAY\'>': set([']', 'string', 'number', 'bool', 'null', '{',
+                                  '[']),
+                '<ELEMENTS>': set(['string', 'number', 'bool', 'null', '{',
+                                   '[']),
+                '<ELEMENTS\'>': set([1, ','])
             },
             'follow': {
-              '<VALUE>': set([0, ']', '}', ',']),
-              '<OBJECT>': set([0, ']', '}', ',']),
-              '<OBJECT\'>': set([0, ']', '}', ',']),
-              '<MEMBERS>': set(['}']),
-              '<PAIR>': set(['}', ',']),
-              '<MEMBERS\'>': set(['}']),
-              '<ARRAY>': set([0, ']', '}', ',']),
-              '<ARRAY\'>': set([0, ']', '}', ',']),
-              '<ELEMENTS>': set([']']),
-              '<ELEMENTS\'>': set([']'])
+                '<VALUE>': set([0, ']', '}', ',']),
+                '<OBJECT>': set([0, ']', '}', ',']),
+                '<OBJECT\'>': set([0, ']', '}', ',']),
+                '<MEMBERS>': set(['}']),
+                '<PAIR>': set(['}', ',']),
+                '<MEMBERS\'>': set(['}']),
+                '<ARRAY>': set([0, ']', '}', ',']),
+                '<ARRAY\'>': set([0, ']', '}', ',']),
+                '<ELEMENTS>': set([']']),
+                '<ELEMENTS\'>': set([']'])
             },
             'rules': [
-              ('<VALUE>', ['string']),
-              ('<VALUE>', ['number']),
-              ('<VALUE>', ['bool']),
-              ('<VALUE>', ['null']),
-              ('<VALUE>', ['<OBJECT>']),
-              ('<VALUE>', ['<ARRAY>']),
-              ('<OBJECT>', ['{', '<OBJECT\'>']),
-              ('<OBJECT\'>', ['}']),
-              ('<OBJECT\'>', ['<MEMBERS>', '}']),
-              ('<MEMBERS>', ['<PAIR>', '<MEMBERS\'>']),
-              ('<PAIR>', ['string', ':', '<VALUE>']),
-              ('<MEMBERS\'>', [',', '<MEMBERS>']),
-              ('<MEMBERS\'>', []),
-              ('<ARRAY>', ['[', '<ARRAY\'>']),
-              ('<ARRAY\'>', [']']),
-              ('<ARRAY\'>', ['<ELEMENTS>', ']']),
-              ('<ELEMENTS>', ['<VALUE>', '<ELEMENTS\'>']),
-              ('<ELEMENTS\'>', [',', '<ELEMENTS>']),
-              ('<ELEMENTS\'>', [])
+                ('<VALUE>', ['string']),
+                ('<VALUE>', ['number']),
+                ('<VALUE>', ['bool']),
+                ('<VALUE>', ['null']),
+                ('<VALUE>', ['<OBJECT>']),
+                ('<VALUE>', ['<ARRAY>']),
+                ('<OBJECT>', ['{', '<OBJECT\'>']),
+                ('<OBJECT\'>', ['}']),
+                ('<OBJECT\'>', ['<MEMBERS>', '}']),
+                ('<MEMBERS>', ['<PAIR>', '<MEMBERS\'>']),
+                ('<PAIR>', ['string', ':', '<VALUE>']),
+                ('<MEMBERS\'>', [',', '<MEMBERS>']),
+                ('<MEMBERS\'>', []),
+                ('<ARRAY>', ['[', '<ARRAY\'>']),
+                ('<ARRAY\'>', [']']),
+                ('<ARRAY\'>', ['<ELEMENTS>', ']']),
+                ('<ELEMENTS>', ['<VALUE>', '<ELEMENTS\'>']),
+                ('<ELEMENTS\'>', [',', '<ELEMENTS>']),
+                ('<ELEMENTS\'>', [])
             ],
             'table': [[' ', 0, ':', 'string', ']', 'number', ',', 'bool', '{',
                        'null', '}', '['],
@@ -807,56 +809,56 @@ if __name__ == "__main__":
             'name': 'Valid Grammar: INI',
             'valid': True,
             'productions': {
-              '<INI>': '<SECTION> <INI> |',
-              '<SECTION>': '<HEADER> <SETTINGS>',
-              '<HEADER>': '[ string ]',
-              '<SETTINGS>': '<KEY> <SEP> <VALUE> <SETTINGS> |',
-              '<KEY>': 'string',
-              '<SEP>': ': | =',
-              '<VALUE>': 'string | number | bool'
+                '<INI>': '<SECTION> <INI> |',
+                '<SECTION>': '<HEADER> <SETTINGS>',
+                '<HEADER>': '[ string ]',
+                '<SETTINGS>': '<KEY> <SEP> <VALUE> <SETTINGS> |',
+                '<KEY>': 'string',
+                '<SEP>': ': | =',
+                '<VALUE>': 'string | number | bool'
             },
             'start': '<INI>',
             'terminals': set(['string', 'number', 'bool', ':', '=', '[', ']']),
             'nonterminals': set(['<INI>', '<SECTION>', '<HEADER>',
                                  '<SETTINGS>', '<KEY>', '<SEP>', '<VALUE>']),
             'first': {
-              'string': set(['string']),
-              'number': set(['number']),
-              'bool': set(['bool']),
-              ':': set([':']),
-              '=': set(['=']),
-              '[': set(['[']),
-              ']': set([']']),
-              '<INI>': set([1, '[']),
-              '<SECTION>': set(['[']),
-              '<HEADER>': set(['[']),
-              '<SETTINGS>': set([1, 'string']),
-              '<KEY>': set(['string']),
-              '<SEP>': set([':', '=']),
-              '<VALUE>': set(['string', 'number', 'bool'])
+                'string': set(['string']),
+                'number': set(['number']),
+                'bool': set(['bool']),
+                ':': set([':']),
+                '=': set(['=']),
+                '[': set(['[']),
+                ']': set([']']),
+                '<INI>': set([1, '[']),
+                '<SECTION>': set(['[']),
+                '<HEADER>': set(['[']),
+                '<SETTINGS>': set([1, 'string']),
+                '<KEY>': set(['string']),
+                '<SEP>': set([':', '=']),
+                '<VALUE>': set(['string', 'number', 'bool'])
             },
             'follow': {
-              '<INI>': set([0]),
-              '<SECTION>': set([0, '[']),
-              '<HEADER>': set([0, '[', 'string']),
-              '<SETTINGS>': set([0, '[']),
-              '<KEY>': set([':', '=']),
-              '<SEP>': set(['string', 'number', 'bool']),
-              '<VALUE>': set([0, '[', 'string'])
+                '<INI>': set([0]),
+                '<SECTION>': set([0, '[']),
+                '<HEADER>': set([0, '[', 'string']),
+                '<SETTINGS>': set([0, '[']),
+                '<KEY>': set([':', '=']),
+                '<SEP>': set(['string', 'number', 'bool']),
+                '<VALUE>': set([0, '[', 'string'])
             },
             'rules': [
-              ('<INI>', ['<SECTION>', '<INI>']),
-              ('<INI>', []),
-              ('<SECTION>', ['<HEADER>', '<SETTINGS>']),
-              ('<HEADER>', ['[', 'string', ']']),
-              ('<SETTINGS>', ['<KEY>', '<SEP>', '<VALUE>', '<SETTINGS>']),
-              ('<SETTINGS>', []),
-              ('<KEY>', ['string']),
-              ('<SEP>', [':']),
-              ('<SEP>', ['=']),
-              ('<VALUE>', ['string']),
-              ('<VALUE>', ['number']),
-              ('<VALUE>', ['bool'])
+                ('<INI>', ['<SECTION>', '<INI>']),
+                ('<INI>', []),
+                ('<SECTION>', ['<HEADER>', '<SETTINGS>']),
+                ('<HEADER>', ['[', 'string', ']']),
+                ('<SETTINGS>', ['<KEY>', '<SEP>', '<VALUE>', '<SETTINGS>']),
+                ('<SETTINGS>', []),
+                ('<KEY>', ['string']),
+                ('<SEP>', [':']),
+                ('<SEP>', ['=']),
+                ('<VALUE>', ['string']),
+                ('<VALUE>', ['number']),
+                ('<VALUE>', ['bool'])
             ],
             'table': [[' ', 0, 'bool', 'string', '=', '[', ':', ']', 'number'],
                       ['<VALUE>', set([]), set([11]), set([9]), set([]),
@@ -931,7 +933,7 @@ if __name__ == "__main__":
             for (_idx, (_nonterminal, _rule)) in enumerate(test['rules']):
                 if nonterminal == _nonterminal and \
                    len(rule) == len(_rule) and \
-                   all(map(lambda i,j: i == j, rule, _rule)):
+                   all([rule[i] == e for i, e in enumerate(_rule)]):
                     _map[idx] = _idx
                     found = True
                     break
@@ -939,8 +941,8 @@ if __name__ == "__main__":
             if not found:
                 raise ValueError('Invalid production rule produced')
 
-        _cols = {t:i for i,t in enumerate(test['table'].pop(0)[1:])}
-        _rows = {n:i for i,n in enumerate([r.pop(0) for r in test['table']])}
+        _cols = {t:i for i, t in enumerate(test['table'].pop(0)[1:])}
+        _rows = {n:i for i, n in enumerate([r.pop(0) for r in test['table']])}
 
         table, rows, cols = grammar.table()
         if len(rows) != len(_rows) or set(rows.keys()) ^ set(_rows.keys()):
@@ -952,7 +954,7 @@ if __name__ == "__main__":
         if len(table) != len(test['table']):
             raise ValueError('Invalid number of table rows produced')
 
-        if not all(map(lambda r,_r: len(r) == len(_r), table, test['table'])):
+        if not all([len(table[i]) == len(r) for i, r in enumerate(test['table'])]):
             raise ValueError('Invalid number of table columns produced')
 
         for r in rows:
