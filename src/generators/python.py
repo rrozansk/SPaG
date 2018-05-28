@@ -2,11 +2,10 @@
 A scanner/parser generator targeting python.
 Generates a single python (.py) file.
 """
-import datetime
-from .. import generator as generator
+from . import Generator
 
 
-class Python(generator.Generator):
+class Python(Generator):
     """
     A simple object for compiling scanner's and/or parser's to python.
     """
@@ -19,11 +18,11 @@ class Python(generator.Generator):
         Attempt to generate and write the python (.py) source file with the
         corresponding scanner and/or parser currently set in the object.
         """
-        if type(filename) != str:
+        if isinstance(filename) is not str:
             raise ValueError('Invalid Input: filename must be a string')
 
-        if filename == "":
-            raise ValueError('Invalid Input: filename must be non empty')
+        if not filename:
+            raise ValueError('Invalid Input: filename must be a non empty string')
 
         with open(filename+".py", 'w') as _file:
             _file.write(self._output(filename))

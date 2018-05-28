@@ -80,16 +80,33 @@ Finally, the table is verified by checking for conflicts.
 
 The generators are very light weight wrappers on top of the scanner/parser
 objects and are responsible for compiling there output into a useable program in
-the choosen language.
+the choosen language. Adding a new generator is extremely simple as it only requires
+the addition of a single file containing a single class definition.
 
-Adding a new generator can be easily done by following the given steps below:
-  1. Create a new file for the generator following these restrictions:
-      * named by the targeted language (convention) and lowercase
-      * placed under src/generators/
-      * contains a class named by the capitalized filename
-      * class inherits from src/generator.py (Generator object)
-      * class must implement output(self, filename) API to generate the output
-  2. Edit src/generators/\_\_init\_\_.py by adding the new file to the list
+Using the below as a template create a new file with the given contents under
+src/generators, naming the file after the language being compiled to:
+
+```python
+"""
+A scanner/parser generator targeting {filename}.
+"""
+from . import Generator
+
+
+class {Filename}(Generator):
+    """
+    A simple object for compiling scanner's and/or parser's to {filename}.
+    """
+
+    def output(self, filename):
+        """
+        Attempt to generate the required output file for {filename}.
+        """
+        pass
+```
+
+NOTE: the class name is a capitalized version of the filename.
+This is important for the framework to automatically pick up and use the file/class.
 
 Below shows the current status of the generators:
 

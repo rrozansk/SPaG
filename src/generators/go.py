@@ -2,11 +2,10 @@
 A scanner/parser generator targeting go.
 Generates a single golang (.go) file.
 """
-import datetime
-from .. import generator as generator
+from . import Generator
 
 
-class Go(generator.Generator):
+class Go(Generator):
     """
     A simple object for compiling scanner's and/or parser's to golang.
     """
@@ -19,11 +18,11 @@ class Go(generator.Generator):
         Attempt to generate and write the golang (.go) source file with the
         corresponding scanner and/or parser currently set in the object.
         """
-        if type(filename) != str:
+        if isinstance(filename) is not str:
             raise ValueError('Invalid Input: filename must be a string')
 
-        if filename == "":
-            raise ValueError('Invalid Input: filename must be non empty')
+        if not filename:
+            raise ValueError('Invalid Input: filename must be a non empty string')
 
         with open(filename+".go", 'w') as _file:
             _file.write(self._output(filename))

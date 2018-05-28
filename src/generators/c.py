@@ -3,20 +3,20 @@ A scanner/parser generator targeting c.
 Generates header (.h) and source (.c) files.
 """
 import datetime
-from .. import generator as generator
+from . import Generator
 
 
-class C(generator.Generator):
+class C(Generator):
     """
     A simple object for compiling scanner's and/or parser's to c.
     """
 
     _reserved = {
-      "auto", "break", "case", "char", "const", "continue", "default", "do",
-      "int", "long", "register", "return", "short", "signed", "sizeof",
-      "static", "struct", "switch", "typedef", "union", "unsigned", "void",
-      "volatile", "while", "double", "else", "enum", "extern", "float", "for",
-      "goto", "if"
+        "auto", "break", "case", "char", "const", "continue", "default", "do",
+        "int", "long", "register", "return", "short", "signed", "sizeof",
+        "static", "struct", "switch", "typedef", "union", "unsigned", "void",
+        "volatile", "while", "double", "else", "enum", "extern", "float", "for",
+        "goto", "if"
     }
 
     def _sanatize(self, name):
@@ -28,8 +28,10 @@ class C(generator.Generator):
         """
         _name = ''
         for char in name:
-            if char.isalnum(): _name += char
-            else: _name += '_'
+            if char.isalnum():
+                _name += char
+            else:
+                _name += '_'
 
         if _name in self._reserved or name[0].isdigit():
             _name = '_' + _name
@@ -235,6 +237,9 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
 
     # FIXME:
     # - switch to internal buffer, allowing for pipes.
+        # -> more scanner state and a buffer API?
+        # - NFA to be updated with types in final state for uniqueness when ->dfa->hopcroft??
+        #   - cannot be done. example is most langs do relop -> < | > | <= | >= ...
     def _generate_scanner_api(self, name):
         return """\
 {1}
@@ -394,7 +399,7 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
         Attempt to generate and write the c source(.c) and header(.h) files for
         the corresponding scanner and/or parser currently set in the object.
         """
-        if type(filename) != str:
+        if type(filename) is not str:
             raise ValueError('Invalid Input: filename must be a string')
 
         if filename == "":
@@ -442,5 +447,7 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
 #endif
 """.format(filename, header)
 
-        with open(filename+".h", 'w') as _file: _file.write(header)
-        with open(filename+".c", 'w') as _file: _file.write(source)
+        with open(filename+".h", 'w') as _file:
+            _file.write(header)
+        with open(filename+".c", 'w') as _file:
+            _file.write(source)
