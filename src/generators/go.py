@@ -18,11 +18,11 @@ class Go(Generator):
         Attempt to generate and write the golang (.go) source file with the
         corresponding scanner and/or parser currently set in the object.
         """
-        if isinstance(filename) is not str:
-            raise ValueError('Invalid Input: filename must be a string')
+        if not isinstance(filename, str):
+            raise ValueError('Invalid Input [Go Gen]: filename must be a string')
 
         if not filename:
-            raise ValueError('Invalid Input: filename must be a non empty string')
+            raise ValueError('Invalid Input [Go Gen]: filename must be a non empty string')
 
         with open(filename+".go", 'w') as _file:
             _file.write(self._output(filename))

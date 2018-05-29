@@ -405,10 +405,10 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
         the corresponding scanner and/or parser currently set in the object.
         """
         if not isinstance(filename, str):
-            raise ValueError('Invalid Input: filename must be a string')
+            raise ValueError('Invalid Input [C Gen]: filename must be a string')
 
         if filename == "":
-            raise ValueError('Invalid Input: filename must be non empty')
+            raise ValueError('Invalid Input [C Gen]: filename must be non empty')
 
         author = '**AUTO GENERATED**'
         source = 'https://github.com/rrozansk/Scanner-Parser-Generator'

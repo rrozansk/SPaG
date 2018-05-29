@@ -117,7 +117,7 @@ Below shows the current status of the generators:
 ## Quick Start Guide
 
 ### Prerequisites (Code Generation)
-  - python >= 2.7
+  - python 2.7 or 3.5
 
 ### Getting Started
 ```sh

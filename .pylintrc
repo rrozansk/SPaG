@@ -401,16 +401,14 @@ function-naming-style=snake_case
 #function-rgx=
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=e,
-           f,
-           i,
+good-names=i,
            j,
+           k,
            p,
            q,
            r,
            s,
            t,
-           k,
            Q,
            V,
            T,
@@ -424,7 +422,6 @@ good-names=e,
            Fp,
            Gp,
            ex,
-           Run,
            _
 
 # Include a hint for the correct naming format with invalid-name

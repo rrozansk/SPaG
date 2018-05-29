@@ -1,7 +1,5 @@
 ini
 
-<Ini>
-
 <Ini>         <Section> <Ini'>
 <Ini'>        <Section> <Ini'> |
 <Section>     <Header> <Settings>

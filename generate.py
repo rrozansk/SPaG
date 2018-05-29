@@ -63,8 +63,8 @@ if ARGS['scanner'] is not None:
     try:
         SCANNER = scanner.RegularGrammar(NAME, TOKENS)
         GENERATOR.set_scanner(SCANNER)
-    except ValueError as e:
-        print('Scanner creation failed\n', e)
+    except ValueError as exception:
+        print('Scanner creation failed\n', exception)
 
 if ARGS['parser'] is not None:
     NAME = None
@@ -81,21 +81,18 @@ if ARGS['parser'] is not None:
             NAME = items[0]
             continue
 
-        if START is None:
-            if len(items) != 1:
-                raise ValueError('Error: Invalid file format - parser start')
-            START = items[0]
-            continue
-
         if len(items) != 2:
             raise ValueError('Error: Invalid file format - parser production')
+
+        if START is None:
+            START = items[0]
 
         PRODUCTIONS[items[0]] = items[1].rstrip()
     try:
         PARSER = parser.ContextFreeGrammar(NAME, PRODUCTIONS, START)
         GENERATOR.set_parser(PARSER)
-    except ValueError as e:
-        print('Parser creation failed\n', e)
+    except ValueError as exception:
+        print('Parser creation failed\n', exception)
 
 if not GENERATOR.get_parser() and not GENERATOR.get_scanner():
     raise ValueError('Error: Must provide atleast a scanner or a parser')

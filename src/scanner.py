@@ -777,7 +777,9 @@ class RegularGrammar(object):
         Gp = {g:set([rename[s] for s in states]) for g, states in G.items()}
         return Qp, V, Tp, Sp, Fp, Gp
 
-
+# disable pylint spacing error to enable 'pretty/readable'
+# display of grammar transition trables.
+# pylint: disable=bad-whitespace, line-too-long
 if __name__ == '__main__':
 
     TESTS = [
@@ -2279,12 +2281,12 @@ if __name__ == '__main__':
     for test in TESTS:
         try:
             regular_grammar = RegularGrammar(test['name'], test['expressions'])
-        except ValueError as e:
-            if test['valid']:  # test type (input output)
-                raise e        # Unexpected Failure (+-)
-            continue           # Expected Failure   (--)
+        except ValueError as exception:
+            if test['valid']:   # test type (input output)
+                raise exception # Unexpected Failure (+-)
+            continue            # Expected Failure   (--)
 
-        if not test['valid']:  # Unexpected Pass    (-+)
+        if not test['valid']:   # Unexpected Pass    (-+)
             raise ValueError('Panic: Negative test passed without error')
 
         # Failure checking for:  Expected Pass      (++)
