@@ -108,7 +108,7 @@ class RegularGrammar(object):
         if not isinstance(expressions, list):
             raise ValueError('Invalid Input: expressions must be a list')
 
-        NFAs = []
+        nfa = []
         self._exprs = []
         for element in expressions:
             if not isinstance(element, tuple):
@@ -124,15 +124,16 @@ class RegularGrammar(object):
 
             self._exprs.append((name, pattern))
 
-            pattern = self._scan(pattern)
-            pattern = self._expand_char_class_range(pattern)
-            pattern = self._expand_concat(pattern)
-            pattern = self._shunt(pattern)
+            pattern = RegularGrammar._scan(pattern)
+            pattern = RegularGrammar._expand_char_class_range(pattern)
+            pattern = RegularGrammar._expand_concat(pattern)
+            pattern = RegularGrammar._shunt(pattern)
 
-            NFAs.append((self._NFA(name, pattern)))
+            nfa.append((RegularGrammar._nfa(name, pattern)))
 
-        Q, V, T, S, F, G = self._total(*self._DFA(*self._merge_NFAs(NFAs)))
-        Q, V, T, S, F, G = self._alpha(*self._Hopcroft(Q, V, T, S, F, G))
+        Q, V, T, S, F, G = RegularGrammar._dfa(*RegularGrammar._merge_nfa(nfa))
+        Q, V, T, S, F, G = RegularGrammar._total(Q, V, T, S, F, G)
+        Q, V, T, S, F, G = RegularGrammar._alpha(*RegularGrammar._hopcroft(Q, V, T, S, F, G))
 
         self._states = Q
         self._alphas = V
@@ -210,7 +211,8 @@ class RegularGrammar(object):
         """
         return deepcopy(self._types)
 
-    def _scan(self, expr):
+    @staticmethod
+    def _scan(expr):
         """
         Convert an external representation of a token (regular expression) to
         an internal one. Ensures all characters and escape sequences are valid.
@@ -233,25 +235,39 @@ class RegularGrammar(object):
         for char in expr:
             if escape:
                 escape = False
-                if char in self._operators: output.append(char)
-                elif char == '\\': output.append('\\')
-                elif char == 's': output.append(' ')
-                elif char == 't': output.append('\t')
-                elif char == 'n': output.append('\n')
-                elif char == 'r': output.append('\r')
-                elif char == 'f': output.append('\f')
-                elif char == 'v': output.append('\v')
-                else: raise ValueError('Error: invalid escape seq: \\' + char)
+                if char in RegularGrammar._operators:
+                    output.append(char)
+                elif char == '\\':
+                    output.append('\\')
+                elif char == 's':
+                    output.append(' ')
+                elif char == 't':
+                    output.append('\t')
+                elif char == 'n':
+                    output.append('\n')
+                elif char == 'r':
+                    output.append('\r')
+                elif char == 'f':
+                    output.append('\f')
+                elif char == 'v':
+                    output.append('\v')
+                else:
+                    raise ValueError('Error: invalid escape seq: \\' + char)
             else:
-                if char == '\\': escape = True
-                elif char in self._operators: output.append(self._operators[char])
-                elif char in self._characters: output.append(char)
-                else: raise ValueError('Error: unrecognized character: ' + char)
+                if char == '\\':
+                    escape = True
+                elif char in RegularGrammar._operators:
+                    output.append(RegularGrammar._operators[char])
+                elif char in RegularGrammar._characters:
+                    output.append(char)
+                else:
+                    raise ValueError('Error: unrecognized character: ' + char)
         if escape:
             raise ValueError('Error: empty escape sequence')
         return output
 
-    def _expand_char_class_range(self, expr):
+    @staticmethod
+    def _expand_char_class_range(expr):
         """
         Expand the internal representation of the expression so that
         character classes and ranges are eliminated.
@@ -266,9 +282,9 @@ class RegularGrammar(object):
         output, literals = [], []
         expansion, negation, prange = False, False, False
         for char in expr:
-            if char == self._operators['['] and not expansion:
+            if char == RegularGrammar._operators['['] and not expansion:
                 expansion = True
-            elif char == self._operators[']']:
+            elif char == RegularGrammar._operators[']']:
                 if not expansion:
                     raise ValueError('Error: Invalid character class/range; no start')
                 expansion = False
@@ -277,14 +293,14 @@ class RegularGrammar(object):
                     literals.append('-')
                 if negation:
                     negation = False
-                    literals = list(self._characters - set(literals))
+                    literals = list(RegularGrammar._characters - set(literals))
                 if literals:
                     literals = list(set(literals))
-                    output.append(self._operators['('])
+                    output.append(RegularGrammar._operators['('])
                     while literals:
                         output.append(literals.pop())
-                        output.append(self._operators['|'])
-                    output[-1] = self._operators[')']
+                        output.append(RegularGrammar._operators['|'])
+                    output[-1] = RegularGrammar._operators[')']
             elif not expansion:
                 output.append(char)
             elif char == '^' and not literals and not negation:
@@ -296,12 +312,13 @@ class RegularGrammar(object):
                 _char = literals.pop()
                 literals.extend(map(chr, range(ord(min(_char, char)), ord(max(_char, char))+1)))
             else:
-                literals.append(self._literals.get(char, char))
+                literals.append(RegularGrammar._literals.get(char, char))
         if expansion:
             raise ValueError('Error: character class/range end not specified')
         return output
 
-    def _expand_concat(self, expr):
+    @staticmethod
+    def _expand_concat(expr):
         """
         Expand the internal representation of the expression so that
         concatentation is explicit throughout.
@@ -316,15 +333,16 @@ class RegularGrammar(object):
         output = []
         for elem in expr:
             if output and \
-               output[-1] != self._operators['('] and \
-               output[-1] != self._operators['|'] and \
-               output[-1] != self._operators['.'] and \
-               (elem == self._operators['('] or elem in self._characters):
-                output.append(self._operators['.'])
+               output[-1] != RegularGrammar._operators['('] and \
+               output[-1] != RegularGrammar._operators['|'] and \
+               output[-1] != RegularGrammar._operators['.'] and \
+               (elem == RegularGrammar._operators['('] or elem in RegularGrammar._characters):
+                output.append(RegularGrammar._operators['.'])
             output.append(elem)
         return output
 
-    def _shunt(self, expr):
+    @staticmethod
+    def _shunt(expr):
         """
         Convert the input expression to be entirely in postfix notation (RPN;
         Reverse Polish Notation) allowing all parenthesis to be dropped.
@@ -341,21 +359,21 @@ class RegularGrammar(object):
         stack, queue = [], []  # operators, output expression
 
         for token in expr:
-            if token in self._characters:
+            if token in RegularGrammar._characters:
                 queue.append(token)
-            elif token == self._operators['(']:
-                stack.append(self._operators['('])
-            elif token == self._operators[')']:
-                while stack and stack[-1] != self._operators['(']:
+            elif token == RegularGrammar._operators['(']:
+                stack.append(RegularGrammar._operators['('])
+            elif token == RegularGrammar._operators[')']:
+                while stack and stack[-1] != RegularGrammar._operators['(']:
                     queue.append(stack.pop())
                 if not stack:
                     raise ValueError('Error: unbalanced parenthesis')
                 stack.pop()
-            elif token in self._precedence:
-                while stack and stack[-1] != self._operators['('] and\
-                      self._precedence[token][0] <= \
-                      self._precedence[stack[-1]][0]\
-                      and self._precedence[token][1]:  # left-associative?
+            elif token in RegularGrammar._precedence:
+                while stack and stack[-1] != RegularGrammar._operators['('] and\
+                      RegularGrammar._precedence[token][0] <= \
+                      RegularGrammar._precedence[stack[-1]][0]\
+                      and RegularGrammar._precedence[token][1]:  # left-associative?
                     queue.append(stack.pop())
                 stack.append(token)
             else:
@@ -363,13 +381,15 @@ class RegularGrammar(object):
 
         while stack:
             token = stack.pop()
-            if token == self._operators['('] or token == self._operators[')']:
+            if token == RegularGrammar._operators['('] or \
+               token == RegularGrammar._operators[')']:
                 raise ValueError('Error: unbalanced parenthesis')
             queue.append(token)
 
         return queue
 
-    def _state(self):
+    @staticmethod
+    def _state():
         """
         Generate a new universally unique state name/label.
 
@@ -379,7 +399,8 @@ class RegularGrammar(object):
         """
         return str(uuid4())
 
-    def _NFA(self, type, expr):
+    @staticmethod
+    def _nfa(name, expr):
         """
         Attempt to convert an internal representation of a regular expression
         in RPN to an epsilon NFA. Operators handled: union |, kleene star *,
@@ -393,7 +414,7 @@ class RegularGrammar(object):
         Runtime: O(n) - linear to the length of expr.
 
         Input Type:
-          type: String
+          name: String
           expr: List[String, Int]
 
         Output Types:
@@ -413,54 +434,57 @@ class RegularGrammar(object):
         F = None    # accepting state F in Q
         G = dict()  # map type to the final state(s)
 
-        def e_update(s, f):
-            E[s] = E.get(s, set())
-            E[s].add(f)
+        def e_update(start, final):
+            """
+            Small internal helper to update epsilon dictionary.
+            """
+            E[start] = E.get(start, set())
+            E[start].add(final)
 
         stk = []  # NFA machine stk
         for token in expr:
-            if token in self._characters:
-                S, F = self._state(), self._state()
+            if token in RegularGrammar._characters:
+                S, F = RegularGrammar._state(), RegularGrammar._state()
                 V.add(token)
                 T.add((S, token, F))
-            elif token == self._operators['.']:
+            elif token == RegularGrammar._operators['.']:
                 if len(stk) < 2:
                     raise ValueError('Error: not enough args to op .')
                 p, F = stk.pop()
                 S, q = stk.pop()
                 e_update(q, p)
-            elif token == self._operators['|']:
+            elif token == RegularGrammar._operators['|']:
                 if len(stk) < 2:
                     raise ValueError('Error: not enough args to op |')
                 p, q = stk.pop()
                 r, t = stk.pop()
-                S, F = self._state(), self._state()
+                S, F = RegularGrammar._state(), RegularGrammar._state()
                 e_update(S, p)
                 e_update(S, r)
                 e_update(q, F)
                 e_update(t, F)
-            elif token == self._operators['*']:
+            elif token == RegularGrammar._operators['*']:
                 if len(stk) < 1:
                     raise ValueError('Error: not enough args to op *')
                 p, q = stk.pop()
-                S, F = self._state(), self._state()
+                S, F = RegularGrammar._state(), RegularGrammar._state()
                 e_update(S, p)
                 e_update(q, p)
                 e_update(q, F)
                 e_update(S, F)
-            elif token == self._operators['+']:
+            elif token == RegularGrammar._operators['+']:
                 if len(stk) < 1:
                     raise ValueError('Error: not enough args to op +')
                 p, q = stk.pop()
-                S, F = self._state(), self._state()
+                S, F = RegularGrammar._state(), RegularGrammar._state()
                 e_update(S, p)
                 e_update(q, p)
                 e_update(q, F)
-            elif token == self._operators['?']:
+            elif token == RegularGrammar._operators['?']:
                 if len(stk) < 1:
                     raise ValueError('Error: not enough args to op ?')
                 p, q = stk.pop()
-                S, F = self._state(), self._state()
+                S, F = RegularGrammar._state(), RegularGrammar._state()
                 e_update(S, p)
                 e_update(S, F)
                 e_update(q, F)
@@ -472,10 +496,11 @@ class RegularGrammar(object):
         if len(stk) != 1:
             raise ValueError('Error: invalid expression')
         S, F = stk.pop()
-        G[type] = F
+        G[name] = F
         return Q, V, T, E, S, F, G
 
-    def _merge_NFAs(self, NFAs):
+    @staticmethod
+    def _merge_nfa(nfa):
         """
         Merge multiple NFAs with a new single start state containing epsilon
         transitions to each individual machine.
@@ -504,23 +529,23 @@ class RegularGrammar(object):
           x String
           x Dict[String, String]
         """
-        S = self._state()
+        S = RegularGrammar._state()
         Q, V, T, E, S, F, G = set(), set(), set(), dict(), S, set(), dict()
         E[S] = set()
-        for NFA in NFAs:
-            q, v, t, e, s, f, g = NFA
-            Q.update(q)
-            V.update(v)
-            T.update(t)
-            E[S].add(s)
-            for state, etransitions in e.items():
+        for _nfa in nfa:
+            Q.update(_nfa[0])
+            V.update(_nfa[1])
+            T.update(_nfa[2])
+            E[S].add(_nfa[4])
+            for state, etransitions in _nfa[3].items():
                 E[state] = E.get(state, set()) | etransitions
-            F.add(f)
-            for type, state in g.items():
-                G[type] = state
+            F.add(_nfa[5])
+            for name, state in _nfa[6].items():
+                G[name] = state
         return Q, V, T, E, S, F, G
 
-    def _e_closure(self, q, E, cache):
+    @staticmethod
+    def _e_closure(q, E, cache):
         """
         Find the epsilon closure of state q and epsilon transitions E. A cache
         is utilized to speed things up for repeated invocations. Stated in set
@@ -551,7 +576,8 @@ class RegularGrammar(object):
 
         return closure
 
-    def _DFA(self, Q, V, T, E, S, F, G):
+    @staticmethod
+    def _dfa(Q, V, T, E, S, F, G):
         """
         Convert the epsilon NFA to a DFA using subset construction and
         e-closure conversion. Only states wich are reachable from the start
@@ -578,31 +604,33 @@ class RegularGrammar(object):
           x Dict[String, Set[Frozenset[String]]]
         """
         cache, Gp = dict(), dict()
-        Sp = frozenset(self._e_closure(S, E, cache))
+        Sp = frozenset(RegularGrammar._e_closure(S, E, cache))
         Qp, Fp, Tp, explore = set(), set(), set(), set([Sp])
         while explore:
-            q = explore.pop()  # DFA state; set of NFA states
-            if q not in Qp:
-                Qp.add(q)
-                if F & q: Fp.add(q)
+            in_state = explore.pop()  # DFA state; set of NFA states
+            if in_state not in Qp:
+                Qp.add(in_state)
+                if F & in_state:
+                    Fp.add(in_state)
                 qps = {}
                 for t in T:
-                    if t[0] in q:
-                        qp = qps[t[1]] = qps.get(t[1], set())
-                        qp.update(self._e_closure(t[2], E, cache))
-                for a, qp in qps.items():
-                    qp = frozenset(qp)
-                    explore.add(qp)
-                    Tp.add((q, a, qp))
+                    if t[0] in in_state:
+                        out_states = qps[t[1]] = qps.get(t[1], set())
+                        out_states.update(RegularGrammar._e_closure(t[2], E, cache))
+                for alpha, out_state in qps.items():
+                    out_state = frozenset(out_state)
+                    explore.add(out_state)
+                    Tp.add((in_state, alpha, out_state))
 
-        for type, NFA_final in G.items():
-            for DFA_final in Fp:
-                if NFA_final in DFA_final:
-                    Gp[type] = Gp.get(type, set()) | set([DFA_final])
+        for name, nfa_final in G.items():
+            for dfa_final in Fp:
+                if nfa_final in dfa_final:
+                    Gp[name] = Gp.get(name, set()) | set([dfa_final])
 
         return Qp, V, Tp, Sp, Fp, Gp
 
-    def _total(self, Q, V, T, S, F, G):
+    @staticmethod
+    def _total(Q, V, T, S, F, G):
         """
         Make the DFA's delta function total, if not already, by adding a
         sink/error state. All unspecified state transitions are then specified
@@ -632,7 +660,7 @@ class RegularGrammar(object):
           x Set[Frozenset[String]]
           x Dict[String, Set[Frozenset[String]]]
         """
-        q_err = frozenset([self._state()])
+        q_err = frozenset([RegularGrammar._state()])
         if len(T) != len(Q) * len(V):
             Q.add(q_err)
             G['_sink'] = set([q_err])
@@ -645,7 +673,8 @@ class RegularGrammar(object):
 
         return Q, V, (states, symbols, table), S, F, G
 
-    def _Hopcroft(self, Q, V, T, S, F, G):
+    @staticmethod
+    def _hopcroft(Q, V, T, S, F, G):
         """
         Minimize the DFA with reguard to indistinguishable states using
         hopcrafts algorithm, which merges states together based on partition
@@ -680,67 +709,71 @@ class RegularGrammar(object):
         (states, symbols, T) = T
         Q, F = frozenset(Q), frozenset(F)
 
-        P = set([F, Q - F]) - set([frozenset()])  # if Q - F was empty
-        W = set([F])
+        partitions = set([F, Q - F]) - set([frozenset()])  # if Q - F was empty
+        explore = set([F])
 
-        while W:
-            A = W.pop()
-            for vIdx in symbols.values():
-                X = frozenset({q for q, qIdx in states.items() if T[vIdx][qIdx] in A})
-                _P = set()
-                for Y in P:
-                    s1 = X & Y
-                    s2 = Y - X
-                    if s1 and s2:
-                        _P.update([s1, s2])
-                        if Y in W:
-                            W.remove(Y)
-                            W.update([s1, s2])
-                        elif len(s1) <= len(s2):
-                            W.update([s1])
+        while explore:
+            selection = explore.pop()
+            for v_idx in symbols.values():
+                _selection = {q for q, q_idx in states.items() if T[v_idx][q_idx] in selection}
+                _selection = frozenset(_selection)
+                _partitions = set()
+                for partition in partitions:
+                    split_1 = _selection & partition
+                    split_2 = partition - _selection
+                    if split_1 and split_2:
+                        _partitions.update([split_1, split_2])
+                        if partition  in explore:
+                            explore.remove(partition)
+                            explore.update([split_1, split_2])
+                        elif len(split_1) <= len(split_2):
+                            explore.update([split_1])
                         else:
-                            W.update([s2])
+                            explore.update([split_2])
                     else:
-                        _P.add(Y)
-                P = _P
+                        _partitions.add(partition)
+                partitions = _partitions
 
-        _states = dict(zip(P, range(len(P))))
-        Tp = [[None for _ in P] for symbol in V]
+        _states = dict(zip(partitions, range(len(partitions))))
+        Tp = [[None for _ in partitions] for symbol in V]
         for source in states:
             for symbol in V:
                 dest = T[symbols[symbol]][states[source]]
-                s1, s2 = None, None
-                for part in P:
+                state_1, state_2 = None, None
+                for part in partitions:
                     if source in part:
-                        s1 = part
-                        if s2: break
+                        state_1 = part
+                        if state_2:
+                            break
                     if dest in part:
-                        s2 = part
-                        if s1: break
-                Tp[symbols[symbol]][_states[s1]] = s2
+                        state_2 = part
+                        if state_1:
+                            break
+                Tp[symbols[symbol]][_states[state_1]] = state_2
 
         Sp = None
-        for part in P:
+        for part in partitions:
             if S in part:
                 Sp = part
                 break
 
-        Fp = {part for part in P if part & F}
+        Fp = {partition for partition in partitions if partition & F}
 
         Gp = dict()
 
-        for type, DFA_finals in G.items():
-            if type == '_sink': # special case (i.e not a final state)
-                Gp[type] = {part for part in P if part & G['_sink']}
+        for name, dfa_finals in G.items():
+            if name == '_sink': # special case (i.e not a final state)
+                Gp[name] = {part for part in partitions if part & G['_sink']}
                 continue
-            for DFA_final in DFA_finals:
-                for DFA_merged_final in Fp:
-                    if DFA_final in DFA_merged_final:
-                        Gp[type] = Gp.get(type, set()) | set([DFA_merged_final])
+            for dfa_final in dfa_finals:
+                for dfa_merged_final in Fp:
+                    if dfa_final in dfa_merged_final:
+                        Gp[name] = Gp.get(name, set()) | set([dfa_merged_final])
 
-        return P, V, (_states, symbols, Tp), Sp, Fp, Gp
+        return partitions, V, (_states, symbols, Tp), Sp, Fp, Gp
 
-    def _alpha(self, Q, V, T, S, F, G):
+    @staticmethod
+    def _alpha(Q, V, T, S, F, G):
         """
         Perform an alpha rename on all DFA states to simplify the
         representation which the end user will consume.
@@ -767,7 +800,7 @@ class RegularGrammar(object):
           x Set[String]
           x Dict[String, Set[String]]
         """
-        rename = {q: self._state() for q in Q}
+        rename = {q: RegularGrammar._state() for q in Q}
         Qp = set(rename.values())
         (states, symbols, table) = T
         states = {rename[state]:idx for state, idx in states.items()}
@@ -777,9 +810,8 @@ class RegularGrammar(object):
         Gp = {g:set([rename[s] for s in states]) for g, states in G.items()}
         return Qp, V, Tp, Sp, Fp, Gp
 
-# disable pylint spacing error to enable 'pretty/readable'
-# display of grammar transition trables.
-# pylint: disable=bad-whitespace, line-too-long
+# disable pylint spacing error to enable 'pretty/readable' transition tables.
+# pylint: disable=bad-whitespace, line-too-long, anomalous-backslash-in-string
 if __name__ == '__main__':
 
     TESTS = [
@@ -2276,17 +2308,20 @@ if __name__ == '__main__':
         },
     ]
 
+# re-enable pylint errors.
+# pylint: enable=bad-whitespace, line-too-long, anomalous-backslash-in-string
+
     from itertools import permutations
 
     for test in TESTS:
         try:
             regular_grammar = RegularGrammar(test['name'], test['expressions'])
-        except ValueError as exception:
-            if test['valid']:   # test type (input output)
-                raise exception # Unexpected Failure (+-)
-            continue            # Expected Failure   (--)
+        except ValueError as regular_grammar_exception:
+            if test['valid']:                   # test type (input output)
+                raise regular_grammar_exception # Unexpected Failure (+-)
+            continue                            # Expected Failure   (--)
 
-        if not test['valid']:   # Unexpected Pass    (-+)
+        if not test['valid']:                   # Unexpected Pass    (-+)
             raise ValueError('Panic: Negative test passed without error')
 
         # Failure checking for:  Expected Pass      (++)
@@ -2308,49 +2343,53 @@ if __name__ == '__main__':
             if _name != name or _pattern != pattern:
                 raise ValueError('Error: Incorrect token name/pattern created')
 
-        _DFA = test['DFA']
-
         V = regular_grammar.alphabet()
-        if V != _DFA['V']:
+        if V != test['DFA']['V']:
             raise ValueError('Error: Incorrect alphabet produced')
 
         Q = regular_grammar.states()
-        if len(Q) != len(_DFA['Q']):
+        if len(Q) != len(test['DFA']['Q']):
             raise ValueError('Error: Incorrect number of states produced')
 
         F = regular_grammar.accepting()
-        if len(F) != len(_DFA['F']):
+        if len(F) != len(test['DFA']['F']):
             raise ValueError('Error: Incorrect number of finish states')
 
         G = regular_grammar.types()
-        if len(G) != len(_DFA['G']):
+        if len(G) != len(test['DFA']['G']):
             print regular_grammar.name()
             raise ValueError('Error: Incorrect number of types')
 
         state, symbol, T = regular_grammar.transitions()
-        if len(T) != len(_DFA['T'])-1 or \
-           (T and len(T[0]) != len(_DFA['T'][0])-1):
+        if len(T) != len(test['DFA']['T'])-1 or \
+           (T and len(T[0]) != len(test['DFA']['T'][0])-1):
             raise ValueError('Error: Incorrect number of transitions produced')
 
         # Check if DFA's are isomorphic by attempting to find a bijection
         # between them since they both already look very 'similar'.
-        _Q = _DFA['Q']
+        _Q = test['DFA']['Q']
         S = regular_grammar.start()
 
         _state, _symbol, _T = dict(), dict(), list()
         if T:
-            _state = {s:idx for idx, s in enumerate(_DFA['T'].pop(0)[1:])}
-            _symbol = {s:idx for idx, s in enumerate([row.pop(0) for row in _DFA['T']])}
-            _T = _DFA['T']
+            _state = {s:idx for idx, s in enumerate(test['DFA']['T'].pop(0)[1:])}
+            _symbol = {s:idx for idx, s in enumerate([row.pop(0) for row in test['DFA']['T']])}
+            _T = test['DFA']['T']
 
         found = False
         for _map in (dict(zip(Q, perm)) for perm in permutations(_Q, len(_Q))):
-            if _map[S] == _DFA['S'] and \
-               all(map(lambda f: _map[f] in _DFA['F'], F)) and \
-               all(map(lambda elem: {_map[s] for s in elem[1]} == _DFA['G'].get(elem[0], set()), G.items())) and \
-               all(map(lambda v: all(map(lambda q: _map[T[symbol[v]][state[q]]] == _T[_symbol[v]][_state[_map[q]]], Q)), V)):
-                found = True
-                break
+            if _map[S] != test['DFA']['S']:
+                continue
+            if not all([_map[f] in test['DFA']['F'] for f in F]):
+                continue
+            if not all([{_map[s] for s in types} == \
+               test['DFA']['G'].get(name, set()) for name, types in G.items()]):
+                continue
+            if not all([all([_map[T[symbol[v]][state[q]]] == \
+               _T[_symbol[v]][_state[_map[q]]] for q in Q]) for v in V]):
+                continue
+            found = True
+            break
 
         if not found:
             raise ValueError('Error: Non-isomorphic DFA produced')

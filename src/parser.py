@@ -880,12 +880,12 @@ if __name__ == "__main__":
             productions = test['productions']
             start = test['start']
             context_free_grammar = ContextFreeGrammar(name, productions, start)
-        except ValueError as exception:
-            if test['valid']:   # test type (input output)
-                raise exception # Unexpected Failure (+-)
-            continue            # Expected Failure   (--)
+        except ValueError as context_free_grammar_exception:
+            if test['valid']:                        # test type (input output)
+                raise context_free_grammar_exception # Unexpected Failure (+-)
+            continue                                 # Expected Failure   (--)
 
-        if not test['valid']:   # Unexpected Pass    (-+)
+        if not test['valid']:                        # Unexpected Pass    (-+)
             raise ValueError('Panic: Negative test passed without error')
 
         # Failure checking for:  Expected Pass      (++)
