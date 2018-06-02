@@ -1,6 +1,25 @@
-# Scanner-Parser-Generator
+Scanner-Parser-Generator
+=================
 
-[![LICENSE](https://img.shields.io/badge/LICENSE-MIT-green.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/LICENSE.txt) [![RELEASES](https://img.shields.io/badge/Releases-current-yellow.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/releases)
+  1. [Introduction](#introduction)
+  2. [Installation](#installation)
+      * [Prerequisites](#prerequisites)
+      * [Github](#github)
+      * [Pip](#pip)
+  3. [Scanner](#scanner)
+      * [Input](#scanner-input)
+      * [Test](#scanner-test)
+  4. [Parser](#parser)
+      * [Input](#parser-input)
+      * [Test](#parser-test)
+  5. [Generators](#generators)
+      * [Scanner](#generate-scanner)
+      * [Parser](#generate-parser)
+      * [Status](#generators-status)
+      * [Extend](#generator-extention)
+  6. [License](#license)
+
+# Introduction
 
 An extensible purely Python framework (with no external dependencies!) capable
 of producing scanners and/or parsers from regular expressions (regular grammars)
@@ -16,7 +35,29 @@ compilation/generation process. Below describes in detail what each component
 sets out to do, how it accomplished those intended goals, and the accepted
 input.
 
-### Scanner
+# Installation
+
+Currently, only github cloning is supported for obtaining the program.
+
+## Prerequisites
+
+  - python 2.7 or 3.5
+
+## Github
+
+```sh
+$ git clone https://github.com/rrozansk/Scanner-Parser-Generator.git
+```
+
+## Pip
+
+*Coming soon*
+
+```sh
+$ pip install
+```
+
+# Scanner
 
 The scanner attempts to transform a collection of named patterns (regular
 expression/token type pairs) into a unique minimal DFA accepting any input
@@ -30,7 +71,10 @@ states using e-closure conversions which are cached. Finally, the minimal DFA is
 made total, if not already, so it can be further minimized with respect to
 indistinguishable states using Hopcroft's algorithm.
 
+## Scanner Input
+
 Regular expressions must be specified following these guidelines:
+
 ```text
     - only printable ascii characters (33-126) and spaces are supported
     - supported operators:
@@ -63,7 +107,18 @@ Regular expressions must be specified following these guidelines:
         escape literal      -> \\\\
 ```
 
-### Parser
+## Scanner Test
+
+Testing is easy and straight forward and can be run by envoking the following at
+the command line:
+
+```sh
+$ python src/scanner.py
+```
+
+NOTE: No output is expected upon if all tests pass.
+
+# Parser
 
 The parser attempts to transform a collection of BNF production rules into a
 parse table. While any BNF is accepted only LL(1) grammars will produce a valid
@@ -76,12 +131,51 @@ corresponding production rules. Subsequently, the first and follow sets are used
 to construct the predict sets which are in turn used in the table construction.
 Finally, the table is verified by checking for conflicts.
 
-### Generators
+## Parser Input
+
+TODO
+
+## Parser Test
+
+Testing is easy and straight forward and can be run by envoking the following at
+the command line:
+
+```sh
+$ python src/parser.py
+```
+
+NOTE: No output is expected upon if all tests pass.
+
+# Generators
 
 The generators are very light weight wrappers on top of the scanner/parser
 objects and are responsible for compiling there output into a useable program in
-the choosen language. Adding a new generator is extremely simple as it only requires
-the addition of a single file containing a single class definition.
+the choosen language.
+
+## Generate Scanner
+
+```sh
+$ python generate.py -s scanner.txt -o c scanner_program
+```
+
+## Generate Parser
+
+```sh
+$ python generate.py -p parser.txt -o c parser_program
+```
+
+## Generators Status
+
+Below shows the current status of the generators:
+
+  * [![C](https://img.shields.io/badge/C-Developing-yellow.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/src/generators/c.py)
+  * [![Golang](https://img.shields.io/badge/Golang-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/src/generators/go.py)
+  * [![Python](https://img.shields.io/badge/Python-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/src/generators/python.py)
+
+## Generator Extension
+
+Adding a new generator is extremely simple as it only requires the addition of a
+single file containing a single class definition.
 
 Using the below as a template create a new file with the given contents under
 src/generators, naming the file after the language being compiled to:
@@ -108,22 +202,6 @@ class {Filename}(Generator):
 NOTE: the class name is a capitalized version of the filename.
 This is important for the framework to automatically pick up and use the file/class.
 
-Below shows the current status of the generators:
+# License
 
-  * [![C](https://img.shields.io/badge/C-Developing-yellow.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/src/generators/c.py)
-  * [![Golang](https://img.shields.io/badge/Golang-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/src/generators/go.py)
-  * [![Python](https://img.shields.io/badge/Python-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/src/generators/python.py)
-
-## Quick Start Guide
-
-### Prerequisites (Code Generation)
-  - python 2.7 or 3.5
-
-### Getting Started
-```sh
-$ git clone https://github.com/rrozansk/Scanner-Parser-Generator.git
-$ cd Scanner-Parser-Generator/
-$ vim scanner.txt   # edit scanner name and type/pattern token pairs
-$ vim parser.txt    # edit grammar name, start production, and LL(1) BNF grammar
-$ python generate.py --help
-```
+[MIT](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/LICENSE.txt)
