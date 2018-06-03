@@ -4,19 +4,21 @@ Scanner-Parser-Generator
   1. [Introduction](#introduction)
   2. [Installation](#installation)
       * [Prerequisites](#prerequisites)
-      * [Github](#github)
+      * [Source](#source)
+        * [Prerequisites](#source-prerequisites)
+        * [Install](#source-install)
       * [Pip](#pip)
+        * [Prerequisites](#pip-prerequisites)
+        * [Install](#pip-install)
   3. [Scanner](#scanner)
       * [Input](#scanner-input)
-      * [Test](#scanner-test)
   4. [Parser](#parser)
       * [Input](#parser-input)
-      * [Test](#parser-test)
-  5. [Generators](#generators)
-      * [Scanner](#generate-scanner)
-      * [Parser](#generate-parser)
-      * [Status](#generators-status)
-      * [Extend](#generator-extention)
+  5. [Generate](#generate)
+      * [Status](#generate-status)
+      * [Extension](#generate-extension)
+        * [Template](#generate-extension-template)
+        * [Pylint](#generate-extension-pylint)
   6. [License](#license)
 
 # Introduction
@@ -37,24 +39,56 @@ input.
 
 # Installation
 
-Currently, only github cloning is supported for obtaining the program.
+Currently, installation can be done by more than one method, all of which are
+listed below. Each methods lists the additional dependencies needed for that method,
+if any, along with all the steps required for a proper install.
 
 ## Prerequisites
 
   - python 2.7 or 3.5
+  - setuptools
 
-## Github
+## Source
+
+### Source Prerequisites
+
+  - git
+
+### Source Install
 
 ```sh
+# 1. Obtain the source code.
 $ git clone https://github.com/rrozansk/Scanner-Parser-Generator.git
+
+# 2. Run the tests to ensure compatability.
+
+# NOTE: No output expected if all scanner tests pass.
+$ python src/scanner.py
+
+# NOTE: No output expected if all parser tests pass.
+$ python src/parser.py
+
+# 3. Install using the provided python setup script.
+$ python setup.py install
+
+# Check the program installed correctly and works.
+$ python generate --help
 ```
 
 ## Pip
 
-*Coming soon*
+### Pip Prerequisites
+
+  - pip
+
+### Pip Install
 
 ```sh
-$ pip install
+# Only step required!
+$ pip install scanner-parser-generator
+
+# Check the program installed correctly and works.
+$ python generate --help
 ```
 
 # Scanner
@@ -107,17 +141,6 @@ Regular expressions must be specified following these guidelines:
         escape literal      -> \\\\
 ```
 
-## Scanner Test
-
-Testing is easy and straight forward and can be run by envoking the following at
-the command line:
-
-```sh
-$ python src/scanner.py
-```
-
-NOTE: No output is expected upon if all tests pass.
-
 # Parser
 
 The parser attempts to transform a collection of BNF production rules into a
@@ -133,38 +156,19 @@ Finally, the table is verified by checking for conflicts.
 
 ## Parser Input
 
-TODO
+```text
 
-## Parser Test
+*TODO*
 
-Testing is easy and straight forward and can be run by envoking the following at
-the command line:
-
-```sh
-$ python src/parser.py
 ```
 
-NOTE: No output is expected upon if all tests pass.
-
-# Generators
+# Generate
 
 The generators are very light weight wrappers on top of the scanner/parser
 objects and are responsible for compiling there output into a useable program in
 the choosen language.
 
-## Generate Scanner
-
-```sh
-$ python generate.py -s scanner.txt -o c scanner_program
-```
-
-## Generate Parser
-
-```sh
-$ python generate.py -p parser.txt -o c parser_program
-```
-
-## Generators Status
+## Generate Status
 
 Below shows the current status of the generators:
 
@@ -172,10 +176,12 @@ Below shows the current status of the generators:
   * [![Golang](https://img.shields.io/badge/Golang-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/src/generators/go.py)
   * [![Python](https://img.shields.io/badge/Python-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/src/generators/python.py)
 
-## Generator Extension
+## Generate Extension
 
 Adding a new generator is extremely simple as it only requires the addition of a
-single file containing a single class definition.
+single file containing a single class definition and allows output to a new langauge.
+
+### Generate Extension Template
 
 Using the below as a template create a new file with the given contents under
 src/generators, naming the file after the language being compiled to:
@@ -201,6 +207,19 @@ class {Filename}(Generator):
 
 NOTE: the class name is a capitalized version of the filename.
 This is important for the framework to automatically pick up and use the file/class.
+
+### Generate Extension Pylint
+
+There is also a .pylintrc file included in the repository so that your generator conforms
+to the style guidlines of the rest of the project which provides a similiar look and feel.
+
+```sh
+# Lint your new generator and save the output in a file.
+$ pylint src/generators/<new generator>.py > output.txt
+
+# Update accordingly as per pylint's comments in output.txt.
+$ vim output.txt src/generators/<new generator>.py
+```
 
 # License
 
