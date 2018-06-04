@@ -1,7 +1,7 @@
 """
 Create the PyPi package distribution(s) for use with python pip or install directly.
 """
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 with open("README.md", "r") as fd:
@@ -23,33 +23,41 @@ setup(
     url="https://github.com/rrozansk/Scanner-Parser-Generator",
     download_url="https://github.com/rrozansk/Scanner-Parser-Generator",
     python_requires=">= 2.7.0, != 3.1, != 3.2, != 3.3, != 3.4, != 3.6",
+    packages=find_packages(),
     keywords=" ".join([
-        "lexer-generator",
-        "parser-generator",
-        "scanner-generator",
-        "ll1",
-        "LL(1)",
-        "scanner",
-        "parser",
-        "lexer",
-        "tokenizer",
-        "tokens",
-        "regular-expression(s)",
-        "context-free-grammar",
-        "regular-grammar",
         "bnf",
         "BNF",
+        "code-generation",
+        "context-free-grammar",
+        "lexer",
+        "lexer-generator",
         "lexical-analysis",
-        "code-generation"
+        "ll1",
+        "LL(1)",
+        "parser",
+        "parser-generator",
+        "regular-expression(s)",
+        "regular-grammar",
+        "scanner-generator",
+        "scanner",
+        "tokenizer",
+        "tokens"
     ]),
     license="MIT",
     include_package_data=False,
     zip_safe=True,
     classifiers=(
         "Development Status :: 3 - Alpha",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Education",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Software Development :: Code Generators",
+        "Topic :: Software Development :: Compilers",
+        "Topic :: Text Processing :: Linguistic"
     )
 )
