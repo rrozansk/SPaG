@@ -2357,7 +2357,6 @@ if __name__ == '__main__':
 
         G = regular_grammar.types()
         if len(G) != len(test['DFA']['G']):
-            print regular_grammar.name()
             raise ValueError('Error: Incorrect number of types')
 
         state, symbol, T = regular_grammar.transitions()

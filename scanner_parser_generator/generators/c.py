@@ -67,7 +67,7 @@ class C(Generator):
 
     def _generate_token_api(self, name):
         types = []
-        for token_name, pattern in self._scanner.expressions():
+        for token_name, pattern in self.scanner.expressions():
             types.append('  {0: <23} // {1}'.format(token_name.upper()+",", pattern))
         return """\
 {2}
@@ -163,10 +163,10 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
 """.format(name, self._generate_section_header("tokens"))
 
     def _encode_dfa(self, name):
-        state, symbol, T = self._scanner.transitions()
-        final_states = self._scanner.accepting()
-        expressions = self._scanner.expressions()
-        types = self._scanner.types()
+        state, symbol, T = self.scanner.transitions()
+        final_states = self.scanner.accepting()
+        expressions = self.scanner.expressions()
+        types = self.scanner.types()
 
         labels, label = {}, 0
         for state_id in state.keys():
@@ -176,7 +176,7 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
         program = """\
   goto {0};
 
-""".format(labels[self._scanner.start()])
+""".format(labels[self.scanner.start()])
 
         for in_state, state_key in state.items():
             if in_state in types.get('_sink', set()):
@@ -428,16 +428,16 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
                                             warning,
                                             libs)
 
-        if self._scanner is not None:
-            scan_func = self._sanatize(self._scanner.name())
+        if self.scanner is not None:
+            scan_func = self._sanatize(self.scanner.name())
             token_header, token_source = self._generate_token_api(scan_func)
             scanner_header, scanner_source = self._generate_scanner_api(scan_func)
 
             header += token_header + scanner_header
             source += token_source + scanner_source
 
-        if self._parser is not None:
-            parse_func = self._sanatize(self._parser.name())
+        if self.parser is not None:
+            parse_func = self._sanatize(self.parser.name())
             ast_header, ast_source = self._generate_ast_api(parse_func)
             parser_header, parser_source = self._generate_parser_api(parse_func)
 

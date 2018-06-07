@@ -9,7 +9,7 @@ with open("README.md", "r") as fd:
 
 setup(
     name="scanner_parser_generator",
-    version="0.0.8",
+    version="0.0.13",
     author="Ryan Rozanski",
     author_email="",
     maintainer="Ryan Rozanski",
@@ -44,7 +44,12 @@ setup(
         "tokens"
     ]),
     license="MIT",
-    include_package_data=False,
+    include_package_data=True,
+    package_data={
+        "scanner_parser_generator": [
+            "../LICENSE.txt",
+        ]
+    },
     zip_safe=True,
     classifiers=(
         "Development Status :: 3 - Alpha",

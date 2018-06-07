@@ -6,8 +6,8 @@ the output method.
 """
 from os import listdir
 from os.path import dirname, realpath
-from .. import scanner as scan
-from .. import parser as parse
+from .. import scanner as _scanner
+from .. import parser as _parser
 
 
 __all__ = []
@@ -23,11 +23,26 @@ class Generator(object):
     generate a scanner and/or parser for the specified language of interest.
     """
 
-    _scanner = None
-    _parser = None
+    def __init__(self, scanner=None, parser=None):
+        """
+        Set the scanner and/or parser to be used for code generation, if any.
 
-    def __init__(self):
-        pass
+        Runtime: O(1) - constant.
+
+        Input Type:
+          scanner:      None | RegularGrammar
+          parser:       None | ContextFreeGrammar
+
+        Output Type: Generator | ValueError
+        """
+        if not isinstance(scanner, (_scanner.RegularGrammar, type(None))):
+            raise ValueError('Invalid Input: scanner not a RegularGrammar')
+
+        if not isinstance(parser, (_parser.ContextFreeGrammar, type(None))):
+            raise ValueError('Invalid Input: parser not a ContextFreeGrammar')
+
+        self.scanner = scanner
+        self.parser = parser
 
     def set_scanner(self, scanner):
         """
@@ -40,10 +55,10 @@ class Generator(object):
 
         Output Type: None | ValueError
         """
-        if not isinstance(scanner, scan.RegularGrammar):
-            raise ValueError('Invalid Input: scanner not a RegularGrammar')
+        if not isinstance(scanner, (_scanner.RegularGrammar, type(None))):
+            raise ValueError('Invalid Input: scanner not a RegularGrammar or None')
 
-        self._scanner = scanner
+        self.scanner = scanner
 
     def get_scanner(self):
         """
@@ -53,7 +68,7 @@ class Generator(object):
 
         Output Type: None | RegularGrammar
         """
-        return self._scanner
+        return self.scanner
 
     def set_parser(self, parser):
         """
@@ -66,10 +81,10 @@ class Generator(object):
 
         Output Type: None | ValueError
         """
-        if not isinstance(parser, parse.ContextFreeGrammar):
-            raise ValueError('Invalid Input: parser not a ContextFreeGrammar')
+        if not isinstance(parser, (_parser.ContextFreeGrammar, type(None))):
+            raise ValueError('Invalid Input: parser not a ContextFreeGrammar or None')
 
-        self._parser = parser
+        self.parser = parser
 
     def get_parser(self):
         """
@@ -79,7 +94,7 @@ class Generator(object):
 
         Output Type: None | ContextFreeGrammar
         """
-        return self._parser
+        return self.parser
 
     @staticmethod
     def output(filename):

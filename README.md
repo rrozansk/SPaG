@@ -10,6 +10,9 @@ Scanner-Parser-Generator
       * [Pip](#pip)
         * [Prerequisites](#pip-prerequisites)
         * [Install](#pip-install)
+      * [Usage](#usage)
+        * [Library](#library)
+        * [CLI](#cli)
   3. [Scanner](#scanner)
       * [Input](#scanner-input)
   4. [Parser](#parser)
@@ -63,16 +66,16 @@ $ git clone https://github.com/rrozansk/Scanner-Parser-Generator.git
 # 2. Run the tests to ensure compatability.
 
 # NOTE: No output expected if all scanner tests pass.
-$ python src/scanner.py
+$ python scanner_parser_generator/scanner.py
 
 # NOTE: No output expected if all parser tests pass.
-$ python src/parser.py
+$ python scanner_parser_generator/parser.py
 
 # 3. Install using the provided python setup script.
 $ python setup.py install
 
 # Check the program installed correctly and works.
-$ python generate --help
+$ python -m scanner_parser_generator.generate --help
 ```
 
 ## Pip
@@ -88,7 +91,35 @@ $ python generate --help
 $ pip install scanner-parser-generator
 
 # Check the program installed correctly and works.
-$ python generate --help
+$ python -m scanner_parser_generator.generate --help
+```
+
+## Usage
+
+This module may be imported like a regular python module and used accordingly
+or it may also be invoked as a command line program.
+
+### Library
+
+```sh
+# Get a Python prompt.
+$ /usr/bin/python3
+
+# Import the scanner.
+$ from scanner_parser_generator.scanner import RegularGrammar
+
+# Import the parser.
+$ from scanner_parser_generator.parser import ContextFreeGrammar
+
+# Import the language generator(s) or interest.
+$ from scanner_parser_generator.generators import C, Golang, Python
+```
+
+### CLI
+
+```sh
+# Generate your scanner and/or parser! ...but first ask for help
+$ python -m scanner_parser_generator.generate --help
 ```
 
 # Scanner
@@ -172,9 +203,9 @@ the choosen language.
 
 Below shows the current status of the generators:
 
-  * [![C](https://img.shields.io/badge/C-Developing-yellow.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/src/generators/c.py)
-  * [![Golang](https://img.shields.io/badge/Golang-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/src/generators/go.py)
-  * [![Python](https://img.shields.io/badge/Python-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/src/generators/python.py)
+  * [![C](https://img.shields.io/badge/C-Developing-yellow.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/scanner_parser_generator/generators/c.py)
+  * [![Golang](https://img.shields.io/badge/Golang-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/scanner_parser_generator/generators/go.py)
+  * [![Python](https://img.shields.io/badge/Python-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/scanner_parser_generator/generators/python.py)
 
 ## Generate Extension
 
@@ -184,7 +215,7 @@ single file containing a single class definition and allows output to a new lang
 ### Generate Extension Template
 
 Using the below as a template create a new file with the given contents under
-src/generators, naming the file after the language being compiled to:
+scanner_parser_generator/generators, naming the file after the language being compiled to:
 
 ```python
 """
@@ -215,10 +246,10 @@ to the style guidlines of the rest of the project which provides a similiar look
 
 ```sh
 # Lint your new generator and save the output in a file.
-$ pylint src/generators/<new generator>.py > output.txt
+$ pylint scanner_parser_generator/generators/<new generator>.py > output.txt
 
 # Update accordingly as per pylint's comments in output.txt.
-$ vim output.txt src/generators/<new generator>.py
+$ vim output.txt scanner_parser_generator/generators/<new generator>.py
 ```
 
 # License
