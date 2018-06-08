@@ -4,25 +4,26 @@ Scanner-Parser-Generator
   1. [Introduction](#introduction)
   2. [Installation](#installation)
       * [Prerequisites](#prerequisites)
-      * [Source](#source)
-        * [Prerequisites](#source-prerequisites)
-        * [Install](#source-install)
-      * [Pip](#pip)
-        * [Prerequisites](#pip-prerequisites)
-        * [Install](#pip-install)
-      * [Usage](#usage)
-        * [Library](#library)
-        * [CLI](#cli)
-  3. [Scanner](#scanner)
-      * [Input](#scanner-input)
-  4. [Parser](#parser)
-      * [Input](#parser-input)
-  5. [Generate](#generate)
-      * [Status](#generate-status)
-      * [Extension](#generate-extension)
-        * [Template](#generate-extension-template)
-        * [Pylint](#generate-extension-pylint)
-  6. [License](#license)
+      * [Methods](#methods)
+        * [Source](#source)
+          * [Prerequisites](#source-prerequisites)
+          * [Install](#source-install)
+        * [Pip](#pip)
+          * [Prerequisites](#pip-prerequisites)
+          * [Install](#pip-install)
+  3. [Usage](#usage)
+       * [Library](#library)
+       * [CLI](#cli)
+  4. [Scanner](#scanner)
+       * [Input](#scanner-input)
+  5. [Parser](#parser)
+       * [Input](#parser-input)
+  6. [Generate](#generators)
+      * [Status](#status)
+      * [Extension](#extension)
+        * [Template](#template)
+        * [Pylint](#pylint)
+  7. [License](#license)
 
 # Introduction
 
@@ -48,16 +49,19 @@ if any, along with all the steps required for a proper install.
 
 ## Prerequisites
 
+These are prequisites required reguardless of installation method.
+
   - python 2.7 or 3.5
   - setuptools
 
-## Source
+## Methods
+### Source
 
-### Source Prerequisites
+#### Source Prerequisites
 
   - git
 
-### Source Install
+#### Source Install
 
 ```sh
 # 1. Obtain the source code.
@@ -78,13 +82,13 @@ $ python setup.py install
 $ python -m scanner_parser_generator.generate --help
 ```
 
-## Pip
+### Pip
 
-### Pip Prerequisites
+#### Pip Prerequisites
 
   - pip
 
-### Pip Install
+#### Pip Install
 
 ```sh
 # Only step required!
@@ -94,32 +98,40 @@ $ pip install scanner-parser-generator
 $ python -m scanner_parser_generator.generate --help
 ```
 
-## Usage
+# Usage
 
 This module may be imported like a regular python module and used accordingly
 or it may also be invoked as a command line program.
 
-### Library
+## Library
 
 ```sh
-# Get a Python prompt.
+# Bring up a Python prompt.
 $ /usr/bin/python3
-
-# Import the scanner.
-$ from scanner_parser_generator.scanner import RegularGrammar
-
-# Import the parser.
-$ from scanner_parser_generator.parser import ContextFreeGrammar
-
-# Import the language generator(s) or interest.
-$ from scanner_parser_generator.generators import C, Golang, Python
+Python 3.5.2 (default, Nov 23 2017, 16:37:01)
+[GCC 5.4.0 20160609] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from scanner_parser_generator.scanner import RegularGrammar
+>>> from scanner_parser_generator.parser import ContextFreeGrammar
+>>> from scanner_parser_generator.generators.c import C
+>>> from scanner_parser_generator.generators.go import Go
+>>> from scanner_parser_generator.generators.python import Python
 ```
 
-### CLI
+## CLI
+
+Different examples for the generator to produce scanner's and/or parser's for
+different token sets and LL(1) languages may be found under examples/.
 
 ```sh
-# Generate your scanner and/or parser! ...but first ask for help
+# Generate your scanner and/or parser! ...but first ask for help.
 $ python -m scanner_parser_generator.generate --help
+
+# Generate an ini scanner in c.
+$ python -m scanner_parser_generator.generate -s examples/INI/scanner.txt -o c -f scan
+
+# Generate an ini parser in c.
+$ python -m scanner_parser_generator.generate -p examples/INI/parser.txt -o c -f parse
 ```
 
 # Scanner
@@ -193,13 +205,13 @@ Finally, the table is verified by checking for conflicts.
 
 ```
 
-# Generate
+# Generators
 
 The generators are very light weight wrappers on top of the scanner/parser
 objects and are responsible for compiling there output into a useable program in
 the choosen language.
 
-## Generate Status
+## Status
 
 Below shows the current status of the generators:
 
@@ -207,12 +219,12 @@ Below shows the current status of the generators:
   * [![Golang](https://img.shields.io/badge/Golang-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/scanner_parser_generator/generators/go.py)
   * [![Python](https://img.shields.io/badge/Python-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/scanner_parser_generator/generators/python.py)
 
-## Generate Extension
+## Extension
 
 Adding a new generator is extremely simple as it only requires the addition of a
 single file containing a single class definition and allows output to a new langauge.
 
-### Generate Extension Template
+### Template
 
 Using the below as a template create a new file with the given contents under
 scanner_parser_generator/generators, naming the file after the language being compiled to:
@@ -239,7 +251,7 @@ class {Filename}(Generator):
 NOTE: the class name is a capitalized version of the filename.
 This is important for the framework to automatically pick up and use the file/class.
 
-### Generate Extension Pylint
+### Pylint
 
 There is also a .pylintrc file included in the repository so that your generator conforms
 to the style guidlines of the rest of the project which provides a similiar look and feel.
