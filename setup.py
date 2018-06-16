@@ -9,30 +9,34 @@ with open("README.md", "r") as fd:
 
 setup(
     name="scanner_parser_generator",
-    version="0.0.15",
+    version="0.0.16",
     license="MIT",
     author="Ryan Rozanski",
     author_email="",
     maintainer="Ryan Rozanski",
     maintainer_email="",
     description=(
-        "A CLI program to generate scanners and/or parsers from regular "
-        "expressions and LL(1) BNF grammar specifications respectively."
+        "A CLI program bundled with importable scanner, parser, and generator "
+        "libraries which are used to generate scanners and/or parsers from "
+        "regular expressions and LL(1) BNF grammar specifications respectively."
     ),
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/rrozansk/Scanner-Parser-Generator",
     download_url="https://github.com/rrozansk/Scanner-Parser-Generator",
-    python_requires=">= 2.7.0, != 3.1, != 3.2, != 3.3, != 3.4, != 3.6",
+    python_requires=">= 2.7.0",
     keywords=" ".join([
         "bnf",
         "BNF",
+        "cli",
+        "CLI"
         "code-generation",
         "context-free-grammar",
         "lexer",
         "lexer-generator",
         "lexical-analysis",
         "ll1",
+        "LL1",
         "LL(1)",
         "parser",
         "parser-generator",
@@ -62,8 +66,17 @@ setup(
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
+        "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.0",
+        "Programming Language :: Python :: 3.1",
+        "Programming Language :: Python :: 3.2",
+        "Programming Language :: Python :: 3.3",
+        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Scientific/Engineering",
         "Topic :: Software Development",
         "Topic :: Software Development :: Build Tools",
