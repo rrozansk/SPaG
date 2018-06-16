@@ -17,6 +17,14 @@
  and with the aid of a single look ahead token it cannot be known what rule to
  choose in order to successfully produce a parse.
 
+ BNF grammars must be specified following these guidelines:
+    - no syntax rules are enforced on nonterminals, but by conventions should be
+      delimited by a pair of angle brackets '< >'
+    - multiple productions per nonterminal may be specified, but each must be
+      delimited by a '|'
+    - production symbols must be delimited by whitespace
+    - epsilon may be specified by declaring an empty production
+
  Testing is implemented in a table driven fashion using the black box method.
  The tests may be run at the command line with the following invocation:
 

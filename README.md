@@ -1,29 +1,30 @@
 Scanner-Parser-Generator
-=================
+========================
 
-  1. [Introduction](#introduction)
-  2. [Installation](#installation)
-      * [Prerequisites](#prerequisites)
-      * [Methods](#methods)
-        * [Source](#source)
-          * [Prerequisites](#source-prerequisites)
-          * [Install](#source-install)
-        * [Pip](#pip)
-          * [Prerequisites](#pip-prerequisites)
-          * [Install](#pip-install)
-  3. [Usage](#usage)
-       * [Library](#library)
-       * [CLI](#cli)
-  4. [Scanner](#scanner)
-       * [Input](#scanner-input)
-  5. [Parser](#parser)
-       * [Input](#parser-input)
-  6. [Generate](#generators)
-      * [Status](#status)
-      * [Extension](#extension)
-        * [Template](#template)
-        * [Pylint](#pylint)
-  7. [License](#license)
+  - [Introduction](#introduction)
+  - [Installation](#installation)
+    - [Prerequisites](#prerequisites)
+    - [Methods](#methods)
+      - [Source](#source)
+        - [Prerequisites](#source-prerequisites)
+        - [Install](#source-install)
+      - [Pip](#pip)
+        - [Prerequisites](#pip-prerequisites)
+        - [Install](#pip-install)
+    - [Test](#test)
+  - [Usage](#usage)
+    - [Library](#library)
+    - [CLI](#cli)
+  - [Scanner](#scanner)
+    - [Input](#scanner-input)
+  - [Parser](#parser)
+    - [Input](#parser-input)
+  - [Generate](#generators)
+    - [Status](#status)
+    - [Extension](#extension)
+      - [Template](#template)
+      - [Pylint](#pylint)
+  - [License](#license)
 
 # Introduction
 
@@ -43,16 +44,15 @@ input.
 
 # Installation
 
-Currently, installation can be done by more than one method, all of which are
-listed below. Each methods lists the additional dependencies needed for that method,
-if any, along with all the steps required for a proper install.
+Multiple installation methods are supported, all of which are listed below.
+Each individual method lists the additional dependencies needed, if any,
+along with all the steps required for a proper install.
 
 ## Prerequisites
 
-These are prequisites required reguardless of installation method.
+These are the prerequisites required reguardless of choosen installation method.
 
-  - python 2.7 or 3.5
-  - setuptools
+  - python >= 2.7.0
 
 ## Methods
 ### Source
@@ -60,6 +60,7 @@ These are prequisites required reguardless of installation method.
 #### Source Prerequisites
 
   - git
+  - setuptools
 
 #### Source Install
 
@@ -67,19 +68,8 @@ These are prequisites required reguardless of installation method.
 # 1. Obtain the source code.
 $ git clone https://github.com/rrozansk/Scanner-Parser-Generator.git
 
-# 2. Run the tests to ensure compatability.
-
-# NOTE: No output expected if all scanner tests pass.
-$ python scanner_parser_generator/scanner.py
-
-# NOTE: No output expected if all parser tests pass.
-$ python scanner_parser_generator/parser.py
-
-# 3. Install using the provided python setup script.
+# 2. Install using the provided python setup script.
 $ python setup.py install
-
-# Check the program installed correctly and works.
-$ python -m scanner_parser_generator.generate --help
 ```
 
 ### Pip
@@ -93,20 +83,44 @@ $ python -m scanner_parser_generator.generate --help
 ```sh
 # Only step required!
 $ pip install scanner-parser-generator
+```
 
-# Check the program installed correctly and works.
+## Test
+
+Run the tests to ensure compatibility and verify installation went correctly.
+
+NOTE: No output expected if all scanner and/or parser tests pass.
+
+```sh
+# 1. Run the scanner test suite.
+$ python -m scanner_parser_generator.scanner
+
+# 2. Run the parser test suite.
+$ python -m scanner_parser_generator.parser
+
+# 3. Check the generator CLI program installed correctly.
 $ python -m scanner_parser_generator.generate --help
 ```
 
 # Usage
 
-This module may be imported like a regular python module and used accordingly
-or it may also be invoked as a command line program.
+This python module may be imported or invoked as a command line program.
+
+NOTE: for the command line program to work properly the argparse package is
+needed. It comes in most python versions but will need to be explicitly
+installed if using python 3.0 or 3.1.
 
 ## Library
 
+The individual components may be imported to produce custom python programs.
+The RegularGrammar and ContextFreeGrammar are completely independent from one
+another. For there respective documentation and interface see scanner.py and
+parser.py. The individual generators may also be imported but they have a
+dependency on both RegularGrammar and ContextFreeGrammar. For there respective
+documentation and interface see the base generator in generators/\_\_init\_\_.py.
+Below shows how the various components may be imported.
+
 ```sh
-# Bring up a Python prompt.
 $ /usr/bin/python3
 Python 3.5.2 (default, Nov 23 2017, 16:37:01)
 [GCC 5.4.0 20160609] on linux
@@ -122,6 +136,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 Different examples for the generator to produce scanner's and/or parser's for
 different token sets and LL(1) languages may be found under examples/.
+Shown below are some basic invocation's for help, scanner, and parser generation.
 
 ```sh
 # Generate your scanner and/or parser! ...but first ask for help.
@@ -153,35 +168,35 @@ indistinguishable states using Hopcroft's algorithm.
 Regular expressions must be specified following these guidelines:
 
 ```text
-    - only printable ascii characters (33-126) and spaces are supported
-    - supported operators:
-        |                (union -> choice -> either or)
-        ?                (question -> choice -> 1 or none)
-        .                (concatenation -> combine)
-        *                (kleene star -> repitition >= 0)
-        +                (plus -> repitition >= 1)
-        ()               (grouping -> disambiguation -> any expression)
-        [ab]             (character class -> choice -> any specified char)
-        [a-c] or [c-a]   (character range -> choice -> any char between the two)
-        [^ab] or [^a-c]  (character negation -> choice -> all but the specified)
-        NOTES: '^' is required to come first after the bracket for negation.
-               If alone ([^]) it is translated as all alphabet characters.
-               It is still legal for character ranges as well ([b-^] and
-               negated as [^^-b]). Note that the reverse range was needed. If
-               the first character is a '^' it will always mean negation! If a
-               single '^' is wanted then there is no need to use a class/range.
-               Classes and ranges can be combined between the same set of
-               brackets ([abc-z]), even multiple times if wanted/needed. Due to
-               this though the '-' char must come as the last character in the
-               class if the literal is wanted. For literal right brackets an
-               escape is needed if mentioned ([\]]). All other characters are
-               treated as literals.
-    - concat can be either implicit or explicit
-    - supported escape sequences:
-        operator literals   -> \?, \*, \., \+, \|
-        grouping literals   -> \(, \), \[, \]
-        whitespace literals -> \s, \t, \n, \r, \f, \v
-        escape literal      -> \\\\
+- only printable ascii characters (33-126) and spaces are supported
+- supported operators:
+    |                (union -> choice -> either or)
+    ?                (question -> choice -> 0 or none)
+    .                (concatenation -> combine)
+    *                (kleene star -> repitition >= 0)
+    +                (plus -> repitition >= 1)
+    ()               (grouping -> disambiguation -> any expression)
+    [ab]             (character class -> choice -> any specified char)
+    [a-c] or [c-a]   (character range -> choice -> any char between the two)
+    [^ab] or [^a-c]  (character negation -> choice -> all but the specified)
+    NOTES: '^' is required to come first after the bracket for negation.
+           If alone ([^]) it is translated as all alphabet characters.
+           It is still legal for character ranges as well ([b-^] and
+           negated as [^^-b]). Note that the reverse range was needed. If
+           the first character is a '^' it will always mean negation! If a
+           single '^' is wanted then there is no need to use a class/range.
+           Classes and ranges can be combined between the same set of
+           brackets ([abc-z]), even multiple times if wanted/needed. Due to
+           this though the '-' char must come as the last character in the
+           class if the literal is wanted. For literal right brackets an
+           escape is needed if mentioned ([\]]). All other characters are
+           treated as literals.
+- concat can be either implicit or explicit
+- supported escape sequences:
+    operator literals   -> \?, \*, \., \+, \|
+    grouping literals   -> \(, \), \[, \]
+    whitespace literals -> \s, \t, \n, \r, \f, \v
+    escape literal      -> \\\\
 ```
 
 # Parser
@@ -199,10 +214,18 @@ Finally, the table is verified by checking for conflicts.
 
 ## Parser Input
 
+Context Free Grammars must be specified following these guidelines:
+
 ```text
-
-*TODO*
-
+- no left recursion (direct or indirect)
+- must be left factored
+- no ambiguity
+- no syntax rules are enforced on nonterminals, but by conventions they should
+  be delimited by a pair of angle brackets '< >'
+- multiple productions per nonterminal may be specified, but each must be
+  delimited by a '|'
+- production symbols must be delimited by whitespace
+- epsilon may be specified by declaring an empty production
 ```
 
 # Generators
