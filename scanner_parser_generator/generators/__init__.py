@@ -99,15 +99,15 @@ class Generator(object):
     @staticmethod
     def output(filename):
         """
-        Override this method in subclasses to write the necessary files for the
-        specific language to be generated.
+        Override this method in subclasses which should return the files and
+        there content for the specific language to be generated.
 
         Runtime: O(1) - constant.
 
         Input Type:
           filename: String
 
-        Output Type: ValueError
+        Output Type: List[Tuple[String, String]] | ValueError
         """
         if not isinstance(filename, str):
             raise ValueError('Invalid Input: filename not a string')

@@ -7,7 +7,7 @@ from . import Generator
 
 class Python(Generator):
     """
-    A simple object for compiling scanner's and/or parser's to python.
+    A simple object for compiling scanner's and/or parser's to python programs.
     """
 
     def _output(self, filename):
@@ -15,8 +15,13 @@ class Python(Generator):
 
     def output(self, filename):
         """
-        Attempt to generate and write the python (.py) source file with the
-        corresponding scanner and/or parser currently set in the object.
+        Attempt to generate the python (.py) source file with the corresponding
+        scanner and/or parser currently set in the object.
+
+        Input Type:
+          filename: String
+
+        Output Type: List[Tuple[String, String]] | ValueError
         """
         if not isinstance(filename, str):
             raise ValueError('Invalid Input [Python Gen]: filename must be a string')
@@ -24,5 +29,4 @@ class Python(Generator):
         if not filename:
             raise ValueError('Invalid Input [Python Gen]: filename must be a non empty string')
 
-        with open(filename+".py", 'w') as _file:
-            _file.write(self._output(filename))
+        return [(filename+'.py', self._output(filename))]

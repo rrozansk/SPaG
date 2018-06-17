@@ -8,7 +8,7 @@ from . import Generator
 
 class C(Generator):
     """
-    A simple object for compiling scanner's and/or parser's to c.
+    A simple object for compiling scanner's and/or parser's to c programs.
     """
 
     _reserved = {
@@ -401,8 +401,13 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
 
     def output(self, filename):
         """
-        Attempt to generate and write the c source(.c) and header(.h) files for
-        the corresponding scanner and/or parser currently set in the object.
+        Attempt to generate the c source(.c) and header(.h) files for the
+        corresponding scanner and/or parser currently set in the object.
+
+        Input Type:
+          filename: String
+
+        Output Type: List[Tuple[String, String]] | ValueError
         """
         if not isinstance(filename, str):
             raise ValueError('Invalid Input [C Gen]: filename must be a string')
@@ -452,7 +457,4 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
 #endif
 """.format(filename, header)
 
-        with open(filename+".h", 'w') as _file:
-            _file.write(header)
-        with open(filename+".c", 'w') as _file:
-            _file.write(source)
+        return [(filename+'.h', header), (filename+'.c', source)]

@@ -143,10 +143,10 @@ Shown below are some basic invocation's for help, scanner, and parser generation
 $ python -m scanner_parser_generator.generate --help
 
 # Generate an ini scanner in c.
-$ python -m scanner_parser_generator.generate -s examples/INI/scanner.txt -o c -f scan
+$ python -m scanner_parser_generator.generate -s examples/INI/scanner.txt -g c -o scan
 
 # Generate an ini parser in c.
-$ python -m scanner_parser_generator.generate -p examples/INI/parser.txt -o c -f parse
+$ python -m scanner_parser_generator.generate -p examples/INI/parser.txt -g c -o parse
 ```
 
 # Scanner
@@ -261,12 +261,18 @@ from . import Generator
 
 class {Filename}(Generator):
     """
-    A simple object for compiling scanner's and/or parser's to {filename}.
+    A simple object for compiling scanner's and/or parser's to {filename} programs.
     """
 
     def output(self, filename):
         """
-        Attempt to generate the required output file for {filename}.
+        Attempt to generate the {filename} file(s) with the corresponding
+        scanner and/or parser currently set in the object.
+
+        Input Type:
+          filename: String
+
+        Output Type: List[Tuple[String, String]] | ValueError
         """
         pass
 ```
