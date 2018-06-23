@@ -9,7 +9,7 @@ with open("README.md", "r") as fd:
 
 setup(
     name="scanner_parser_generator",
-    version="0.0.16",
+    version="0.0.17",
     license="MIT",
     author="Ryan Rozanski",
     author_email="",
@@ -29,7 +29,7 @@ setup(
         "bnf",
         "BNF",
         "cli",
-        "CLI"
+        "CLI",
         "code-generation",
         "context-free-grammar",
         "lexer",
@@ -51,6 +51,8 @@ setup(
     package_data={
         "scanner_parser_generator": [
             "../LICENSE.txt",
+            "../pytest.ini",
+            "../.pylintrc",
         ]
     },
     include_package_data=True,

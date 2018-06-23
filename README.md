@@ -93,13 +93,25 @@ NOTE: No output expected if all scanner and/or parser tests pass.
 
 ```sh
 # 1. Run the scanner test suite.
-$ python -m scanner_parser_generator.scanner
+$ python -m scanner_parser_generator.tests.test_scanner
 
 # 2. Run the parser test suite.
-$ python -m scanner_parser_generator.parser
+$ python -m scanner_parser_generator.tests.test_parser
 
 # 3. Check the generator CLI program installed correctly.
 $ python -m scanner_parser_generator.generate --help
+```
+
+A pytest.ini file is included so the tests may also be run through pytest if desired.
+This is slightly more informative as it's output shows what tests are running
+and which passed and/or failed, etc.
+
+```sh
+# Install pytest
+$ pip install 'pytest>=3.6.2'
+
+# Run the tests
+$ python -m pytest
 ```
 
 # Usage
@@ -217,6 +229,7 @@ Finally, the table is verified by checking for conflicts.
 Context Free Grammars must be specified following these guidelines:
 
 ```text
+- LL(1)
 - no left recursion (direct or indirect)
 - must be left factored
 - no ambiguity
