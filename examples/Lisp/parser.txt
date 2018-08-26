@@ -1,0 +1,5 @@
+Lisp
+
+<s_expression>  <atom> | <pair>
+<pair>          left <s_expression> dot <s_expression> right
+<atom>          symbol | character | string | boolean | int | float | nil
