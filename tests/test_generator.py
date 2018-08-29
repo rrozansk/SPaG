@@ -1,13 +1,7 @@
 """
 Testing for Generator objects located in generators/__init__.py
 """
-import os
-import sys
 import pytest
-
-# Change the path so we can import the code properly.
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from src.scanner.scanner import RegularGrammar
 from src.parser.parser import ContextFreeGrammar
 from src.generators import Generator
@@ -31,16 +25,14 @@ class TestGenerator(object):
         """
         Ensure successful creation of a Generator object with only a scanner.
         """
-        Generator(RegularGrammar(), None)
-        raise ValueError('not implemented')
+        Generator(RegularGrammar('test', []), None)
 
     @staticmethod
     def test_constructor_parser():
         """
         Ensure successful creation of a Generator object with only a parser.
         """
-        Generator(None, ContextFreeGrammar())
-        raise ValueError('not implemented')
+        Generator(None, ContextFreeGrammar('test', {'S': ''}, 'S'))
 
     @staticmethod
     def test_constructor():
@@ -48,39 +40,41 @@ class TestGenerator(object):
         Ensure successful creation of a Generator object with no scanner and
         parser.
         """
-        Generator(RegularGrammar(), ContextFreeGrammar())
+        scanner = RegularGrammar('test', [])
+        parser = ContextFreeGrammar('test', {'S': ''}, 'S')
+        Generator(scanner, parser)
 
     @staticmethod
     def test_get_scanner():
         """
         Ensure get_scanner works correctly.
         """
-        generator = Generator(RegularGrammar(), None)
-        generator.Generator.get_scanner()
+        generator = Generator(RegularGrammar('test', []), None)
+        generator.get_scanner()
 
     @staticmethod
     def test_set_scanner():
         """
         Ensure set_scanner works correctly when given proper input.
         """
-        generator = Generator(RegularGrammar(), ContextFreeGrammar())
-        generator.Generator.set_scanner(RegularGrammar())
+        generator = Generator(RegularGrammar('test', []), None)
+        generator.set_scanner(RegularGrammar('test', []))
 
     @staticmethod
     def test_get_parser():
         """
         Ensure get_parser works correctly.
         """
-        generator = Generator(None, ContextFreeGrammar())
-        generator.Generator.get_parser()
+        generator = Generator(None, ContextFreeGrammar('test', {'S': ''}, 'S'))
+        generator.get_parser()
 
     @staticmethod
     def test_set_parser():
         """
         Ensure set_parser works correctly when given proper input.
         """
-        generator = Generator(None, ContextFreeGrammar())
-        generator.Generator.set_parser(ContextFreeGrammar())
+        generator = Generator(None, ContextFreeGrammar('test', {'S': ''}, 'S'))
+        generator.set_parser(ContextFreeGrammar('test', {'S': ''}, 'S'))
 
     @staticmethod
     @pytest.mark.xfail(

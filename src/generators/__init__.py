@@ -6,8 +6,8 @@ the output method.
 """
 from os import listdir
 from os.path import dirname, realpath
-from parser.parser import ContextFreeGrammar
-from scanner.scanner import RegularGrammar
+from src.parser.parser import ContextFreeGrammar
+from src.scanner.scanner import RegularGrammar
 
 
 __all__ = []
