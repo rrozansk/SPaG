@@ -79,7 +79,7 @@ class TestGenerator(object):
     @staticmethod
     @pytest.mark.xfail(
         reason='Scanner is not of type RegularGrammar.',
-        raises=ValueError,
+        raises=TypeError,
     )
     def test_constructor_invalid_scanner():
         """
@@ -91,7 +91,7 @@ class TestGenerator(object):
     @staticmethod
     @pytest.mark.xfail(
         reason='Scanner is not of type RegularGrammar.',
-        raises=ValueError,
+        raises=TypeError,
     )
     def test_set_invalid_scanner():
         """
@@ -104,7 +104,7 @@ class TestGenerator(object):
     @staticmethod
     @pytest.mark.xfail(
         reason='Parser is not of type ContextFreeGrammar.',
-        raises=ValueError,
+        raises=TypeError,
     )
     def test_constructor_invalid_parser():
         """
@@ -116,7 +116,7 @@ class TestGenerator(object):
     @staticmethod
     @pytest.mark.xfail(
         reason='Parser is not of type ContextFreeGrammar.',
-        raises=ValueError,
+        raises=TypeError,
     )
     def test_set_invalid_parser():
         """
@@ -129,7 +129,7 @@ class TestGenerator(object):
     @staticmethod
     @pytest.mark.xfail(
         reason='Filename is not of type str.',
-        raises=ValueError,
+        raises=TypeError,
     )
     def test_output_invalid_filename():
         """
@@ -141,7 +141,7 @@ class TestGenerator(object):
     @staticmethod
     @pytest.mark.xfail(
         reason='Output not handled by base Generator.',
-        raises=ValueError,
+        raises=NotImplementedError,
     )
     def test_output_invalid():
         """

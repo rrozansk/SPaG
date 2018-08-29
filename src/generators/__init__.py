@@ -33,13 +33,13 @@ class Generator(object):
           scanner:      None | RegularGrammar
           parser:       None | ContextFreeGrammar
 
-        Output Type: Generator | ValueError
+        Output Type: Generator | TypeError
         """
         if not isinstance(scanner, (RegularGrammar, type(None))):
-            raise ValueError('Invalid Input: scanner not a RegularGrammar')
+            raise TypeError('scanner not a RegularGrammar')
 
         if not isinstance(parser, (ContextFreeGrammar, type(None))):
-            raise ValueError('Invalid Input: parser not a ContextFreeGrammar')
+            raise TypeError('parser not a ContextFreeGrammar')
 
         self.scanner = scanner
         self.parser = parser
@@ -53,10 +53,10 @@ class Generator(object):
         Input Type:
           scanner: None | RegularGrammar
 
-        Output Type: None | ValueError
+        Output Type: None | TypeError
         """
         if not isinstance(scanner, (RegularGrammar, type(None))):
-            raise ValueError('Invalid Input: scanner not a RegularGrammar or None')
+            raise TypeError('scanner not a RegularGrammar or None')
 
         self.scanner = scanner
 
@@ -79,10 +79,10 @@ class Generator(object):
         Input Type:
           parser: None | ContextFreeGrammar
 
-        Output Type: None | ValueError
+        Output Type: None | TypeError
         """
         if not isinstance(parser, (ContextFreeGrammar, type(None))):
-            raise ValueError('Invalid Input: parser not a ContextFreeGrammar or None')
+            raise TypeError('parser not a ContextFreeGrammar or None')
 
         self.parser = parser
 
@@ -107,9 +107,10 @@ class Generator(object):
         Input Type:
           filename: String
 
-        Output Type: List[Tuple[String, String]] | ValueError
+        Output Type: List[Tuple[String, String]] | TypeError |
+                     NotImplementedError
         """
         if not isinstance(filename, str):
-            raise ValueError('Invalid Input: filename not a string')
+            raise TypeError('filename not a string')
 
-        raise ValueError('Error: output not implemented for Generator')
+        raise NotImplementedError('output not implemented for Generator')
