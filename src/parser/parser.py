@@ -44,7 +44,7 @@ class ContextFreeGrammar(object):
         production rule. Multiple productions may be specified by seperating
         them by a vertical bar (|). An empty production specifies an epsilon.
 
-        If creation is unsuccessful a ValueError will be thrown, otherwise the
+        If creation is unsuccessful a TypeError will be thrown, otherwise the
         results can be queried through the API provided below.
 
         Input Type:
@@ -52,28 +52,28 @@ class ContextFreeGrammar(object):
           productions: Dict[String, String]
           start:       String
 
-        Output Type: None | raise ValueError
+        Output Type: None | raise TypeError
         """
         if not isinstance(name, str):
-            raise ValueError('Invalid Input: name must be a string')
+            raise TypeError('name must be a string')
 
         self._name = name
 
         if not isinstance(start, str):
-            raise ValueError('Invalid Input: starting must be a string')
+            raise TypeError('starting must be a string')
 
         self._start = start
 
         if not isinstance(productions, dict):
-            raise ValueError('Invalid Input: productions must be a dict')
+            raise TypeError('productions must be a dict')
 
         self._rules = []
         for nonterminal, rhs in productions.items():
             if not isinstance(nonterminal, str):
-                raise ValueError('Invalid Input: nonterminal must be a string')
+                raise TypeError('nonterminal must be a string')
 
             if not isinstance(rhs, str):
-                raise ValueError('Invalid Input: rules must be a string')
+                raise TypeError('rules must be a string')
 
             for rule in rhs.split('|'):
                 self._rules.append((nonterminal, rule.split()))
