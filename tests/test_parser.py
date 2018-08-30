@@ -1,6 +1,4 @@
 # pylint: disable=too-many-locals
-# pylint: disable=too-many-statements
-# pylint: disable=too-many-branches
 """
 Testing for ContextFreeGrammar objects located in src/parser/parser.py
 """
@@ -24,37 +22,37 @@ class TestParser(object):
                                                   kwargs['productions'],
                                                   kwargs['start'])
 
-        if context_free_grammar.name() != kwargs['name']:
-            raise ValueError('Invalid name produced')
+        assert context_free_grammar.name() == kwargs['name'], \
+               ValueError('Invalid name produced')
 
-        if context_free_grammar.start() != kwargs['start']:
-            raise ValueError('Invalid start production produced')
+        assert context_free_grammar.start() == kwargs['start'], \
+               'Invalid start production produced'
 
-        if context_free_grammar.terminals() != kwargs['terminals']:
-            raise ValueError('Invalid terminal set produced')
+        assert context_free_grammar.terminals() == kwargs['terminals'], \
+               'Invalid terminal set produced'
 
-        if context_free_grammar.nonterminals() != kwargs['nonterminals']:
-            raise ValueError('Invalid nonterminal set produced')
+        assert context_free_grammar.nonterminals() == kwargs['nonterminals'], \
+              'Invalid nonterminal set produced'
 
         first = context_free_grammar.first()
-        if len(first) != len(kwargs['first']):
-            raise ValueError('Invalid first set size produced')
+        assert len(first) == len(kwargs['first']), \
+               'Invalid first set size produced'
 
         for elem in kwargs['first']:
-            if first.get(elem, None) != kwargs['first'][elem]:
-                raise ValueError('Invalid first set produced')
+            assert first.get(elem, None) == kwargs['first'][elem], \
+                   'Invalid first set produced'
 
         follow = context_free_grammar.follow()
-        if len(follow) != len(kwargs['follow']):
-            raise ValueError('Invalid follow set size produced')
+        assert len(follow) == len(kwargs['follow']), \
+               'Invalid follow set size produced'
 
         for elem in kwargs['follow']:
-            if follow.get(elem, None) != kwargs['follow'][elem]:
-                raise ValueError('Invalid follow set produced')
+            assert follow.get(elem, None) == kwargs['follow'][elem], \
+                   'Invalid follow set produced'
 
         rules = context_free_grammar.rules()
-        if len(rules) != len(kwargs['rules']):
-            raise ValueError('Invalid number of table rules produced')
+        assert len(rules) == len(kwargs['rules']), \
+               'Invalid number of table rules produced'
 
         _map = {}
         for (idx, (nonterminal, rule)) in enumerate(rules):
@@ -67,8 +65,7 @@ class TestParser(object):
                     found = True
                     break
 
-            if not found:
-                raise ValueError('Invalid production rule produced')
+            assert found, 'Invalid production rule produced'
 
         _cols = {t:i for i, t in enumerate(kwargs['table'].pop(0)[1:])}
         _rows = {n:i for i, n in enumerate([r.pop(0) for r in kwargs['table']])}
@@ -80,29 +77,27 @@ class TestParser(object):
         if len(cols) != len(_cols) or set(cols.keys()) ^ set(_cols.keys()):
             raise ValueError('Invalid number of table column headers produced')
 
-        if len(table) != len(kwargs['table']):
-            raise ValueError('Invalid number of table rows produced')
+        assert len(table) == len(kwargs['table']), \
+               'Invalid number of table rows produced'
 
-        if not all([len(table[i]) == len(r) for i, r in enumerate(kwargs['table'])]):
-            raise ValueError('Invalid number of table columns produced')
+        assert all([len(table[i]) == len(r) for i, r in enumerate(kwargs['table'])]), \
+               'Invalid number of table columns produced'
 
         fail = False
         for row in rows:
             for col in cols:
                 produced = {_map[elem] for elem in table[rows[row]][cols[col]]}
                 expected = kwargs['table'][_rows[row]][_cols[col]]
-                if produced != expected:
-                    raise ValueError('Invalid table value produced')
+                assert produced == expected, 'Invalid table value produced'
                 if len(expected) > 1:
                     fail = True
 
-        if fail:
-            raise ValueError('conflict present in parse table')
+        assert not fail, 'conflict present in parse table'
 
     @staticmethod
     @pytest.mark.xfail(
         reason='First/first conflict.',
-        raises=ValueError,
+        raises=AssertionError,
     )
     def test_first_first_conflict():
         """
@@ -143,7 +138,7 @@ class TestParser(object):
     @staticmethod
     @pytest.mark.xfail(
         reason='First/follow conflict.',
-        raises=ValueError,
+        raises=AssertionError,
     )
     def test_first_follow_conflict():
         """
@@ -183,7 +178,7 @@ class TestParser(object):
     @staticmethod
     @pytest.mark.xfail(
         reason='Left recursive.',
-        raises=ValueError,
+        raises=AssertionError,
     )
     def test_left_recursion():
         """

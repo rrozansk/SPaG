@@ -3,7 +3,6 @@
 # pylint: disable=line-too-long
 # pylint: disable=anomalous-backslash-in-string
 # pylint: disable=too-many-locals
-# pylint: disable=too-many-branches
 # pylint: disable=too-many-public-methods
 """
 Testing for RegularGrammar objects located in src/scanner/scanner.py
@@ -28,13 +27,13 @@ class TestScanner(object):
 
         regular_grammar = RegularGrammar(kwargs['name'], kwargs['expressions'])
 
-        if regular_grammar.name() != kwargs['name']:
-            raise ValueError('Error: Incorrect DFA name returned')
+        assert regular_grammar.name() == kwargs['name'], \
+               'Incorrect DFA name returned'
 
         expressions = regular_grammar.expressions()
 
-        if len(expressions) != len(kwargs['expressions']):
-            raise ValueError('Error: Incorrect expression count in grammar')
+        assert len(expressions) == len(kwargs['expressions']), \
+               'Incorrect expression count in grammar'
 
         idx = 0
         expressions = sorted(expressions, key=lambda x: x[0])
@@ -42,29 +41,29 @@ class TestScanner(object):
         for name, pattern in kwargs['expressions']:
             _name, _pattern = expressions[idx]
             idx += 1
-            if _name != name or _pattern != pattern:
-                raise ValueError('Error: Incorrect token name/pattern created')
+            assert _name == name and _pattern == pattern, \
+                   'Incorrect token name/pattern created'
 
         V = regular_grammar.alphabet()
-        if V != kwargs['DFA']['V']:
-            raise ValueError('Error: Incorrect alphabet produced')
+        assert V == kwargs['DFA']['V'], \
+               'Incorrect alphabet produced'
 
         Q = regular_grammar.states()
-        if len(Q) != len(kwargs['DFA']['Q']):
-            raise ValueError('Error: Incorrect number of states produced')
+        assert len(Q) == len(kwargs['DFA']['Q']), \
+               'Incorrect number of states produced'
 
         F = regular_grammar.accepting()
-        if len(F) != len(kwargs['DFA']['F']):
-            raise ValueError('Error: Incorrect number of finish states')
+        assert len(F) == len(kwargs['DFA']['F']), \
+               'Incorrect number of finish states'
 
         G = regular_grammar.types()
-        if len(G) != len(kwargs['DFA']['G']):
-            raise ValueError('Error: Incorrect number of types')
+        assert len(G) == len(kwargs['DFA']['G']), \
+               'Incorrect number of types'
 
         state, symbol, T = regular_grammar.transitions()
-        if len(T) != len(kwargs['DFA']['T'])-1 or \
-           (T and len(T[0]) != len(kwargs['DFA']['T'][0])-1):
-            raise ValueError('Error: Incorrect number of transitions produced')
+        assert len(T) == len(kwargs['DFA']['T'])-1 or \
+               (T and len(T[0]) == len(kwargs['DFA']['T'][0])-1), \
+               'Incorrect number of transitions produced'
 
         # Check if DFA's are isomorphic by attempting to find a bijection
         # between them since they both already look very 'similar'.
@@ -92,8 +91,7 @@ class TestScanner(object):
             found = True
             break
 
-        if not found:
-            raise ValueError('Error: Non-isomorphic DFA produced')
+        assert found, 'Non-isomorphic DFA produced'
 
     @staticmethod
     def test_single_alpha():
