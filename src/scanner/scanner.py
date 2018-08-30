@@ -92,26 +92,26 @@ class RegularGrammar(object):
         Output Type: None | raise ValueError
         """
         if not isinstance(name, str):
-            raise ValueError('Invalid Input: name must be a string')
+            raise TypeError('name must be a string')
 
         self._name = name
 
         if not isinstance(expressions, list):
-            raise ValueError('Invalid Input: expressions must be a list')
+            raise TypeError('expressions must be a list')
 
         nfa = []
         self._exprs = []
         for element in expressions:
             if not isinstance(element, tuple):
-                raise ValueError('Invalid Input: items in expressions must be tuples')
+                raise TypeError('items in expressions must be tuples')
 
             name, pattern = element
 
             if not isinstance(name, str):
-                raise ValueError('Invalid Input: name must be a string')
+                raise TypeError('name must be a string')
 
             if not isinstance(pattern, str):
-                raise ValueError('Invalid Input: pattern must be a string')
+                raise TypeError('pattern must be a string')
 
             self._exprs.append((name, pattern))
 
