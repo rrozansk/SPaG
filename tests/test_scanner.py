@@ -4,7 +4,6 @@
 # pylint: disable=anomalous-backslash-in-string
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-branches
-# pylint: disable=too-many-statements
 # pylint: disable=too-many-public-methods
 """
 Testing for RegularGrammar objects located in src/scanner/scanner.py

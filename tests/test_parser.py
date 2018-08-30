@@ -1,4 +1,6 @@
-# pylint: disable=anomalous-backslash-in-string, too-many-locals, too-many-statements, too-many-branches
+# pylint: disable=too-many-locals
+# pylint: disable=too-many-statements
+# pylint: disable=too-many-branches
 """
 Testing for ContextFreeGrammar objects located in src/parser/parser.py
 """
@@ -72,7 +74,6 @@ class TestParser(object):
         _rows = {n:i for i, n in enumerate([r.pop(0) for r in kwargs['table']])}
 
         table, rows, cols = context_free_grammar.table()
-        print table, rows, cols
         if len(rows) != len(_rows) or set(rows.keys()) ^ set(_rows.keys()):
             raise ValueError('Invalid number of table row headers produced')
 
