@@ -1,4 +1,3 @@
-# pylint: disable=too-many-locals
 """
 Testing for ContextFreeGrammar objects located in src/parser/parser.py
 """
@@ -10,6 +9,85 @@ class TestParser(object):
     """
     A test suite for testing the ContextFreeGrammar object.
     """
+
+    @staticmethod
+    def _compare_first_sets(expected, actual):
+        """
+        Compare the expected and actual first sets.
+        """
+        assert len(expected) == len(actual), 'Invalid first set size produced'
+
+        for elem, items in actual.items():
+            assert expected.get(elem, None) == items, \
+            'Invalid first set produced'
+
+    @staticmethod
+    def _compare_follow_sets(expected, actual):
+        """
+        Compare the expected and actual follow sets.
+        """
+        assert len(expected) == len(actual), 'Invalid follow set size produced'
+
+        for elem, items in actual.items():
+            assert expected.get(elem, None) == items, \
+            'Invalid follow set produced'
+
+    @staticmethod
+    def _compare_rules(expected, actual):
+        """
+        Compare the expected and actual production rules and return a mapping
+        between the two for use with table comparison.
+        """
+        assert len(expected) == len(actual), 'Invalid number of rules produced'
+
+        mapping = {}
+
+        for (idx, (nonterminal, rule)) in enumerate(actual):
+            found = False
+            for (_idx, (_nonterminal, _rule)) in enumerate(expected):
+                if nonterminal == _nonterminal and \
+                   len(rule) == len(_rule) and \
+                   all([rule[i] == e for i, e in enumerate(_rule)]):
+                    mapping[idx] = _idx
+                    found = True
+                    break
+
+            assert found, 'Invalid production rule produced'
+
+        return mapping
+
+    @staticmethod
+    def _compare_tables(expected, actual, _map):
+        """
+        Compare the expected and actual tables with the help of the mapping
+        between rules.
+        """
+        _cols = {t:i for i, t in enumerate(expected.pop(0)[1:])}
+        _rows = {n:i for i, n in enumerate([r.pop(0) for r in expected])}
+
+        table, rows, cols = actual
+        assert len(rows) == len(_rows) and \
+               not set(rows.keys()) ^ set(_rows.keys()), \
+               'Invalid number of table row headers produced'
+
+        assert len(cols) == len(_cols) and \
+               not set(cols.keys()) ^ set(_cols.keys()), \
+               'Invalid number of table column headers produced'
+
+        assert len(table) == len(expected), \
+               'Invalid number of table rows produced'
+
+        assert all([len(table[i]) == len(r) for i, r in enumerate(expected)]), \
+               'Invalid number of table columns produced'
+
+        for row in rows:
+            for col in cols:
+                _actual = {_map[elem] for elem in table[rows[row]][cols[col]]}
+                _expected = expected[_rows[row]][_cols[col]]
+
+                assert _expected == _actual, 'Invalid table value produced'
+
+                assert len(_expected) < 2, 'conflict present in parse table'
 
     @staticmethod
     def _run(**kwargs):
@@ -34,65 +112,27 @@ class TestParser(object):
         assert context_free_grammar.nonterminals() == kwargs['nonterminals'], \
               'Invalid nonterminal set produced'
 
-        first = context_free_grammar.first()
-        assert len(first) == len(kwargs['first']), \
-               'Invalid first set size produced'
+        assert context_free_grammar.nonterminals() == kwargs['nonterminals'], \
+              'Invalid nonterminal set produced'
 
-        for elem in kwargs['first']:
-            assert first.get(elem, None) == kwargs['first'][elem], \
-                   'Invalid first set produced'
+        assert context_free_grammar.first() == kwargs['first'], \
+              'Invalid first set produced'
 
-        follow = context_free_grammar.follow()
-        assert len(follow) == len(kwargs['follow']), \
-               'Invalid follow set size produced'
+        assert context_free_grammar.follow() == kwargs['follow'], \
+              'Invalid follow set produced'
 
-        for elem in kwargs['follow']:
-            assert follow.get(elem, None) == kwargs['follow'][elem], \
-                   'Invalid follow set produced'
+        TestParser._compare_first_sets(kwargs['first'],
+                                       context_free_grammar.first())
 
-        rules = context_free_grammar.rules()
-        assert len(rules) == len(kwargs['rules']), \
-               'Invalid number of table rules produced'
+        TestParser._compare_follow_sets(kwargs['follow'],
+                                        context_free_grammar.follow())
 
-        _map = {}
-        for (idx, (nonterminal, rule)) in enumerate(rules):
-            found = False
-            for (_idx, (_nonterminal, _rule)) in enumerate(kwargs['rules']):
-                if nonterminal == _nonterminal and \
-                   len(rule) == len(_rule) and \
-                   all([rule[i] == e for i, e in enumerate(_rule)]):
-                    _map[idx] = _idx
-                    found = True
-                    break
+        mapping = TestParser._compare_rules(kwargs['rules'],
+                                            context_free_grammar.rules())
 
-            assert found, 'Invalid production rule produced'
-
-        _cols = {t:i for i, t in enumerate(kwargs['table'].pop(0)[1:])}
-        _rows = {n:i for i, n in enumerate([r.pop(0) for r in kwargs['table']])}
-
-        table, rows, cols = context_free_grammar.table()
-        if len(rows) != len(_rows) or set(rows.keys()) ^ set(_rows.keys()):
-            raise ValueError('Invalid number of table row headers produced')
-
-        if len(cols) != len(_cols) or set(cols.keys()) ^ set(_cols.keys()):
-            raise ValueError('Invalid number of table column headers produced')
-
-        assert len(table) == len(kwargs['table']), \
-               'Invalid number of table rows produced'
-
-        assert all([len(table[i]) == len(r) for i, r in enumerate(kwargs['table'])]), \
-               'Invalid number of table columns produced'
-
-        fail = False
-        for row in rows:
-            for col in cols:
-                produced = {_map[elem] for elem in table[rows[row]][cols[col]]}
-                expected = kwargs['table'][_rows[row]][_cols[col]]
-                assert produced == expected, 'Invalid table value produced'
-                if len(expected) > 1:
-                    fail = True
-
-        assert not fail, 'conflict present in parse table'
+        TestParser._compare_tables(kwargs['table'],
+                                   context_free_grammar.table(),
+                                   mapping)
 
     @staticmethod
     @pytest.mark.xfail(
