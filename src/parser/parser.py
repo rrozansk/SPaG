@@ -44,36 +44,48 @@ class ContextFreeGrammar(object):
         production rule. Multiple productions may be specified by seperating
         them by a vertical bar (|). An empty production specifies an epsilon.
 
-        If creation is unsuccessful a TypeError will be thrown, otherwise the
-        results can be queried through the API provided below.
+        If creation is unsuccessful a TypeError or ValueError will be thrown,
+        otherwise the results can be queried through the API provided below.
 
         Input Type:
           name:        String
           productions: Dict[String, String]
           start:       String
 
-        Output Type: None | raise TypeError
+        Output Type: None | raise TypeError | raise ValueError
         """
         if not isinstance(name, str):
             raise TypeError('name must be a string')
 
+        if not name:
+            raise ValueError('name must be non empty')
+
         self._name = name
 
         if not isinstance(start, str):
-            raise TypeError('starting must be a string')
+            raise TypeError('start must be a string')
+
+        if not start:
+            raise ValueError('start must be non empty')
 
         self._start = start
 
         if not isinstance(productions, dict):
             raise TypeError('productions must be a dict')
 
+        if self._start not in productions:
+            raise ValueError('start production not present in given productions')
+
         self._rules = []
         for nonterminal, rhs in productions.items():
             if not isinstance(nonterminal, str):
-                raise TypeError('nonterminal must be a string')
+                raise TypeError('production nonterminal must be a string')
+
+            if not nonterminal:
+                raise ValueError('production nonterminal must be non empty')
 
             if not isinstance(rhs, str):
-                raise TypeError('rules must be a string')
+                raise TypeError('production rule(s) must be a string')
 
             for rule in rhs.split('|'):
                 self._rules.append((nonterminal, rule.split()))

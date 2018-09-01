@@ -127,7 +127,7 @@ class TestParser(object):
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Name is not of type: string',
+        reason='Name is not of type string.',
         raises=TypeError,
     )
     def test_constructor_invalid_name():
@@ -149,13 +149,35 @@ class TestParser(object):
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Start is not of type: string',
+        reason='Name must be non empty.',
+        raises=ValueError,
+    )
+    def test_constructor_empty_name():
+        """
+        Ensure a ValueError is raised when constructing a ContextFreeGrammar
+        object if the name is an empty string.
+        """
+        TestParser._run(**{
+            'name': '',
+            'productions': {},
+            'start': '<S>',
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Start is not of type string.',
         raises=TypeError,
     )
     def test_constructor_invalid_start():
         """
-        Ensure an error is raised when constructing a ContextFreeGrammar object
-        if the start production is not of type string.
+        Ensure a TypeError is raised when constructing a ContextFreeGrammar
+        object if the start production is not of type string.
         """
         TestParser._run(**{
             'name': 'Invalid Start Type',
@@ -171,17 +193,17 @@ class TestParser(object):
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Productions is not of type: dict[string, string]',
-        raises=TypeError,
+        reason='Start must be non empty.',
+        raises=ValueError,
     )
-    def test_constructor_invalid_production():
+    def test_constructor_empty_start():
         """
-        Ensure an error is raised when constructing a ContextFreeGrammar object
-        if the productions are not of type dict[string, string].
+        Ensure a ValueError is raised when constructing a ContextFreeGrammar
+        object if the start production is an empty string.
         """
         TestParser._run(**{
-            'name': 'Invalid Production Rules',
-            'productions': None,
+            'name': 'Empty Start',
+            'productions': {},
             'start': '',
             'terminals': None,
             'nonterminals': None,
@@ -193,18 +215,88 @@ class TestParser(object):
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Productions is not of type: dict[string, string]',
+        reason='Start must be present in given productions.',
+        raises=ValueError,
+    )
+    def test_constructor_missing_start():
+        """
+        Ensure a ValueError is raised when constructing a ContextFreeGrammar
+        object if the start production is missing from the production rules.
+        """
+        TestParser._run(**{
+            'name': 'Empty Start',
+            'productions': {},
+            'start': '<S>',
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Productions is not of type dict.',
+        raises=TypeError,
+    )
+    def test_constructor_invalid_production():
+        """
+        Ensure a TypeError is raised when constructing a ContextFreeGrammar
+        object if the productions are not of type dict.
+        """
+        TestParser._run(**{
+            'name': 'Invalid Production Rules',
+            'productions': None,
+            'start': '<invalid>',
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Productions nonterminals are not of type string.',
         raises=TypeError,
     )
     def test_constructor_invalid_production_nonterminal():
         """
-        Ensure an error is raised when constructing a ContextFreeGrammar object
-        if the productions are not of type dict[string, string].
+        Ensure a TypeError is raised when constructing a ContextFreeGrammar
+        object if the productions nonterminals are not of type string.
         """
         TestParser._run(**{
             'name': 'Invalid Production Rules',
             'productions': {
-                None: '<E> | <E> a'
+                '<A>': '<A> | <A> a',
+                None: '<B> | <B> b'
+            },
+            'start': '<A>',
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Production nonterminals must be non empty.',
+        raises=ValueError,
+    )
+    def test_constructor_empty_production_nonterminal():
+        """
+        Ensure a ValueError is raised when constructing a ContextFreeGrammar
+        object if the production nonterminals are empty strings.
+        """
+        TestParser._run(**{
+            'name': 'Invalid Production Rules',
+            'productions': {
+                '': 'b',
+                '<E>': '<E> | <E> a'
             },
             'start': '<E>',
             'terminals': None,
@@ -217,13 +309,13 @@ class TestParser(object):
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Productions is not of type: dict[string, string]',
+        reason='Productions rules are not of type string.',
         raises=TypeError,
     )
     def test_constructor_invalid_production_rule():
         """
-        Ensure an error is raised when constructing a ContextFreeGrammar object
-        if the productions are not of type dict[string, string].
+        Ensure a TypeError is raised when constructing a ContextFreeGrammar
+        object if the production rules are not of type string.
         """
         TestParser._run(**{
             'name': 'Invalid Nonterminal',
@@ -246,7 +338,7 @@ class TestParser(object):
     )
     def test_first_first_conflict():
         """
-        Valid example but produces a first/first conflict.
+        Valid input example which produces a first/first conflict.
         """
         TestParser._run(**{
             'name': 'First/First Conflict',
@@ -287,7 +379,7 @@ class TestParser(object):
     )
     def test_first_follow_conflict():
         """
-        Valid example but produces a first/follow conflict.
+        Valid input example but produces a first/follow conflict.
         """
         TestParser._run(**{
             'name': 'First/Follow Conflict',
@@ -327,7 +419,7 @@ class TestParser(object):
     )
     def test_left_recursion():
         """
-        Valid example but produces some conflicts due to the use of left
+        Valid input example but produces some conflicts due to the use of left
         recursion.
         """
         TestParser._run(**{
