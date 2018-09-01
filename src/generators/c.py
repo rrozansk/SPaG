@@ -410,10 +410,13 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
         Output Type: List[Tuple[String, String]] | ValueError
         """
         if not isinstance(filename, str):
-            raise ValueError('Invalid Input [C Gen]: filename must be a string')
+            raise TypeError('[C Gen]: filename must be a string')
 
         if filename == "":
-            raise ValueError('Invalid Input [C Gen]: filename must be non empty')
+            raise TypeError('[C Gen]: filename must be non empty')
+
+        if self.scanner is None and self.parser is None:
+            raise ValueError('Must provide atleast a scanner or a parser for generation')
 
         author = '**AUTO GENERATED**'
         source = 'https://github.com/rrozansk/Scanner-Parser-Generator'

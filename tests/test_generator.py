@@ -1,5 +1,5 @@
 """
-Testing for Generator objects located in generators/__init__.py
+Testing for Generator objects located in src/generators/__init__.py
 """
 import pytest
 from src.scanner.scanner import RegularGrammar

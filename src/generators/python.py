@@ -24,9 +24,12 @@ class Python(Generator):
         Output Type: List[Tuple[String, String]] | ValueError
         """
         if not isinstance(filename, str):
-            raise ValueError('Invalid Input [Python Gen]: filename must be a string')
+            raise TypeError('[Python Gen]: filename must be a string')
 
         if not filename:
-            raise ValueError('Invalid Input [Python Gen]: filename must be a non empty string')
+            raise TypeError('[Python Gen]: filename must be a non empty string')
+
+        if self.scanner is None and self.parser is None:
+            raise ValueError('Must provide atleast a scanner or a parser for generation')
 
         return [(filename+'.py', self._output(filename))]
