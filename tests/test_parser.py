@@ -101,7 +101,7 @@ class TestParser(object):
                                                   kwargs['start'])
 
         assert context_free_grammar.name() == kwargs['name'], \
-               ValueError('Invalid name produced')
+               'Invalid name produced'
 
         assert context_free_grammar.start() == kwargs['start'], \
                'Invalid start production produced'
@@ -111,15 +111,6 @@ class TestParser(object):
 
         assert context_free_grammar.nonterminals() == kwargs['nonterminals'], \
               'Invalid nonterminal set produced'
-
-        assert context_free_grammar.nonterminals() == kwargs['nonterminals'], \
-              'Invalid nonterminal set produced'
-
-        assert context_free_grammar.first() == kwargs['first'], \
-              'Invalid first set produced'
-
-        assert context_free_grammar.follow() == kwargs['follow'], \
-              'Invalid follow set produced'
 
         TestParser._compare_first_sets(kwargs['first'],
                                        context_free_grammar.first())
@@ -133,6 +124,124 @@ class TestParser(object):
         TestParser._compare_tables(kwargs['table'],
                                    context_free_grammar.table(),
                                    mapping)
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Name is not of type: string',
+        raises=TypeError,
+    )
+    def test_constructor_invalid_name():
+        """
+        Ensure a TypeError is raised when constructing a ContextFreeGrammar
+        object if the name is not of type string.
+        """
+        TestParser._run(**{
+            'name': False,
+            'productions': {
+                'Invalid Name Type': '<E> | <E> a'
+            },
+            'start': '<S>',
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Start is not of type: string',
+        raises=TypeError,
+    )
+    def test_constructor_invalid_start():
+        """
+        Ensure an error is raised when constructing a ContextFreeGrammar object
+        if the start production is not of type string.
+        """
+        TestParser._run(**{
+            'name': 'Invalid Start Type',
+            'productions': {
+                '<S>': '<E> | <E> a'
+            },
+            'start': False,
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Productions is not of type: dict[string, string]',
+        raises=TypeError,
+    )
+    def test_constructor_invalid_production():
+        """
+        Ensure an error is raised when constructing a ContextFreeGrammar object
+        if the productions are not of type dict[string, string].
+        """
+        TestParser._run(**{
+            'name': 'Invalid Production Rules',
+            'productions': None,
+            'start': False,
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Productions is not of type: dict[string, string]',
+        raises=TypeError,
+    )
+    def test_constructor_invalid_production_nonterminal():
+        """
+        Ensure an error is raised when constructing a ContextFreeGrammar object
+        if the productions are not of type dict[string, string].
+        """
+        TestParser._run(**{
+            'name': 'Invalid Production Rules',
+            'productions': {
+                None: '<E> | <E> a'
+            },
+            'start': False,
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Productions is not of type: dict[string, string]',
+        raises=TypeError,
+    )
+    def test_constructor_invalid_production_rule():
+        """
+        Ensure an error is raised when constructing a ContextFreeGrammar object
+        if the productions are not of type dict[string, string].
+        """
+        TestParser._run(**{
+            'name': 'Invalid Nonterminal',
+            'productions': {
+                '<S>': None
+            },
+            'start': False,
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
 
     @staticmethod
     @pytest.mark.xfail(
@@ -284,125 +393,7 @@ class TestParser(object):
         })
 
     @staticmethod
-    @pytest.mark.xfail(
-        reason='Name is not of type: string',
-        raises=TypeError,
-    )
-    def test_invalid_name():
-        """
-        Ensure an error is thrown when constructing a ContextFreeGrammar object
-        if the name is not of type string.
-        """
-        TestParser._run(**{
-            'name': False,
-            'productions': {
-                'Invalid Name Type': '<E> | <E> a'
-            },
-            'start': '<S>',
-            'terminals': None,
-            'nonterminals': None,
-            'first': None,
-            'follow': None,
-            'rules': None,
-            'table': None
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Start is not of type: string',
-        raises=TypeError,
-    )
-    def test_invalid_start_type():
-        """
-        Ensure an error is thrown when constructing a ContextFreeGrammar object
-        if the start production is not of type string.
-        """
-        TestParser._run(**{
-            'name': 'Invalid Start Type',
-            'productions': {
-                '<S>': '<E> | <E> a'
-            },
-            'start': False,
-            'terminals': None,
-            'nonterminals': None,
-            'first': None,
-            'follow': None,
-            'rules': None,
-            'table': None
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Productions is not of type: dict[string, string]',
-        raises=TypeError,
-    )
-    def test_invalid_production():
-        """
-        Ensure an error is thrown when constructing a ContextFreeGrammar object
-        if the productions are not of type dict[string, string].
-        """
-        TestParser._run(**{
-            'name': 'Invalid Production Rules',
-            'productions': None,
-            'start': False,
-            'terminals': None,
-            'nonterminals': None,
-            'first': None,
-            'follow': None,
-            'rules': None,
-            'table': None
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Productions is not of type: dict[string, string]',
-        raises=TypeError,
-    )
-    def test_invalid_production_nonterminal():
-        """
-        Ensure an error is thrown when constructing a ContextFreeGrammar object
-        if the productions are not of type dict[string, string].
-        """
-        TestParser._run(**{
-            'name': 'Invalid Production Rules',
-            'productions': {
-                None: '<E> | <E> a'
-            },
-            'start': False,
-            'terminals': None,
-            'nonterminals': None,
-            'first': None,
-            'follow': None,
-            'rules': None,
-            'table': None
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Productions is not of type: dict[string, string]',
-        raises=TypeError,
-    )
-    def test_invalid_production_rule():
-        """
-        Ensure an error is thrown when constructing a ContextFreeGrammar object
-        if the productions are not of type dict[string, string].
-        """
-        TestParser._run(**{
-            'name': 'Invalid Nonterminal',
-            'productions': {
-                '<S>': None
-            },
-            'start': False,
-            'terminals': None,
-            'nonterminals': None,
-            'first': None,
-            'follow': None,
-            'rules': None,
-            'table': None
-        })
-
-    @staticmethod
-    def test_grammar_no_epsilon():
+    def test_no_epsilon():
         """
         Ensure the creation of a simple grammar goes as expected.
         """
@@ -443,7 +434,7 @@ class TestParser(object):
         })
 
     @staticmethod
-    def test_grammar_epsilon():
+    def test_epsilon():
         """
         Ensure the creation of a simple grammar containing an epsilon goes as
         expected.
@@ -520,7 +511,7 @@ class TestParser(object):
         })
 
     @staticmethod
-    def test_grammar_simple_language():
+    def test_simple_language():
         """
         Ensure the creation of a simple langugage grammar goes as expected.
         """
@@ -812,16 +803,62 @@ class TestParser(object):
     @staticmethod
     def test_lisp():
         """
-        Ensure the creation of the INI grammar goes as expected.
+        Ensure the creation of the Lisp grammar goes as expected.
         """
         TestParser._run(**{
             'name': 'Lisp',
-            'productions': {},
-            'start': '',
-            'terminals': set([]),
-            'nonterminals': set([]),
-            'first': {},
-            'follow': {},
-            'rules': [],
-            'table': []
+            'productions': {
+                '<expression>': '<atom> | <pair>',
+                '<pair>': '( <expression> . <expression> )',
+                '<atom>': 'symbol | character | string | boolean | int | float | nil',
+            },
+            'start': '<expression>',
+            'terminals': set(['(', '.', ')', 'symbol', 'character', 'string',
+                              'boolean', 'int', 'float', 'nil']),
+            'nonterminals': set(['<atom>', '<pair>', '<expression>']),
+            'first': {
+                '(': set(['(']),
+                '.': set(['.']),
+                ')': set([')']),
+                'symbol': set(['symbol']),
+                'character': set(['character']),
+                'string': set(['string']),
+                'boolean': set(['boolean']),
+                'int': set(['int']),
+                'float': set(['float']),
+                'nil': set(['nil']),
+                '<atom>': set(['boolean', 'character', 'float', 'int', 'nil',
+                               'string', 'symbol']),
+                '<pair>': set(['(']),
+                '<expression>': set(['(', 'boolean', 'character', 'float',
+                                     'int', 'nil', 'string', 'symbol'])
+            },
+            'follow': {
+                '<atom>': set([0, ')', '.']),
+                '<pair>': set([0, ')', '.']),
+                '<expression>': set([0, ')', '.'])
+            },
+            'rules': [
+                ('<expression>', ['<atom>']),
+                ('<expression>', ['<pair>']),
+                ('<pair>', ['(', '<expression>', '.', '<expression>', ')']),
+                ('<atom>', ['symbol']),
+                ('<atom>', ['character']),
+                ('<atom>', ['string']),
+                ('<atom>', ['boolean']),
+                ('<atom>', ['int']),
+                ('<atom>', ['float']),
+                ('<atom>', ['nil'])
+            ],
+            'table': [
+                [' ', 0, 'symbol', 'character', 'string', 'boolean', 'int',
+                 'float', 'nil', '(', '.', ')'],
+                ['<expression>', set([]), set([0]), set([0]), set([0]),
+                 set([0]), set([0]), set([0]), set([0]), set([1]), set([]),
+                 set([])],
+                ['<atom>', set([]), set([3]), set([4]), set([5]), set([6]),
+                 set([7]), set([8]), set([9]), set([]), set([]), set([])],
+                ['<pair>', set([]), set([]), set([]), set([]), set([]),
+                 set([]), set([]), set([]), set([2]), set([]), set([])],
+            ]
         })

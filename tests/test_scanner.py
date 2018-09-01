@@ -1,12 +1,13 @@
-# pylint: disable=too-many-lines
+# pylint: disable=anomalous-backslash-in-string
 # pylint: disable=bad-whitespace
 # pylint: disable=line-too-long
-# pylint: disable=anomalous-backslash-in-string
+# pylint: disable=too-many-lines
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-public-methods
 """
 Testing for RegularGrammar objects located in src/scanner/scanner.py
 """
+from itertools import permutations
 import pytest
 from src.scanner.scanner import RegularGrammar
 
@@ -17,81 +18,382 @@ class TestScanner(object):
     """
 
     @staticmethod
+    def _compare_expressions(expected, actual):
+        """
+        Compare the expected and actual expressions.
+        """
+        assert len(expected) == len(actual), \
+               'Incorrect expression size produced'
+
+        expected = sorted(expected, key=lambda x: x[0])
+
+        actual = sorted(actual, key=lambda x: x[0])
+
+        for idx, (name, pattern) in enumerate(actual):
+            _name, _pattern = expected[idx]
+            assert _name == name and _pattern == pattern, \
+                   'Incorrect token name/pattern created'
+
+    @staticmethod
+    def _compare_dfa(expected, actual):
+        """
+        Check if DFA's are isomorphic by attempting to find a bijection
+        between if they look 'similar' is size and shape.
+        """
+        V = actual.alphabet()
+        assert V == expected['V'], \
+               'Incorrect alphabet produced'
+
+        Q = actual.states()
+        assert len(Q) == len(expected['Q']), \
+               'Incorrect number of states produced'
+
+        F = actual.accepting()
+        assert len(F) == len(expected['F']), \
+               'Incorrect number of finish states produced'
+
+        G = actual.types()
+        assert len(G) == len(expected['G']), \
+               'Incorrect number of types produced'
+
+        state, symbol, T = actual.transitions()
+        assert len(T) == len(expected['T'])-1 or \
+               (T and len(T[0]) == len(expected['T'][0])-1), \
+               'Incorrect number of transitions produced'
+
+        _state, _symbol, Tp = dict(), dict(), list()
+        if T:
+            _state = {s:idx for idx, s in enumerate(expected['T'].pop(0)[1:])}
+            _symbol = {s:idx for idx, s in enumerate([row.pop(0) for row in expected['T']])}
+            Tp = expected['T']
+
+        S = actual.start()
+        Qp = expected['Q']
+
+        map_generator = (dict(zip(Q, perm)) for perm in permutations(Qp, len(Qp)))
+        for _map in map_generator:
+            if _map[S] != expected['S']:
+                continue
+            if not all([_map[f] in expected['F'] for f in F]):
+                continue
+            if not all([{_map[s] for s in types} == \
+               expected['G'].get(name, set()) for name, types in G.items()]):
+                continue
+            if not all([all([_map[T[symbol[v]][state[q]]] == \
+               Tp[_symbol[v]][_state[_map[q]]] for q in Q]) for v in V]):
+                continue
+            return
+
+        assert False, 'Non-isomorphic DFA produced'
+
+    @staticmethod
     def _run(**kwargs):
         """
         The 'main' for testing which creates the required object and compares
         the results are what was expected, failing appropriately if they are
         not.
         """
-        from itertools import permutations
-
         regular_grammar = RegularGrammar(kwargs['name'], kwargs['expressions'])
 
         assert regular_grammar.name() == kwargs['name'], \
                'Incorrect DFA name returned'
 
-        expressions = regular_grammar.expressions()
+        TestScanner._compare_expressions(kwargs['expressions'],
+                                         regular_grammar.expressions())
 
-        assert len(expressions) == len(kwargs['expressions']), \
-               'Incorrect expression count in grammar'
+        TestScanner._compare_dfa(kwargs['DFA'], regular_grammar)
 
-        idx = 0
-        expressions = sorted(expressions, key=lambda x: x[0])
-        kwargs['expressions'] = sorted(kwargs['expressions'], key=lambda x: x[0])
-        for name, pattern in kwargs['expressions']:
-            _name, _pattern = expressions[idx]
-            idx += 1
-            assert _name == name and _pattern == pattern, \
-                   'Incorrect token name/pattern created'
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid scanner name.',
+        raises=TypeError,
+    )
+    def test_constructor_invalid_name():
+        """
+        Ensure invalid scanner names produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': ['Invalid Scanner Name'],
+            'expressions': [
+                ('invalid', 'foo')
+            ],
+            'DFA': {}
+        })
 
-        V = regular_grammar.alphabet()
-        assert V == kwargs['DFA']['V'], \
-               'Incorrect alphabet produced'
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid expressions.',
+        raises=TypeError,
+    )
+    def test_constructor_invalid_expressions():
+        """
+        Ensure invalid expressions produce the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Scanner Expressions',
+            'expressions': {
+                'invalid': 'expression'
+            },
+            'DFA': {}
+        })
 
-        Q = regular_grammar.states()
-        assert len(Q) == len(kwargs['DFA']['Q']), \
-               'Incorrect number of states produced'
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid expressions.',
+        raises=TypeError,
+    )
+    def test_constructor_invalid_token():
+        """
+        Ensure invalid expressions produce the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Scanner Token',
+            'expressions': [
+                'invalid_token',
+            ],
+            'DFA': {}
+        })
 
-        F = regular_grammar.accepting()
-        assert len(F) == len(kwargs['DFA']['F']), \
-               'Incorrect number of finish states'
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid expressions.',
+        raises=TypeError,
+    )
+    def test_constructor_invalid_token_key():
+        """
+        Ensure invalid expressions produce the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Scanner Token Key',
+            'expressions': [
+                (True, 'invalid')
+            ],
+            'DFA': {}
+        })
 
-        G = regular_grammar.types()
-        assert len(G) == len(kwargs['DFA']['G']), \
-               'Incorrect number of types'
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid expressions.',
+        raises=TypeError,
+    )
+    def test_constructor_invalid_token_value():
+        """
+        Ensure invalid expressions produce the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Scanner Token Value',
+            'expressions': [
+                ('invalid', True)
+            ],
+            'DFA': {}
+        })
 
-        state, symbol, T = regular_grammar.transitions()
-        assert len(T) == len(kwargs['DFA']['T'])-1 or \
-               (T and len(T[0]) == len(kwargs['DFA']['T'][0])-1), \
-               'Incorrect number of transitions produced'
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Empty expression.',
+        raises=ValueError,
+    )
+    def test_empty_expression():
+        """
+        Ensure empty expressions produce the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Empty Expression',
+            'expressions': [
+                ('invalid', '')
+            ],
+            'DFA': {}
+        })
 
-        # Check if DFA's are isomorphic by attempting to find a bijection
-        # between them since they both already look very 'similar'.
-        Qp = kwargs['DFA']['Q']
-        S = regular_grammar.start()
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid character.',
+        raises=ValueError,
+    )
+    def test_invalid_character():
+        """
+        Ensure invalid character produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Character',
+            'expressions': [
+                ('invalid', '\x99')
+            ],
+            'DFA': {}
+        })
 
-        _state, _symbol, Tp = dict(), dict(), list()
-        if T:
-            _state = {s:idx for idx, s in enumerate(kwargs['DFA']['T'].pop(0)[1:])}
-            _symbol = {s:idx for idx, s in enumerate([row.pop(0) for row in kwargs['DFA']['T']])}
-            Tp = kwargs['DFA']['T']
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Empty escape sequence.',
+        raises=ValueError,
+    )
+    def test_empty_escape_seq():
+        """
+        Ensure empty escape sequences produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Empty Escape Sequence',
+            'expressions': [
+                ('invalid', '\\')
+            ],
+            'DFA': {}
+        })
 
-        found = False
-        for _map in (dict(zip(Q, perm)) for perm in permutations(Qp, len(Qp))):
-            if _map[S] != kwargs['DFA']['S']:
-                continue
-            if not all([_map[f] in kwargs['DFA']['F'] for f in F]):
-                continue
-            if not all([{_map[s] for s in types} == \
-               kwargs['DFA']['G'].get(name, set()) for name, types in G.items()]):
-                continue
-            if not all([all([_map[T[symbol[v]][state[q]]] == \
-               Tp[_symbol[v]][_state[_map[q]]] for q in Q]) for v in V]):
-                continue
-            found = True
-            break
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid escape sequence.',
+        raises=ValueError,
+    )
+    def test_invalid_escape_seq():
+        """
+        Ensure invalid escape sequences produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Escape Sequence',
+            'expressions': [
+                ('invalid', '\j')
+            ],
+            'DFA': {}
+        })
 
-        assert found, 'Non-isomorphic DFA produced'
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Empty character range.',
+        raises=ValueError,
+    )
+    def test_empty_character_range():
+        """
+        Ensure empty character ranges produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Empty Character Range/Class',
+            'expressions': [
+                ('class/range', '[]')
+            ],
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid operator arity.',
+        raises=ValueError,
+    )
+    def test_invalid_star_airty():
+        """
+        Ensure invalid kleene star (*) operator airty produces the proper
+        exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Expression * Arity',
+            'expressions': [
+                ('invalid', '*')
+            ],
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid operator arity.',
+        raises=ValueError,
+    )
+    def test_invalid_plus_airty():
+        """
+        Ensure invalid kleene plus (+) operator airty produces the proper
+        exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Expression + Arity',
+            'expressions': [
+                ('invalid', '+')
+            ],
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid operator arity.',
+        raises=ValueError,
+    )
+    def test_invalid_question_airty():
+        """
+        Ensure invalid question (?) operator airty produces the proper
+        exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Expression ? Arity',
+            'expressions': [
+                ('invalid', '?')
+            ],
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid operator arity.',
+        raises=ValueError,
+    )
+    def test_invalid_choice_airty():
+        """
+        Ensure invalid choice (|) operator airty produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Expression | Arity',
+            'expressions': [
+                ('invalid', 'a|')
+            ],
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid operator arity.',
+        raises=ValueError,
+    )
+    def test_invalid_dot_airty():
+        """
+        Ensure invalid dot (.) operator airty produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Expression . Arity',
+            'expressions': [
+                ('invalid', 'a.')
+            ],
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Unbalanced parenthesis.',
+        raises=ValueError,
+    )
+    def test_unbalanced_right_paren():
+        """
+        Ensure unbalanced parenthesis produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Unbalanced Left Paren',
+            'expressions': [
+                ('invalid', '(foo|bar')
+            ],
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Unbalanced parenthesis.',
+        raises=ValueError,
+    )
+    def test_unbalanced_left_paren():
+        """
+        Ensure unbalanced parenthesis produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Unbalanced Right Paren',
+            'expressions': [
+                ('invalid', 'foo|bar)')
+            ],
+            'DFA': {}
+        })
 
     @staticmethod
     def test_single_alpha():
@@ -1642,279 +1944,4 @@ class TestScanner(object):
                     '_sink': set(['Err'])
                 }
             }
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Unbalanced parenthesis.',
-        raises=ValueError,
-    )
-    def test_unbalanced_right_paren():
-        """
-        Ensure unbalanced parenthesis produces the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Unbalanced Left Paren',
-            'expressions': [
-                ('invalid', '(foo|bar')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Unbalanced parenthesis.',
-        raises=ValueError,
-    )
-    def test_unbalanced_left_paren():
-        """
-        Ensure unbalanced parenthesis produces the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Unbalanced Right Paren',
-            'expressions': [
-                ('invalid', 'foo|bar)')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid escape sequence.',
-        raises=ValueError,
-    )
-    def test_invalid_escape_seq():
-        """
-        Ensure invalid escape sequences produces the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Escape Sequence',
-            'expressions': [
-                ('invalid', '\j')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Empty escape sequence.',
-        raises=ValueError,
-    )
-    def test_empty_escape_seq():
-        """
-        Ensure empty escape sequences produces the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Empty Escape Sequence',
-            'expressions': [
-                ('invalid', '\\')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Empty expression.',
-        raises=ValueError,
-    )
-    def test_empty_expression():
-        """
-        Ensure empty expressions produce the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Empty Expression',
-            'expressions': [
-                ('invalid', '')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Empty character range.',
-        raises=ValueError,
-    )
-    def test_empty_character_range():
-        """
-        Ensure empty character ranges produces the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Empty Character Range/Class',
-            'expressions': [
-                ('class/range', '[]')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid character.',
-        raises=ValueError,
-    )
-    def test_invalid_character():
-        """
-        Ensure invalid character produces the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Character',
-            'expressions': [
-                ('invalid', '\x99')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid scanner name.',
-        raises=TypeError,
-    )
-    def test_invalid_name():
-        """
-        Ensure invalid scanner names produces the proper exception.
-        """
-        TestScanner._run(**{
-            'name': ['Invalid Scanner Name'],
-            'expressions': [
-                ('invalid', 'foo')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid expressions.',
-        raises=TypeError,
-    )
-    def test_invalid_tokens():
-        """
-        Ensure invalid expressions produce the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Scanner Tokens',
-            'expressions': [
-                'invalid'
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid expressions.',
-        raises=TypeError,
-    )
-    def test_invalid_token_key():
-        """
-        Ensure invalid expressions produce the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Scanner Token Key',
-            'expressions': [
-                (True, 'invalid')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid expressions.',
-        raises=TypeError,
-    )
-    def test_invalid_token_value():
-        """
-        Ensure invalid expressions produce the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Scanner Token Value',
-            'expressions': [
-                ('invalid', True)
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid operator arity.',
-        raises=ValueError,
-    )
-    def test_invalid_star_airty():
-        """
-        Ensure invalid kleene star (*) operator airty produces the proper
-        exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Expression * Arity',
-            'expressions': [
-                ('invalid', '*')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid operator arity.',
-        raises=ValueError,
-    )
-    def test_invalid_plus_airty():
-        """
-        Ensure invalid kleene plus (+) operator airty produces the proper
-        exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Expression + Arity',
-            'expressions': [
-                ('invalid', '+')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid operator arity.',
-        raises=ValueError,
-    )
-    def test_invalid_question_airty():
-        """
-        Ensure invalid question (?) operator airty produces the proper
-        exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Expression ? Arity',
-            'expressions': [
-                ('invalid', '?')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid operator arity.',
-        raises=ValueError,
-    )
-    def test_invalid_choice_airty():
-        """
-        Ensure invalid choice (|) operator airty produces the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Expression | Arity',
-            'expressions': [
-                ('invalid', 'a|')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid operator arity.',
-        raises=ValueError,
-    )
-    def test_invalid_dot_airty():
-        """
-        Ensure invalid dot (.) operator airty produces the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Expression . Arity',
-            'expressions': [
-                ('invalid', 'a.')
-            ],
-            'DFA': {}
         })

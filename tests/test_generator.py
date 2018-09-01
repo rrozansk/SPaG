@@ -36,7 +36,7 @@ class TestGenerator(object):
     )
     def test_constructor_invalid_scanner():
         """
-        Ensure a TypeError is thrown when constructing a Generator object if the
+        Ensure a TypeError is raised when constructing a Generator object if the
         scanner is not of type RegularGrammar.
         """
         Generator('invalid_scanner', None)
@@ -56,7 +56,7 @@ class TestGenerator(object):
     )
     def test_constructor_invalid_parser():
         """
-        Ensure a TypeError is thrown when constructing a Generator object if the
+        Ensure a TypeError is raised when constructing a Generator object if the
         parser is not of type ContextFreeGrammar.
         """
         Generator(None, 'invalid_parser')
@@ -99,7 +99,7 @@ class TestGenerator(object):
     )
     def test_set_invalid_scanner():
         """
-        Ensure a TypeError is thrown when setting the Generator's object scanner
+        Ensure a TypeError is raised when setting the Generator's object scanner
         if is not of type RegularGrammar.
         """
         generator = Generator(None, None)
@@ -132,7 +132,7 @@ class TestGenerator(object):
     )
     def test_set_invalid_parser():
         """
-        Ensure a TypeError is thrown when setting the Generator's object parser
+        Ensure a TypeError is raised when setting the Generator's object parser
         if is not of type ContextFreeGrammar.
         """
         generator = Generator(None, None)
@@ -145,7 +145,7 @@ class TestGenerator(object):
     )
     def test_output_invalid_filename():
         """
-        Ensure a TypeError is thrown if the filename is not a string.
+        Ensure a TypeError is raised if the filename is not a string.
         """
         generator = Generator(None, None)
         generator.output(None)
@@ -157,7 +157,7 @@ class TestGenerator(object):
     )
     def test_output_not_implemented():
         """
-        Ensure a NotImplementedError is thrown if generation to source language
+        Ensure a NotImplementedError is raised if generation to source language
         is attempted with the base Generator.
         """
         generator = Generator(None, None)
