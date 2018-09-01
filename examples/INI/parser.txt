@@ -1,21 +1,9 @@
-ini
+INI
 
-<Ini>         <Section> <Ini'>
-<Ini'>        <Section> <Ini'> |
-<Section>     <Header> <Settings>
-<Header>      lbracket id rbracket
-<Settings>    <Setting> <Settings'>
-<Settings'>   <Setting> <Settings'> |
-<Setting>     id dividor <Value>
-<Value>       int | float | bool | char | string | lcurly <Array> rcurly
-<Array>       <Ints> | <Floats> | <Bools> | <Chars> | <Strings>
-<Ints>        int <Ints'>
-<Ints'>       comma int <Ints'> |
-<Floats>      float <Floats'>
-<Floats'>     comma float <Floats'> |
-<Bools>       bool <Bools'>
-<Bools'>      comma bool <Bools'> |
-<Chars>       char <Chars'>
-<Chars'>      comma char <Chars'> |
-<Strings>     string <Strings'>
-<Strings'>    comma string <Strings'> |
+<INI>         <SECTION> <INI> |
+<SECTION>     <HEADER> <SETTINGS>
+<HEADER>      lbracket string rbracket
+<SETTINGS>    <KEY> <SEP> <VALUE> <SETTINGS> |
+<KEY>         string
+<SEP>         : | =
+<VALUE>       string | number | bool
