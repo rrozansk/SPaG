@@ -137,9 +137,7 @@ class TestParser(object):
         """
         TestParser._run(**{
             'name': False,
-            'productions': {
-                'Invalid Name Type': '<E> | <E> a'
-            },
+            'productions': {},
             'start': '<S>',
             'terminals': None,
             'nonterminals': None,
@@ -161,9 +159,7 @@ class TestParser(object):
         """
         TestParser._run(**{
             'name': 'Invalid Start Type',
-            'productions': {
-                '<S>': '<E> | <E> a'
-            },
+            'productions': {},
             'start': False,
             'terminals': None,
             'nonterminals': None,
@@ -186,7 +182,7 @@ class TestParser(object):
         TestParser._run(**{
             'name': 'Invalid Production Rules',
             'productions': None,
-            'start': False,
+            'start': '',
             'terminals': None,
             'nonterminals': None,
             'first': None,
@@ -210,7 +206,7 @@ class TestParser(object):
             'productions': {
                 None: '<E> | <E> a'
             },
-            'start': False,
+            'start': '<E>',
             'terminals': None,
             'nonterminals': None,
             'first': None,
@@ -234,7 +230,7 @@ class TestParser(object):
             'productions': {
                 '<S>': None
             },
-            'start': False,
+            'start': '<S>',
             'terminals': None,
             'nonterminals': None,
             'first': None,

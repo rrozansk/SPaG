@@ -224,6 +224,23 @@ class TestScanner(object):
 
     @staticmethod
     @pytest.mark.xfail(
+        reason='Invalid character.',
+        raises=ValueError,
+    )
+    def test_invalid_unicode_character():
+        """
+        Ensure invalid character produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Unicode Character',
+            'expressions': [
+                ('invalid', str(u'\0391'))
+            ],
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
         reason='Empty escape sequence.',
         raises=ValueError,
     )
@@ -252,6 +269,40 @@ class TestScanner(object):
             'name': 'Invalid Escape Sequence',
             'expressions': [
                 ('invalid', '\j')
+            ],
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid character range.',
+        raises=ValueError,
+    )
+    def test_invalid_character_range_start():
+        """
+        Ensure an invalid character ranges produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Character Range/Class No Start',
+            'expressions': [
+                ('class/range', ']')
+            ],
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid character range.',
+        raises=ValueError,
+    )
+    def test_invalid_character_range_end():
+        """
+        Ensure an invalid character ranges produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Character Range/Class No End',
+            'expressions': [
+                ('class/range', '[')
             ],
             'DFA': {}
         })
@@ -1302,8 +1353,8 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'White Space',
-            'expressions': [
-                ('white', '( |\t|\n|\r|\f|\v)*')
+            'expressions': [  # FIXME: accepting weird input here
+                ('white', '( |\t|\n|\r|\f|\v|\\s|\\t|\\n|\\r|\\f|\\v)*')
             ],
             'DFA': {
                 'Q': set(['S']),
