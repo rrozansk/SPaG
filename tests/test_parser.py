@@ -130,7 +130,7 @@ class TestParser(object):
         reason='Name is not of type string.',
         raises=TypeError,
     )
-    def test_constructor_invalid_name():
+    def test_invalid_name():
         """
         Ensure a TypeError is raised when constructing a ContextFreeGrammar
         object if the name is not of type string.
@@ -152,7 +152,7 @@ class TestParser(object):
         reason='Name must be non empty.',
         raises=ValueError,
     )
-    def test_constructor_empty_name():
+    def test_empty_name():
         """
         Ensure a ValueError is raised when constructing a ContextFreeGrammar
         object if the name is an empty string.
@@ -174,7 +174,7 @@ class TestParser(object):
         reason='Start is not of type string.',
         raises=TypeError,
     )
-    def test_constructor_invalid_start():
+    def test_invalid_start():
         """
         Ensure a TypeError is raised when constructing a ContextFreeGrammar
         object if the start production is not of type string.
@@ -196,7 +196,7 @@ class TestParser(object):
         reason='Start must be non empty.',
         raises=ValueError,
     )
-    def test_constructor_empty_start():
+    def test_empty_start():
         """
         Ensure a ValueError is raised when constructing a ContextFreeGrammar
         object if the start production is an empty string.
@@ -218,7 +218,7 @@ class TestParser(object):
         reason='Start must be present in given productions.',
         raises=ValueError,
     )
-    def test_constructor_missing_start():
+    def test_missing_start():
         """
         Ensure a ValueError is raised when constructing a ContextFreeGrammar
         object if the start production is missing from the production rules.
@@ -240,7 +240,7 @@ class TestParser(object):
         reason='Productions is not of type dict.',
         raises=TypeError,
     )
-    def test_constructor_invalid_production():
+    def test_invalid_production():
         """
         Ensure a TypeError is raised when constructing a ContextFreeGrammar
         object if the productions are not of type dict.
@@ -262,7 +262,7 @@ class TestParser(object):
         reason='Productions nonterminals are not of type string.',
         raises=TypeError,
     )
-    def test_constructor_invalid_production_nonterminal():
+    def test_invalid_production_nonterm():
         """
         Ensure a TypeError is raised when constructing a ContextFreeGrammar
         object if the productions nonterminals are not of type string.
@@ -287,7 +287,7 @@ class TestParser(object):
         reason='Production nonterminals must be non empty.',
         raises=ValueError,
     )
-    def test_constructor_empty_production_nonterminal():
+    def test_empty_production_nonterm():
         """
         Ensure a ValueError is raised when constructing a ContextFreeGrammar
         object if the production nonterminals are empty strings.
@@ -312,7 +312,7 @@ class TestParser(object):
         reason='Productions rules are not of type string.',
         raises=TypeError,
     )
-    def test_constructor_invalid_production_rule():
+    def test_invalid_production_rule():
         """
         Ensure a TypeError is raised when constructing a ContextFreeGrammar
         object if the production rules are not of type string.
