@@ -212,7 +212,7 @@ ignore-docstrings=yes
 ignore-imports=yes
 
 # Minimum lines number of a similarity.
-min-similarity-lines=4
+min-similarity-lines=10
 
 
 [MISCELLANEOUS]
@@ -331,16 +331,7 @@ good-names=i,
            r,
            s,
            t,
-           test_constructor_invalid_expressions,
-           test_constructor_invalid_production,
-           test_constructor_invalid_production_nonterminal,
-           test_constructor_invalid_production_rule,
            test_constructor_invalid_scanner,
-           test_constructor_invalid_token_key,
-           test_constructor_invalid_token_value,
-           test_invalid_character_range_end,
-           test_invalid_character_range_start,
-           test_invalid_production_nonterminal,
            Q,
            V,
            T,
