@@ -103,7 +103,7 @@ class TestScanner(object):
         reason='Name is not of type string.',
         raises=TypeError,
     )
-    def test_invalid_name():
+    def test_name_invalid():
         """
         Ensure a TypeError is raised when constructing a RegularGrammar object
         if the name is not of type string.
@@ -121,7 +121,7 @@ class TestScanner(object):
         reason='Name must be non empty.',
         raises=ValueError,
     )
-    def test_empty_name():
+    def test_name_empty():
         """
         Ensure a ValueError is raised when constructing a RegularGrammar object
         if the name is an empty string.
@@ -139,7 +139,7 @@ class TestScanner(object):
         reason='Expression is not of type dict.',
         raises=TypeError,
     )
-    def test_invalid_expressions():
+    def test_expressions_invalid():
         """
         Ensure a TypeError is raised when constructing a RegularGrammar object
         if the expressions is not of type dict.
@@ -155,7 +155,7 @@ class TestScanner(object):
         reason='Empty expressions.',
         raises=ValueError,
     )
-    def test_empty_expressions():
+    def test_expressions_empty():
         """
         Ensure empty expressions produce the proper exception.
         """
@@ -170,7 +170,7 @@ class TestScanner(object):
         reason='Invalid expressions.',
         raises=TypeError,
     )
-    def test_invalid_expression_id():
+    def test_expression_id_invalid():
         """
         Ensure invalid expressions produce the proper exception.
         """
@@ -187,7 +187,7 @@ class TestScanner(object):
         reason='Exmpty expressions.',
         raises=ValueError,
     )
-    def test_empty_expression_id():
+    def test_expression_id_empty():
         """
         Ensure invalid expressions produce the proper exception.
         """
@@ -204,7 +204,7 @@ class TestScanner(object):
         reason='Invalid expressions.',
         raises=TypeError,
     )
-    def test_invalid_expression_pattern():
+    def test_expression_pattern_invalid():
         """
         Ensure invalid expressions produce the proper exception.
         """
@@ -221,7 +221,7 @@ class TestScanner(object):
         reason='Empty expression.',
         raises=ValueError,
     )
-    def test_empty_expression_pattern():
+    def test_expression_pattern_empty():
         """
         Ensure empty expressions produce the proper exception.
         """
@@ -238,7 +238,7 @@ class TestScanner(object):
         reason='Invalid character.',
         raises=ValueError,
     )
-    def test_invalid_character():
+    def test_character_invalid_ascii():
         """
         Ensure invalid character produces the proper exception.
         """
@@ -255,31 +255,14 @@ class TestScanner(object):
         reason='Invalid character.',
         raises=ValueError,
     )
-    def test_invalid_unicode_character():
+    def test_character_invalid_unicode():
         """
         Ensure invalid character produces the proper exception.
         """
         TestScanner._run(**{
             'name': 'Invalid Unicode Character',
             'expressions': {
-                'invalid': str(u'\0391')
-            },
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Empty escape sequence.',
-        raises=ValueError,
-    )
-    def test_empty_escape_seq():
-        """
-        Ensure empty escape sequences produces the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Empty Escape Sequence',
-            'expressions': {
-                'invalid': '\\'
+                'invalid': str(u'\u0391')
             },
             'DFA': {}
         })
@@ -289,7 +272,7 @@ class TestScanner(object):
         reason='Invalid escape sequence.',
         raises=ValueError,
     )
-    def test_invalid_escape_seq():
+    def test_escape_sequence_invalid():
         """
         Ensure invalid escape sequences produces the proper exception.
         """
@@ -303,51 +286,17 @@ class TestScanner(object):
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Invalid character range.',
+        reason='Empty escape sequence.',
         raises=ValueError,
     )
-    def test_invalid_char_range_start():
+    def test_escape_sequence_empty():
         """
-        Ensure an invalid character ranges produces the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Character Range/Class No Start',
-            'expressions': {
-                'class/range': ']'
-            },
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid character range.',
-        raises=ValueError,
-    )
-    def test_invalid_char_range_end():
-        """
-        Ensure an invalid character ranges produces the proper exception.
+        Ensure empty escape sequences produces the proper exception.
         """
         TestScanner._run(**{
-            'name': 'Character Range/Class No End',
+            'name': 'Empty Escape Sequence',
             'expressions': {
-                'clas/range': '['
-            },
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Empty character range.',
-        raises=ValueError,
-    )
-    def test_empty_character_range():
-        """
-        Ensure empty character ranges produces the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Empty Character Range/Class',
-            'expressions': {
-                'class/range': '[]'
+                'invalid': '\\'
             },
             'DFA': {}
         })
@@ -357,7 +306,7 @@ class TestScanner(object):
         reason='Invalid operator arity.',
         raises=ValueError,
     )
-    def test_invalid_star_airty():
+    def test_invalid_airty_star():
         """
         Ensure invalid kleene star (*) operator airty produces the proper
         exception.
@@ -375,7 +324,7 @@ class TestScanner(object):
         reason='Invalid operator arity.',
         raises=ValueError,
     )
-    def test_invalid_plus_airty():
+    def test_invalid_airty_plus():
         """
         Ensure invalid kleene plus (+) operator airty produces the proper
         exception.
@@ -393,27 +342,10 @@ class TestScanner(object):
         reason='Invalid operator arity.',
         raises=ValueError,
     )
-    def test_invalid_question_airty():
+    def test_invalid_airty_alternate():
         """
-        Ensure invalid question (?) operator airty produces the proper
+        Ensure invalid alternate (|) operator airty produces the proper
         exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Expression ? Arity',
-            'expressions': {
-                'invalid': '?'
-            },
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid operator arity.',
-        raises=ValueError,
-    )
-    def test_invalid_choice_airty():
-        """
-        Ensure invalid choice (|) operator airty produces the proper exception.
         """
         TestScanner._run(**{
             'name': 'Invalid Expression | Arity',
@@ -428,9 +360,9 @@ class TestScanner(object):
         reason='Invalid operator arity.',
         raises=ValueError,
     )
-    def test_invalid_dot_airty():
+    def test_invalid_airty_concat():
         """
-        Ensure invalid dot (.) operator airty produces the proper exception.
+        Ensure invalid concat (.) operator airty produces the proper exception.
         """
         TestScanner._run(**{
             'name': 'Invalid Expression . Arity',
@@ -442,10 +374,45 @@ class TestScanner(object):
 
     @staticmethod
     @pytest.mark.xfail(
+        reason='Invalid operator arity.',
+        raises=ValueError,
+    )
+    def test_invalid_airty_maybe():
+        """
+        Ensure invalid maybe (?) operator airty produces the proper
+        exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Expression ? Arity',
+            'expressions': {
+                'invalid': '?'
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
         reason='Unbalanced parenthesis.',
         raises=ValueError,
     )
-    def test_unbalanced_right_paren():
+    def test_unbalanced_paren_left():
+        """
+        Ensure unbalanced parenthesis produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Unbalanced Right Paren',
+            'expressions': {
+                'invalid': 'foo|bar)'
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Unbalanced parenthesis.',
+        raises=ValueError,
+    )
+    def test_unbalanced_paren_right():
         """
         Ensure unbalanced parenthesis produces the proper exception.
         """
@@ -459,17 +426,51 @@ class TestScanner(object):
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Unbalanced parenthesis.',
+        reason='Invalid character range.',
         raises=ValueError,
     )
-    def test_unbalanced_left_paren():
+    def test_char_range_invalid_start():
         """
-        Ensure unbalanced parenthesis produces the proper exception.
+        Ensure an invalid character ranges produces the proper exception.
         """
         TestScanner._run(**{
-            'name': 'Unbalanced Right Paren',
+            'name': 'Character Range/Class No Start',
             'expressions': {
-                'invalid': 'foo|bar)'
+                'class/range': ']'
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid character range.',
+        raises=ValueError,
+    )
+    def test_char_range_invalid_end():
+        """
+        Ensure an invalid character ranges produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Character Range/Class No End',
+            'expressions': {
+                'clas/range': '['
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Empty character range.',
+        raises=ValueError,
+    )
+    def test_char_range_empty():
+        """
+        Ensure empty character ranges produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Empty Character Range/Class',
+            'expressions': {
+                'class/range': '[]'
             },
             'DFA': {}
         })
@@ -495,61 +496,6 @@ class TestScanner(object):
                 'F': set(['A']),
                 'G': {
                     'alpha': set(['A']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_explicit_concatenation():
-        """
-        Ensure explicit concatenation of two characters produces the expected
-        output.
-        """
-        TestScanner._run(**{
-            'name': 'Explicit Concatenation',
-            'expressions': {
-                'concat': 'a.b'
-            },
-            'DFA': {
-                'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'S',   'A',   'B',   'Err'],
-                    ['a', 'A',   'Err', 'Err', 'Err'],
-                    ['b', 'Err', 'B',   'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['B']),
-                'G': {
-                    'concat': set(['B']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_alternation():
-        """
-        Ensure the alternative of two characters produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Alternation',
-            'expressions': {
-                'alt': 'a|b'
-            },
-            'DFA': {
-                'Q': set(['S', 'AB', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'S',  'AB',  'Err'],
-                    ['a', 'AB', 'Err', 'Err'],
-                    ['b', 'AB', 'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['AB']),
-                'G': {
-                    'alt': set(['AB']),
                     '_sink': set(['Err'])
                 }
             }
@@ -606,9 +552,122 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_choice():
+    def test_alternation():
         """
-        Ensure choice on a single character produces the expected output.
+        Ensure the alternative of two characters produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Alternation',
+            'expressions': {
+                'alt': 'a|b'
+            },
+            'DFA': {
+                'Q': set(['S', 'AB', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'S',  'AB',  'Err'],
+                    ['a', 'AB', 'Err', 'Err'],
+                    ['b', 'AB', 'Err', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['AB']),
+                'G': {
+                    'alt': set(['AB']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_concatenation_explicit():
+        """
+        Ensure explicit concatenation of two characters produces the expected
+        output.
+        """
+        TestScanner._run(**{
+            'name': 'Explicit Concatenation',
+            'expressions': {
+                'concat': 'a.b'
+            },
+            'DFA': {
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'S',   'A',   'B',   'Err'],
+                    ['a', 'A',   'Err', 'Err', 'Err'],
+                    ['b', 'Err', 'B',   'Err', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['B']),
+                'G': {
+                    'concat': set(['B']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_concatenation_implicit():
+        """
+        Ensure implicit concatenation of two characters produces the expected
+        output.
+        """
+        TestScanner._run(**{
+            'name': 'Implicit Concatenation Characters',
+            'expressions': {
+                'concat': 'ab'
+            },
+            'DFA': {
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'S',   'A',   'B',   'Err'],
+                    ['a', 'A',   'Err', 'Err', 'Err'],
+                    ['b', 'Err', 'B',   'Err', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['B']),
+                'G': {
+                    'concat': set(['B']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_concatenation_mixed():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Mixed Concatenation',
+            'expressions': {
+                'concat': 'a.bc.de'
+            },
+            'DFA': {
+                'Q': set(['S', 'A', 'B', 'C', 'D', 'E', 'Err']),
+                'V': set('abcde'),
+                'T': [
+                    [' ', 'S',   'A',   'B',   'C',   'D',   'E',   'Err'],
+                    ['a', 'A',   'Err', 'Err', 'Err', 'Err', 'Err', 'Err'],
+                    ['b', 'Err', 'B',   'Err', 'Err', 'Err', 'Err', 'Err'],
+                    ['c', 'Err', 'Err', 'C',   'Err', 'Err', 'Err', 'Err'],
+                    ['d', 'Err', 'Err', 'Err', 'D',   'Err', 'Err', 'Err'],
+                    ['e', 'Err', 'Err', 'Err', 'Err', 'E',   'Err', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['E']),
+                'G': {
+                    'concat': set(['E']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_maybe():
+        """
+        Ensure maybe on a single character produces the expected output.
         """
         TestScanner._run(**{
             'name': 'Choice',
@@ -658,365 +717,7 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_association_precedence():
-        """
-        Ensure association operator precedence produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Association',
-            'expressions': {
-                'assoc': 'a|b*'
-            },
-            'DFA': {
-                'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'S', 'A',   'B',   'Err'],
-                    ['a', 'A', 'Err', 'Err', 'Err'],
-                    ['b', 'B', 'Err', 'B',   'Err']
-                ],
-                'S': 'S',
-                'F': set(['S', 'A', 'B']),
-                'G': {
-                    'assoc': set(['S', 'A', 'B']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_operator_literals():
-        """
-        Ensure operator literals, when escaped, produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Operator Alpha Literals',
-            'expressions': {
-                'concat': '\.',
-                'alt': '\|',
-                'star': '\*',
-                'question': '\?',
-                'plus': '\+',
-                'slash': '\\\\',
-                'lparen': '\(',
-                'rparen': '\)',
-                'lbracket': '\[',
-                'rbracket': '\]',
-            },
-            'DFA': {
-                'Q': set(['S', 'F', 'Err']),
-                'V': set('.|*?+\\()[]'),
-                'T': [
-                    [' ',  'S', 'F',   'Err'],
-                    ['.',  'F', 'Err', 'Err'],
-                    ['|',  'F', 'Err', 'Err'],
-                    ['*',  'F', 'Err', 'Err'],
-                    ['?',  'F', 'Err', 'Err'],
-                    ['+',  'F', 'Err', 'Err'],
-                    ['\\', 'F', 'Err', 'Err'],
-                    ['(',  'F', 'Err', 'Err'],
-                    [')',  'F', 'Err', 'Err'],
-                    ['[',  'F', 'Err', 'Err'],
-                    [']',  'F', 'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['F']),
-                'G': {
-                    'concat': set(['F']),
-                    'alt': set(['F']),
-                    'star': set(['F']),
-                    'question': set(['F']),
-                    'plus': set(['F']),
-                    'slash': set(['F']),
-                    'lparen': set(['F']),
-                    'rparen': set(['F']),
-                    'lbracket': set(['F']),
-                    'rbracket': set(['F']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_implicit_concatenation():
-        """
-        Ensure implicit concatenation produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Implicit Concatenation Characters',
-            'expressions': {
-                'permutation1': 'ab',
-                'permutation2': 'a(b)',
-                'permutation3': '(a)b',
-                'permutation4': '(a)(b)'
-            },
-            'DFA': {
-                'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'S',   'A',   'B',   'Err'],
-                    ['a', 'A',   'Err', 'Err', 'Err'],
-                    ['b', 'Err', 'B',   'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['B']),
-                'G': {
-                    'permutation1': set(['B']),
-                    'permutation2': set(['B']),
-                    'permutation3': set(['B']),
-                    'permutation4': set(['B']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_concatenation_star():
-        """
-        Ensure the expression produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Implicit Concatenation Star Operator',
-            'expressions': {
-                'permutation1': 'a*b',
-                'permutation2': 'a*(b)',
-                'permutation3': '(a)*b',
-                'permutation4': '(a)*(b)',
-            },
-            'DFA': {
-                'Q': set(['A', 'B', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'A', 'B',   'Err'],
-                    ['a', 'A', 'Err', 'Err'],
-                    ['b', 'B', 'Err', 'Err']
-                ],
-                'S': 'A',
-                'F': set(['B']),
-                'G': {
-                    'permutation1': set(['B']),
-                    'permutation2': set(['B']),
-                    'permutation3': set(['B']),
-                    'permutation4': set(['B']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_concatenation_plus():
-        """
-        Ensure the expression produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Implicit Concatenation Plus Operator',
-            'expressions': {
-                'permutation1': 'a+b',
-                'permutation2': 'a+(b)',
-                'permutation3': '(a)+b',
-                'permutation4': '(a)+(b)'
-            },
-            'DFA': {
-                'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'S',   'A', 'B',   'Err'],
-                    ['a', 'A',   'A', 'Err', 'Err'],
-                    ['b', 'Err', 'B', 'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['B']),
-                'G': {
-                    'permutation1': set(['B']),
-                    'permutation2': set(['B']),
-                    'permutation3': set(['B']),
-                    'permutation4': set(['B']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_concatenation_question():
-        """
-        Ensure the expression produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Implicit Concatenation Question Operator',
-            'expressions': {
-                'permutation1': 'a?b',
-                'permutation2': 'a?(b)',
-                'permutation3': '(a)?b',
-                'permutation4': '(a)?(b)'
-            },
-            'DFA': {
-                'Q': set(['S', 'A', 'B', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'S', 'A',   'B',   'Err'],
-                    ['a', 'A', 'Err', 'Err', 'Err'],
-                    ['b', 'B', 'B',   'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['B']),
-                'G': {
-                    'permutation1': set(['B']),
-                    'permutation2': set(['B']),
-                    'permutation3': set(['B']),
-                    'permutation4': set(['B']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_concatenation_10():
-        """
-        Ensure the expression produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Implicit Concatenation 10 - Mixed',
-            'expressions': {
-                'concat': 'a.bc.de'
-            },
-            'DFA': {
-                'Q': set(['S', 'A', 'B', 'C', 'D', 'E', 'Err']),
-                'V': set('abcde'),
-                'T': [
-                    [' ', 'S',   'A',   'B',   'C',   'D',   'E',   'Err'],
-                    ['a', 'A',   'Err', 'Err', 'Err', 'Err', 'Err', 'Err'],
-                    ['b', 'Err', 'B',   'Err', 'Err', 'Err', 'Err', 'Err'],
-                    ['c', 'Err', 'Err', 'C',   'Err', 'Err', 'Err', 'Err'],
-                    ['d', 'Err', 'Err', 'Err', 'D',   'Err', 'Err', 'Err'],
-                    ['e', 'Err', 'Err', 'Err', 'Err', 'E',   'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['E']),
-                'G': {
-                    'concat': set(['E']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_randomness_1():
-        """
-        Ensure the expression produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Randomness 1',
-            'expressions': {
-                'random': 'a*(b|cd)*'
-            },
-            'DFA': {
-                'Q': set(['AC', 'B', 'DE', 'Err']),
-                'V': set('abcd'),
-                'T': [
-                    [' ', 'AC',  'B',   'DE',  'Err'],
-                    ['a', 'AC',  'Err', 'Err', 'Err'],
-                    ['b', 'DE',  'Err', 'DE',  'Err'],
-                    ['c', 'B',   'Err', 'B',   'Err'],
-                    ['d', 'Err', 'DE',  'Err', 'Err']
-                ],
-                'S': 'AC',
-                'F': set(['AC', 'DE']),
-                'G': {
-                    'random': set(['AC', 'DE']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_randomness_2():
-        """
-        Ensure the expression produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Randomness 2',
-            'expressions': {
-                'random': 'a?b*'
-            },
-            'DFA': {
-                'Q': set(['A', 'B', 'Err']),
-                'V': set('ab'),
-                'T': [
-                    [' ', 'A',  'B',   'Err'],
-                    ['a', 'B',  'Err', 'Err'],
-                    ['b', 'B',  'B',   'Err']
-                ],
-                'S': 'A',
-                'F': set(['A', 'B']),
-                'G': {
-                    'random': set(['A', 'B']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_randomness_3():
-        """
-        Ensure the expression produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Randomness 3',
-            'expressions': {
-                'random': '(a*b)|(a.bcd.e)'
-            },
-            'DFA': {
-                'Q': set(['S', 'A', 'A*', 'B', 'C', 'D', 'F', 'Err']),
-                'V': set('abcde'),
-                'T': [
-                    [' ', 'S',   'A',   'A*',  'B',   'C',   'D',   'F',   'Err'],
-                    ['a', 'A',   'A*',  'A*',  'Err', 'Err', 'Err', 'Err', 'Err'],
-                    ['b', 'F',   'B',   'F',   'Err', 'Err', 'Err', 'Err', 'Err'],
-                    ['c', 'Err', 'Err', 'Err', 'C',   'Err', 'Err', 'Err', 'Err'],
-                    ['d', 'Err', 'Err', 'Err', 'Err', 'D',   'Err', 'Err', 'Err'],
-                    ['e', 'Err', 'Err', 'Err', 'Err', 'Err', 'F',   'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['F', 'B']),
-                'G': {
-                    'random': set(['F', 'B']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_randomness_4():
-        """
-        Ensure the expression produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Randomness 4',
-            'expressions': {
-                'random': '(foo)?(bar)+'
-            },
-            'DFA': {
-                'Q': set(['S', 'F', 'FO', 'FOO', 'B', 'BA', 'BAR', 'Err']),
-                'V': set('fobar'),
-                'T': [
-                    [' ', 'S',   'F',   'FO',  'FOO', 'B',   'BA',  'BAR', 'Err'],
-                    ['f', 'F',   'Err', 'Err', 'Err', 'Err', 'Err', 'Err', 'Err'],
-                    ['o', 'Err', 'FO',  'FOO', 'Err', 'Err', 'Err', 'Err', 'Err'],
-                    ['b', 'B',   'Err', 'Err', 'B',   'Err', 'Err', 'B',   'Err'],
-                    ['a', 'Err', 'Err', 'Err', 'Err', 'BA',  'Err', 'Err', 'Err'],
-                    ['r', 'Err', 'Err', 'Err', 'Err', 'Err', 'BAR', 'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['BAR']),
-                'G': {
-                    'random': set(['BAR']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_forward_character_range():
+    def test_character_range_forward():
         """
         Ensure the expression produces the expected output.
         """
@@ -1044,7 +745,7 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_backward_character_range():
+    def test_character_range_backward():
         """
         Ensure the expression produces the expected output.
         """
@@ -1101,7 +802,7 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_negated_character_range():
+    def test_character_range_negated():
         """
         Ensure the expression produces the expected output.
         """
@@ -1126,6 +827,31 @@ class TestScanner(object):
                 'F': set(['S']),
                 'G': {
                     'range': set(['S'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_character_range_literal():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Character Class with Literal Right Bracket',
+            'expressions': {
+                'class': '[\]]*'
+            },
+            'DFA': {
+                'Q': set(['S']),
+                'V': set(']'),
+                'T': [
+                    [' ', 'S'],
+                    [']', 'S']
+                ],
+                'S': 'S',
+                'F': set(['S']),
+                'G': {
+                    'class': set(['S'])
                 }
             }
         })
@@ -1185,32 +911,7 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_character_range_literal():
-        """
-        Ensure the expression produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Character Class with Literal Right Bracket',
-            'expressions': {
-                'class': '[\]]*'
-            },
-            'DFA': {
-                'Q': set(['S']),
-                'V': set(']'),
-                'T': [
-                    [' ', 'S'],
-                    [']', 'S']
-                ],
-                'S': 'S',
-                'F': set(['S']),
-                'G': {
-                    'class': set(['S'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_negated_character_class():
+    def test_character_class_negated():
         """
         Ensure the expression produces the expected output.
         """
@@ -1240,7 +941,7 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_character_class_range():
+    def test_char_class_range_combo_1():
         """
         Ensure the expression produces the expected output.
         """
@@ -1269,7 +970,7 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_character_class_range_2():
+    def test_char_class_range_combo_2():
         """
         Ensure the expression produces the expected output.
         """
@@ -1298,77 +999,295 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_integer():
+    def test_operator_literals():
         """
-        Ensure the expression produces the expected output.
+        Ensure operator literals, when escaped, produces the expected output.
         """
         TestScanner._run(**{
-            'name': 'Integer',
+            'name': 'Operator Alpha Literals',
             'expressions': {
-                'int': "0|([-+]?[1-9][0-9]*)"
+                'concat': '\.',
+                'alt': '\|',
+                'star': '\*',
+                'question': '\?',
+                'plus': '\+',
+                'slash': '\\\\',
+                'lparen': '\(',
+                'rparen': '\)',
+                'lbracket': '\[',
+                'rbracket': '\]',
             },
             'DFA': {
-                'Q': set(['S', 'Zero', 'Sign', 'Int', 'Err']),
-                'V': set('+-0123456789'),
+                'Q': set(['S', 'F', 'Err']),
+                'V': set('.|*?+\\()[]'),
                 'T': [
-                    [' ', 'S',    'Zero', 'Sign', 'Int', 'Err'],
-                    ['+', 'Sign', 'Err',  'Err',  'Err', 'Err'],
-                    ['-', 'Sign', 'Err',  'Err',  'Err', 'Err'],
-                    ['0', 'Zero', 'Err',  'Err',  'Int', 'Err'],
-                    ['1', 'Int',  'Err',  'Int',  'Int', 'Err'],
-                    ['2', 'Int',  'Err',  'Int',  'Int', 'Err'],
-                    ['3', 'Int',  'Err',  'Int',  'Int', 'Err'],
-                    ['4', 'Int',  'Err',  'Int',  'Int', 'Err'],
-                    ['5', 'Int',  'Err',  'Int',  'Int', 'Err'],
-                    ['6', 'Int',  'Err',  'Int',  'Int', 'Err'],
-                    ['7', 'Int',  'Err',  'Int',  'Int', 'Err'],
-                    ['8', 'Int',  'Err',  'Int',  'Int', 'Err'],
-                    ['9', 'Int',  'Err',  'Int',  'Int', 'Err']
+                    [' ',  'S', 'F',   'Err'],
+                    ['.',  'F', 'Err', 'Err'],
+                    ['|',  'F', 'Err', 'Err'],
+                    ['*',  'F', 'Err', 'Err'],
+                    ['?',  'F', 'Err', 'Err'],
+                    ['+',  'F', 'Err', 'Err'],
+                    ['\\', 'F', 'Err', 'Err'],
+                    ['(',  'F', 'Err', 'Err'],
+                    [')',  'F', 'Err', 'Err'],
+                    ['[',  'F', 'Err', 'Err'],
+                    [']',  'F', 'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['Zero', 'Int']),
+                'F': set(['F']),
                 'G': {
-                    'int': set(['Zero', 'Int']),
+                    'concat': set(['F']),
+                    'alt': set(['F']),
+                    'star': set(['F']),
+                    'question': set(['F']),
+                    'plus': set(['F']),
+                    'slash': set(['F']),
+                    'lparen': set(['F']),
+                    'rparen': set(['F']),
+                    'lbracket': set(['F']),
+                    'rbracket': set(['F']),
                     '_sink': set(['Err'])
                 }
             }
         })
 
     @staticmethod
-    def test_float():
+    def test_precedence():
+        """
+        Ensure association operator precedence produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Association',
+            'expressions': {
+                'assoc': 'a|b*'
+            },
+            'DFA': {
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'S', 'A',   'B',   'Err'],
+                    ['a', 'A', 'Err', 'Err', 'Err'],
+                    ['b', 'B', 'Err', 'B',   'Err']
+                ],
+                'S': 'S',
+                'F': set(['S', 'A', 'B']),
+                'G': {
+                    'assoc': set(['S', 'A', 'B']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_x():
         """
         Ensure the expression produces the expected output.
         """
         TestScanner._run(**{
-            'name': 'Float',
+            'name': 'Implicit Concatenation Star Operator',
             'expressions': {
-                'float': '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
+                'permutation1': 'a*b',
+                'permutation2': 'a*(b)',
+                'permutation3': '(a)*b',
+                'permutation4': '(a)*(b)',
             },
             'DFA': {
-                'Q': set(['S', 'WholePart', 'ExpPart', 'FractionPart', 'eSignum', 'Sigfrac', 'Sigexp', 'Signum', 'Err']),
-                'V': set('+-.0123456789eE'),
+                'Q': set(['A', 'B', 'Err']),
+                'V': set('ab'),
                 'T': [
-                    [' ', 'S',         'WholePart', 'ExpPart', 'FractionPart', 'eSignum', 'Sigfrac',      'Sigexp',  'Signum',    'Err'],
-                    ['+', 'Signum',    'Err',       'Err',     'Err',          'Err',     'Err',          'eSignum', 'Err',       'Err'],
-                    ['-', 'Signum',    'Err',       'Err',     'Err',          'Err',     'Err',          'eSignum', 'Err',       'Err'],
-                    ['.', 'Sigfrac',   'Sigfrac',   'Err',     'Err',          'Err',     'Err',          'Err',     'Sigfrac',   'Err'],
-                    ['0', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
-                    ['1', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
-                    ['2', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
-                    ['3', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
-                    ['4', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
-                    ['5', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
-                    ['6', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
-                    ['7', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
-                    ['8', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
-                    ['9', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
-                    ['E', 'Err',       'Sigexp',    'Err',     'Sigexp',       'Err',     'Err',          'Err',     'Err',       'Err'],
-                    ['e', 'Err',       'Sigexp',    'Err',     'Sigexp',       'Err',     'Err',          'Err',     'Err',       'Err']
+                    [' ', 'A', 'B',   'Err'],
+                    ['a', 'A', 'Err', 'Err'],
+                    ['b', 'B', 'Err', 'Err']
+                ],
+                'S': 'A',
+                'F': set(['B']),
+                'G': {
+                    'permutation1': set(['B']),
+                    'permutation2': set(['B']),
+                    'permutation3': set(['B']),
+                    'permutation4': set(['B']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_xx():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Implicit Concatenation Plus Operator',
+            'expressions': {
+                'permutation1': 'a+b',
+                'permutation2': 'a+(b)',
+                'permutation3': '(a)+b',
+                'permutation4': '(a)+(b)'
+            },
+            'DFA': {
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'S',   'A', 'B',   'Err'],
+                    ['a', 'A',   'A', 'Err', 'Err'],
+                    ['b', 'Err', 'B', 'Err', 'Err']
                 ],
                 'S': 'S',
-                'F': set(['WholePart', 'ExpPart', 'FractionPart']),
+                'F': set(['B']),
                 'G': {
-                    'float': set(['WholePart', 'ExpPart', 'FractionPart']),
+                    'permutation1': set(['B']),
+                    'permutation2': set(['B']),
+                    'permutation3': set(['B']),
+                    'permutation4': set(['B']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_xxx():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Implicit Concatenation Question Operator',
+            'expressions': {
+                'permutation1': 'a?b',
+                'permutation2': 'a?(b)',
+                'permutation3': '(a)?b',
+                'permutation4': '(a)?(b)'
+            },
+            'DFA': {
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'S', 'A',   'B',   'Err'],
+                    ['a', 'A', 'Err', 'Err', 'Err'],
+                    ['b', 'B', 'B',   'Err', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['B']),
+                'G': {
+                    'permutation1': set(['B']),
+                    'permutation2': set(['B']),
+                    'permutation3': set(['B']),
+                    'permutation4': set(['B']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_xxxx():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Randomness 1',
+            'expressions': {
+                'random': 'a*(b|cd)*'
+            },
+            'DFA': {
+                'Q': set(['AC', 'B', 'DE', 'Err']),
+                'V': set('abcd'),
+                'T': [
+                    [' ', 'AC',  'B',   'DE',  'Err'],
+                    ['a', 'AC',  'Err', 'Err', 'Err'],
+                    ['b', 'DE',  'Err', 'DE',  'Err'],
+                    ['c', 'B',   'Err', 'B',   'Err'],
+                    ['d', 'Err', 'DE',  'Err', 'Err']
+                ],
+                'S': 'AC',
+                'F': set(['AC', 'DE']),
+                'G': {
+                    'random': set(['AC', 'DE']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_xxxxx():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Randomness 2',
+            'expressions': {
+                'random': 'a?b*'
+            },
+            'DFA': {
+                'Q': set(['A', 'B', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'A',  'B',   'Err'],
+                    ['a', 'B',  'Err', 'Err'],
+                    ['b', 'B',  'B',   'Err']
+                ],
+                'S': 'A',
+                'F': set(['A', 'B']),
+                'G': {
+                    'random': set(['A', 'B']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_xxxxxx():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Randomness 3',
+            'expressions': {
+                'random': '(a*b)|(a.bcd.e)'
+            },
+            'DFA': {
+                'Q': set(['S', 'A', 'A*', 'B', 'C', 'D', 'F', 'Err']),
+                'V': set('abcde'),
+                'T': [
+                    [' ', 'S',   'A',   'A*',  'B',   'C',   'D',   'F',   'Err'],
+                    ['a', 'A',   'A*',  'A*',  'Err', 'Err', 'Err', 'Err', 'Err'],
+                    ['b', 'F',   'B',   'F',   'Err', 'Err', 'Err', 'Err', 'Err'],
+                    ['c', 'Err', 'Err', 'Err', 'C',   'Err', 'Err', 'Err', 'Err'],
+                    ['d', 'Err', 'Err', 'Err', 'Err', 'D',   'Err', 'Err', 'Err'],
+                    ['e', 'Err', 'Err', 'Err', 'Err', 'Err', 'F',   'Err', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['F', 'B']),
+                'G': {
+                    'random': set(['F', 'B']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_xxxxxxx():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Randomness 4',
+            'expressions': {
+                'random': '(foo)?(bar)+'
+            },
+            'DFA': {
+                'Q': set(['S', 'F', 'FO', 'FOO', 'B', 'BA', 'BAR', 'Err']),
+                'V': set('fobar'),
+                'T': [
+                    [' ', 'S',   'F',   'FO',  'FOO', 'B',   'BA',  'BAR', 'Err'],
+                    ['f', 'F',   'Err', 'Err', 'Err', 'Err', 'Err', 'Err', 'Err'],
+                    ['o', 'Err', 'FO',  'FOO', 'Err', 'Err', 'Err', 'Err', 'Err'],
+                    ['b', 'B',   'Err', 'Err', 'B',   'Err', 'Err', 'B',   'Err'],
+                    ['a', 'Err', 'Err', 'Err', 'Err', 'BA',  'Err', 'Err', 'Err'],
+                    ['r', 'Err', 'Err', 'Err', 'Err', 'Err', 'BAR', 'Err', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['BAR']),
+                'G': {
+                    'random': set(['BAR']),
                     '_sink': set(['Err'])
                 }
             }
@@ -1433,256 +1352,6 @@ class TestScanner(object):
                 'G': {
                     'bool': set(['E']),
                     '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_line_comment():
-        """
-        Ensure the expression produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Line Comment',
-            'expressions': {
-                'comment': '(#|;)[^\n]*\n'
-            },
-            'DFA': {
-                'Q': set(['S', '_', 'F', 'Err']),
-                'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
-                'T': [
-                    [' ',  'S',   '_', 'F',   'Err'],
-                    ['#',  '_',   '_', 'Err', 'Err'],
-                    [';',  '_',   '_', 'Err', 'Err'],
-                    ['\n', 'Err', 'F', 'Err', 'Err'],
-                    ['0',  'Err', '_', 'Err', 'Err'],
-                    ['1',  'Err', '_', 'Err', 'Err'],
-                    ['2',  'Err', '_', 'Err', 'Err'],
-                    ['3',  'Err', '_', 'Err', 'Err'],
-                    ['4',  'Err', '_', 'Err', 'Err'],
-                    ['5',  'Err', '_', 'Err', 'Err'],
-                    ['6',  'Err', '_', 'Err', 'Err'],
-                    ['7',  'Err', '_', 'Err', 'Err'],
-                    ['8',  'Err', '_', 'Err', 'Err'],
-                    ['9',  'Err', '_', 'Err', 'Err'],
-                    [' ',  'Err', '_', 'Err', 'Err'],
-                    ['\t', 'Err', '_', 'Err', 'Err'],
-                    ['\v', 'Err', '_', 'Err', 'Err'],
-                    ['\f', 'Err', '_', 'Err', 'Err'],
-                    ['\r', 'Err', '_', 'Err', 'Err'],
-                    ['a',  'Err', '_', 'Err', 'Err'],
-                    ['b',  'Err', '_', 'Err', 'Err'],
-                    ['c',  'Err', '_', 'Err', 'Err'],
-                    ['d',  'Err', '_', 'Err', 'Err'],
-                    ['e',  'Err', '_', 'Err', 'Err'],
-                    ['f',  'Err', '_', 'Err', 'Err'],
-                    ['g',  'Err', '_', 'Err', 'Err'],
-                    ['h',  'Err', '_', 'Err', 'Err'],
-                    ['i',  'Err', '_', 'Err', 'Err'],
-                    ['j',  'Err', '_', 'Err', 'Err'],
-                    ['k',  'Err', '_', 'Err', 'Err'],
-                    ['l',  'Err', '_', 'Err', 'Err'],
-                    ['m',  'Err', '_', 'Err', 'Err'],
-                    ['n',  'Err', '_', 'Err', 'Err'],
-                    ['o',  'Err', '_', 'Err', 'Err'],
-                    ['p',  'Err', '_', 'Err', 'Err'],
-                    ['q',  'Err', '_', 'Err', 'Err'],
-                    ['r',  'Err', '_', 'Err', 'Err'],
-                    ['s',  'Err', '_', 'Err', 'Err'],
-                    ['t',  'Err', '_', 'Err', 'Err'],
-                    ['u',  'Err', '_', 'Err', 'Err'],
-                    ['v',  'Err', '_', 'Err', 'Err'],
-                    ['w',  'Err', '_', 'Err', 'Err'],
-                    ['x',  'Err', '_', 'Err', 'Err'],
-                    ['y',  'Err', '_', 'Err', 'Err'],
-                    ['z',  'Err', '_', 'Err', 'Err'],
-                    ['A',  'Err', '_', 'Err', 'Err'],
-                    ['B',  'Err', '_', 'Err', 'Err'],
-                    ['C',  'Err', '_', 'Err', 'Err'],
-                    ['D',  'Err', '_', 'Err', 'Err'],
-                    ['E',  'Err', '_', 'Err', 'Err'],
-                    ['F',  'Err', '_', 'Err', 'Err'],
-                    ['G',  'Err', '_', 'Err', 'Err'],
-                    ['H',  'Err', '_', 'Err', 'Err'],
-                    ['I',  'Err', '_', 'Err', 'Err'],
-                    ['J',  'Err', '_', 'Err', 'Err'],
-                    ['K',  'Err', '_', 'Err', 'Err'],
-                    ['L',  'Err', '_', 'Err', 'Err'],
-                    ['M',  'Err', '_', 'Err', 'Err'],
-                    ['N',  'Err', '_', 'Err', 'Err'],
-                    ['O',  'Err', '_', 'Err', 'Err'],
-                    ['P',  'Err', '_', 'Err', 'Err'],
-                    ['Q',  'Err', '_', 'Err', 'Err'],
-                    ['R',  'Err', '_', 'Err', 'Err'],
-                    ['S',  'Err', '_', 'Err', 'Err'],
-                    ['T',  'Err', '_', 'Err', 'Err'],
-                    ['U',  'Err', '_', 'Err', 'Err'],
-                    ['V',  'Err', '_', 'Err', 'Err'],
-                    ['W',  'Err', '_', 'Err', 'Err'],
-                    ['X',  'Err', '_', 'Err', 'Err'],
-                    ['Y',  'Err', '_', 'Err', 'Err'],
-                    ['Z',  'Err', '_', 'Err', 'Err'],
-                    ['!',  'Err', '_', 'Err', 'Err'],
-                    ['"',  'Err', '_', 'Err', 'Err'],
-                    ['$',  'Err', '_', 'Err', 'Err'],
-                    ['%',  'Err', '_', 'Err', 'Err'],
-                    ['&',  'Err', '_', 'Err', 'Err'],
-                    ['\'', 'Err', '_', 'Err', 'Err'],
-                    ['(',  'Err', '_', 'Err', 'Err'],
-                    [')',  'Err', '_', 'Err', 'Err'],
-                    ['*',  'Err', '_', 'Err', 'Err'],
-                    ['+',  'Err', '_', 'Err', 'Err'],
-                    [',',  'Err', '_', 'Err', 'Err'],
-                    ['-',  'Err', '_', 'Err', 'Err'],
-                    ['.',  'Err', '_', 'Err', 'Err'],
-                    ['/',  'Err', '_', 'Err', 'Err'],
-                    [':',  'Err', '_', 'Err', 'Err'],
-                    ['<',  'Err', '_', 'Err', 'Err'],
-                    ['=',  'Err', '_', 'Err', 'Err'],
-                    ['>',  'Err', '_', 'Err', 'Err'],
-                    ['?',  'Err', '_', 'Err', 'Err'],
-                    ['@',  'Err', '_', 'Err', 'Err'],
-                    ['[',  'Err', '_', 'Err', 'Err'],
-                    ['\\', 'Err', '_', 'Err', 'Err'],
-                    [']',  'Err', '_', 'Err', 'Err'],
-                    ['^',  'Err', '_', 'Err', 'Err'],
-                    ['_',  'Err', '_', 'Err', 'Err'],
-                    ['`',  'Err', '_', 'Err', 'Err'],
-                    ['{',  'Err', '_', 'Err', 'Err'],
-                    ['|',  'Err', '_', 'Err', 'Err'],
-                    ['}',  'Err', '_', 'Err', 'Err'],
-                    ['~',  'Err', '_', 'Err', 'Err']
-                ],
-                'S': 'S',
-                'F': set(['F']),
-                'G': {
-                    'comment': set(['F']),
-                    '_sink': set(['Err'])
-                }
-            }
-        })
-
-    @staticmethod
-    def test_block_comment():
-        """
-        Ensure the expression produces the expected output.
-        """
-        TestScanner._run(**{
-            'name': 'Block Comment',
-            'expressions': {
-                'comment': '/[*][^]*[*]/'
-            },
-            'DFA': {
-                'Q': set(['BEGIN', 'SINK', 'FSLASH', 'SIGEND', 'END', 'ERR']),
-                'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
-                'T': [
-                    [' ',  'BEGIN',  'SINK',   'FSLASH', 'SIGEND', 'END',    'ERR'],
-                    ['/',  'FSLASH', 'SINK',   'ERR',    'END',    'SINK',   'ERR'],
-                    ['*',  'ERR',    'SIGEND', 'SINK',   'SIGEND', 'SIGEND', 'ERR'],
-                    ['#',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    [';',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['\n', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['0',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['1',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['2',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['3',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['4',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['5',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['6',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['7',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['8',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['9',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    [' ',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['\t', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['\v', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['\f', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['\r', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['a',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['b',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['c',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['d',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['e',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['f',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['g',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['h',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['i',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['j',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['k',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['l',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['m',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['n',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['o',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['p',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['q',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['r',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['s',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['t',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['u',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['v',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['w',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['x',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['y',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['z',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['A',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['B',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['C',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['D',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['E',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['F',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['G',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['H',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['I',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['J',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['K',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['L',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['M',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['N',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['O',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['P',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['Q',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['R',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['S',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['T',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['U',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['V',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['W',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['X',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['Y',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['Z',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['!',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['"',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['$',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['%',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['&',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['\'', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['(',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    [')',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['+',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    [',',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['-',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['.',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    [':',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['<',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['=',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['>',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['?',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['@',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['[',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['\\', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    [']',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['^',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['_',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['`',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['{',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['|',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['}',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
-                    ['~',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR']
-                ],
-                'S': 'BEGIN',
-                'F': set(['END']),
-                'G': {
-                    'comment': set(['END']),
-                    '_sink': set(['ERR'])
                 }
             }
         })
@@ -2021,6 +1690,333 @@ class TestScanner(object):
                 'G': {
                     'id': set(['DigitOrChar']),
                     '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_integer():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Integer',
+            'expressions': {
+                'int': "0|([-+]?[1-9][0-9]*)"
+            },
+            'DFA': {
+                'Q': set(['S', 'Zero', 'Sign', 'Int', 'Err']),
+                'V': set('+-0123456789'),
+                'T': [
+                    [' ', 'S',    'Zero', 'Sign', 'Int', 'Err'],
+                    ['+', 'Sign', 'Err',  'Err',  'Err', 'Err'],
+                    ['-', 'Sign', 'Err',  'Err',  'Err', 'Err'],
+                    ['0', 'Zero', 'Err',  'Err',  'Int', 'Err'],
+                    ['1', 'Int',  'Err',  'Int',  'Int', 'Err'],
+                    ['2', 'Int',  'Err',  'Int',  'Int', 'Err'],
+                    ['3', 'Int',  'Err',  'Int',  'Int', 'Err'],
+                    ['4', 'Int',  'Err',  'Int',  'Int', 'Err'],
+                    ['5', 'Int',  'Err',  'Int',  'Int', 'Err'],
+                    ['6', 'Int',  'Err',  'Int',  'Int', 'Err'],
+                    ['7', 'Int',  'Err',  'Int',  'Int', 'Err'],
+                    ['8', 'Int',  'Err',  'Int',  'Int', 'Err'],
+                    ['9', 'Int',  'Err',  'Int',  'Int', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['Zero', 'Int']),
+                'G': {
+                    'int': set(['Zero', 'Int']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_float():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Float',
+            'expressions': {
+                'float': '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
+            },
+            'DFA': {
+                'Q': set(['S', 'WholePart', 'ExpPart', 'FractionPart', 'eSignum', 'Sigfrac', 'Sigexp', 'Signum', 'Err']),
+                'V': set('+-.0123456789eE'),
+                'T': [
+                    [' ', 'S',         'WholePart', 'ExpPart', 'FractionPart', 'eSignum', 'Sigfrac',      'Sigexp',  'Signum',    'Err'],
+                    ['+', 'Signum',    'Err',       'Err',     'Err',          'Err',     'Err',          'eSignum', 'Err',       'Err'],
+                    ['-', 'Signum',    'Err',       'Err',     'Err',          'Err',     'Err',          'eSignum', 'Err',       'Err'],
+                    ['.', 'Sigfrac',   'Sigfrac',   'Err',     'Err',          'Err',     'Err',          'Err',     'Sigfrac',   'Err'],
+                    ['0', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
+                    ['1', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
+                    ['2', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
+                    ['3', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
+                    ['4', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
+                    ['5', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
+                    ['6', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
+                    ['7', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
+                    ['8', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
+                    ['9', 'WholePart', 'WholePart', 'ExpPart', 'FractionPart', 'ExpPart', 'FractionPart', 'ExpPart', 'WholePart', 'Err'],
+                    ['E', 'Err',       'Sigexp',    'Err',     'Sigexp',       'Err',     'Err',          'Err',     'Err',       'Err'],
+                    ['e', 'Err',       'Sigexp',    'Err',     'Sigexp',       'Err',     'Err',          'Err',     'Err',       'Err']
+                ],
+                'S': 'S',
+                'F': set(['WholePart', 'ExpPart', 'FractionPart']),
+                'G': {
+                    'float': set(['WholePart', 'ExpPart', 'FractionPart']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_line_comment():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Line Comment',
+            'expressions': {
+                'comment': '(#|;)[^\n]*\n'
+            },
+            'DFA': {
+                'Q': set(['S', '_', 'F', 'Err']),
+                'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
+                'T': [
+                    [' ',  'S',   '_', 'F',   'Err'],
+                    ['#',  '_',   '_', 'Err', 'Err'],
+                    [';',  '_',   '_', 'Err', 'Err'],
+                    ['\n', 'Err', 'F', 'Err', 'Err'],
+                    ['0',  'Err', '_', 'Err', 'Err'],
+                    ['1',  'Err', '_', 'Err', 'Err'],
+                    ['2',  'Err', '_', 'Err', 'Err'],
+                    ['3',  'Err', '_', 'Err', 'Err'],
+                    ['4',  'Err', '_', 'Err', 'Err'],
+                    ['5',  'Err', '_', 'Err', 'Err'],
+                    ['6',  'Err', '_', 'Err', 'Err'],
+                    ['7',  'Err', '_', 'Err', 'Err'],
+                    ['8',  'Err', '_', 'Err', 'Err'],
+                    ['9',  'Err', '_', 'Err', 'Err'],
+                    [' ',  'Err', '_', 'Err', 'Err'],
+                    ['\t', 'Err', '_', 'Err', 'Err'],
+                    ['\v', 'Err', '_', 'Err', 'Err'],
+                    ['\f', 'Err', '_', 'Err', 'Err'],
+                    ['\r', 'Err', '_', 'Err', 'Err'],
+                    ['a',  'Err', '_', 'Err', 'Err'],
+                    ['b',  'Err', '_', 'Err', 'Err'],
+                    ['c',  'Err', '_', 'Err', 'Err'],
+                    ['d',  'Err', '_', 'Err', 'Err'],
+                    ['e',  'Err', '_', 'Err', 'Err'],
+                    ['f',  'Err', '_', 'Err', 'Err'],
+                    ['g',  'Err', '_', 'Err', 'Err'],
+                    ['h',  'Err', '_', 'Err', 'Err'],
+                    ['i',  'Err', '_', 'Err', 'Err'],
+                    ['j',  'Err', '_', 'Err', 'Err'],
+                    ['k',  'Err', '_', 'Err', 'Err'],
+                    ['l',  'Err', '_', 'Err', 'Err'],
+                    ['m',  'Err', '_', 'Err', 'Err'],
+                    ['n',  'Err', '_', 'Err', 'Err'],
+                    ['o',  'Err', '_', 'Err', 'Err'],
+                    ['p',  'Err', '_', 'Err', 'Err'],
+                    ['q',  'Err', '_', 'Err', 'Err'],
+                    ['r',  'Err', '_', 'Err', 'Err'],
+                    ['s',  'Err', '_', 'Err', 'Err'],
+                    ['t',  'Err', '_', 'Err', 'Err'],
+                    ['u',  'Err', '_', 'Err', 'Err'],
+                    ['v',  'Err', '_', 'Err', 'Err'],
+                    ['w',  'Err', '_', 'Err', 'Err'],
+                    ['x',  'Err', '_', 'Err', 'Err'],
+                    ['y',  'Err', '_', 'Err', 'Err'],
+                    ['z',  'Err', '_', 'Err', 'Err'],
+                    ['A',  'Err', '_', 'Err', 'Err'],
+                    ['B',  'Err', '_', 'Err', 'Err'],
+                    ['C',  'Err', '_', 'Err', 'Err'],
+                    ['D',  'Err', '_', 'Err', 'Err'],
+                    ['E',  'Err', '_', 'Err', 'Err'],
+                    ['F',  'Err', '_', 'Err', 'Err'],
+                    ['G',  'Err', '_', 'Err', 'Err'],
+                    ['H',  'Err', '_', 'Err', 'Err'],
+                    ['I',  'Err', '_', 'Err', 'Err'],
+                    ['J',  'Err', '_', 'Err', 'Err'],
+                    ['K',  'Err', '_', 'Err', 'Err'],
+                    ['L',  'Err', '_', 'Err', 'Err'],
+                    ['M',  'Err', '_', 'Err', 'Err'],
+                    ['N',  'Err', '_', 'Err', 'Err'],
+                    ['O',  'Err', '_', 'Err', 'Err'],
+                    ['P',  'Err', '_', 'Err', 'Err'],
+                    ['Q',  'Err', '_', 'Err', 'Err'],
+                    ['R',  'Err', '_', 'Err', 'Err'],
+                    ['S',  'Err', '_', 'Err', 'Err'],
+                    ['T',  'Err', '_', 'Err', 'Err'],
+                    ['U',  'Err', '_', 'Err', 'Err'],
+                    ['V',  'Err', '_', 'Err', 'Err'],
+                    ['W',  'Err', '_', 'Err', 'Err'],
+                    ['X',  'Err', '_', 'Err', 'Err'],
+                    ['Y',  'Err', '_', 'Err', 'Err'],
+                    ['Z',  'Err', '_', 'Err', 'Err'],
+                    ['!',  'Err', '_', 'Err', 'Err'],
+                    ['"',  'Err', '_', 'Err', 'Err'],
+                    ['$',  'Err', '_', 'Err', 'Err'],
+                    ['%',  'Err', '_', 'Err', 'Err'],
+                    ['&',  'Err', '_', 'Err', 'Err'],
+                    ['\'', 'Err', '_', 'Err', 'Err'],
+                    ['(',  'Err', '_', 'Err', 'Err'],
+                    [')',  'Err', '_', 'Err', 'Err'],
+                    ['*',  'Err', '_', 'Err', 'Err'],
+                    ['+',  'Err', '_', 'Err', 'Err'],
+                    [',',  'Err', '_', 'Err', 'Err'],
+                    ['-',  'Err', '_', 'Err', 'Err'],
+                    ['.',  'Err', '_', 'Err', 'Err'],
+                    ['/',  'Err', '_', 'Err', 'Err'],
+                    [':',  'Err', '_', 'Err', 'Err'],
+                    ['<',  'Err', '_', 'Err', 'Err'],
+                    ['=',  'Err', '_', 'Err', 'Err'],
+                    ['>',  'Err', '_', 'Err', 'Err'],
+                    ['?',  'Err', '_', 'Err', 'Err'],
+                    ['@',  'Err', '_', 'Err', 'Err'],
+                    ['[',  'Err', '_', 'Err', 'Err'],
+                    ['\\', 'Err', '_', 'Err', 'Err'],
+                    [']',  'Err', '_', 'Err', 'Err'],
+                    ['^',  'Err', '_', 'Err', 'Err'],
+                    ['_',  'Err', '_', 'Err', 'Err'],
+                    ['`',  'Err', '_', 'Err', 'Err'],
+                    ['{',  'Err', '_', 'Err', 'Err'],
+                    ['|',  'Err', '_', 'Err', 'Err'],
+                    ['}',  'Err', '_', 'Err', 'Err'],
+                    ['~',  'Err', '_', 'Err', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['F']),
+                'G': {
+                    'comment': set(['F']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_block_comment():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Block Comment',
+            'expressions': {
+                'comment': '/[*][^]*[*]/'
+            },
+            'DFA': {
+                'Q': set(['BEGIN', 'SINK', 'FSLASH', 'SIGEND', 'END', 'ERR']),
+                'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
+                'T': [
+                    [' ',  'BEGIN',  'SINK',   'FSLASH', 'SIGEND', 'END',    'ERR'],
+                    ['/',  'FSLASH', 'SINK',   'ERR',    'END',    'SINK',   'ERR'],
+                    ['*',  'ERR',    'SIGEND', 'SINK',   'SIGEND', 'SIGEND', 'ERR'],
+                    ['#',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    [';',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['\n', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['0',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['1',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['2',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['3',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['4',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['5',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['6',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['7',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['8',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['9',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    [' ',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['\t', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['\v', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['\f', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['\r', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['a',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['b',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['c',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['d',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['e',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['f',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['g',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['h',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['i',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['j',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['k',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['l',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['m',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['n',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['o',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['p',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['q',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['r',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['s',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['t',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['u',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['v',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['w',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['x',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['y',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['z',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['A',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['B',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['C',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['D',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['E',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['F',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['G',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['H',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['I',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['J',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['K',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['L',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['M',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['N',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['O',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['P',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['Q',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['R',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['S',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['T',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['U',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['V',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['W',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['X',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['Y',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['Z',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['!',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['"',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['$',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['%',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['&',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['\'', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['(',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    [')',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['+',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    [',',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['-',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['.',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    [':',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['<',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['=',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['>',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['?',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['@',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['[',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['\\', 'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    [']',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['^',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['_',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['`',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['{',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['|',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['}',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
+                    ['~',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR']
+                ],
+                'S': 'BEGIN',
+                'F': set(['END']),
+                'G': {
+                    'comment': set(['END']),
+                    '_sink': set(['ERR'])
                 }
             }
         })

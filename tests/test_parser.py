@@ -130,7 +130,7 @@ class TestParser(object):
         reason='Name is not of type string.',
         raises=TypeError,
     )
-    def test_invalid_name():
+    def test_name_invalid():
         """
         Ensure a TypeError is raised when constructing a ContextFreeGrammar
         object if the name is not of type string.
@@ -152,7 +152,7 @@ class TestParser(object):
         reason='Name must be non empty.',
         raises=ValueError,
     )
-    def test_empty_name():
+    def test_name_empty():
         """
         Ensure a ValueError is raised when constructing a ContextFreeGrammar
         object if the name is an empty string.
@@ -174,7 +174,7 @@ class TestParser(object):
         reason='Start is not of type string.',
         raises=TypeError,
     )
-    def test_invalid_start():
+    def test_start_invalid():
         """
         Ensure a TypeError is raised when constructing a ContextFreeGrammar
         object if the start production is not of type string.
@@ -196,7 +196,7 @@ class TestParser(object):
         reason='Start must be non empty.',
         raises=ValueError,
     )
-    def test_empty_start():
+    def test_start_empty():
         """
         Ensure a ValueError is raised when constructing a ContextFreeGrammar
         object if the start production is an empty string.
@@ -218,7 +218,7 @@ class TestParser(object):
         reason='Start must be present in given productions.',
         raises=ValueError,
     )
-    def test_missing_start():
+    def test_start_missing():
         """
         Ensure a ValueError is raised when constructing a ContextFreeGrammar
         object if the start production is missing from the production rules.
@@ -240,7 +240,7 @@ class TestParser(object):
         reason='Productions is not of type dict.',
         raises=TypeError,
     )
-    def test_invalid_production():
+    def test_production_invalid():
         """
         Ensure a TypeError is raised when constructing a ContextFreeGrammar
         object if the productions are not of type dict.
@@ -259,10 +259,32 @@ class TestParser(object):
 
     @staticmethod
     @pytest.mark.xfail(
+        reason='Productions must be non empty.',
+        raises=ValueError,
+    )
+    def test_production_empty():
+        """
+        Ensure a ValueError is raised when constructing a ContextFreeGrammar
+        object if the productions are an empty dict.
+        """
+        TestParser._run(**{
+            'name': 'Invalid Production Rules',
+            'productions': {},
+            'start': '<invalid>',
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
         reason='Productions nonterminals are not of type string.',
         raises=TypeError,
     )
-    def test_invalid_production_nonterm():
+    def test_production_nonterm_invalid():
         """
         Ensure a TypeError is raised when constructing a ContextFreeGrammar
         object if the productions nonterminals are not of type string.
@@ -287,7 +309,7 @@ class TestParser(object):
         reason='Production nonterminals must be non empty.',
         raises=ValueError,
     )
-    def test_empty_production_nonterm():
+    def test_production_nonterm_empty():
         """
         Ensure a ValueError is raised when constructing a ContextFreeGrammar
         object if the production nonterminals are empty strings.
@@ -312,7 +334,7 @@ class TestParser(object):
         reason='Productions rules are not of type string.',
         raises=TypeError,
     )
-    def test_invalid_production_rule():
+    def test_production_rule_invalid():
         """
         Ensure a TypeError is raised when constructing a ContextFreeGrammar
         object if the production rules are not of type string.
@@ -336,7 +358,7 @@ class TestParser(object):
         reason='First/first conflict.',
         raises=AssertionError,
     )
-    def test_first_first_conflict():
+    def test_conflict_first_first():
         """
         Valid input example which produces a first/first conflict.
         """
@@ -377,7 +399,7 @@ class TestParser(object):
         reason='First/follow conflict.',
         raises=AssertionError,
     )
-    def test_first_follow_conflict():
+    def test_conflict_first_follow():
         """
         Valid input example but produces a first/follow conflict.
         """
@@ -417,7 +439,7 @@ class TestParser(object):
         reason='Left recursive.',
         raises=AssertionError,
     )
-    def test_left_recursion():
+    def test_conflict_left_recursion():
         """
         Valid input example but produces some conflicts due to the use of left
         recursion.
@@ -481,7 +503,7 @@ class TestParser(object):
         })
 
     @staticmethod
-    def test_no_epsilon():
+    def test_epsilon_absent():
         """
         Ensure the creation of a simple grammar goes as expected.
         """
@@ -522,7 +544,7 @@ class TestParser(object):
         })
 
     @staticmethod
-    def test_epsilon():
+    def test_epsilon_present():
         """
         Ensure the creation of a simple grammar containing an epsilon goes as
         expected.

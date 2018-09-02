@@ -36,7 +36,7 @@ class TestGenerator(object):
         reason='Scanner not of type RegularGrammar.',
         raises=TypeError,
     )
-    def test_constructor_invalid_scanner():
+    def test_constructor_scanner_invalid():
         """
         Ensure a TypeError is raised when constructing a Generator object if the
         scanner is not of type RegularGrammar.
@@ -56,7 +56,7 @@ class TestGenerator(object):
         reason='Parser not of type ContextFreeGrammar.',
         raises=TypeError,
     )
-    def test_constructor_invalid_parser():
+    def test_constructor_parser_invalid():
         """
         Ensure a TypeError is raised when constructing a Generator object if the
         parser is not of type ContextFreeGrammar.
@@ -75,7 +75,7 @@ class TestGenerator(object):
         assert generator is not None, 'Invalid Generator produced'
 
     @staticmethod
-    def test_get_scanner():
+    def test_scanner_get():
         """
         Ensure scanner retrieval works as expected upon successful creation of a
         Generator object.
@@ -85,7 +85,7 @@ class TestGenerator(object):
         assert generator.get_scanner() == scanner, 'Invalid scanner retrieved'
 
     @staticmethod
-    def test_set_scanner():
+    def test_scanner_set():
         """
         Ensure overwriting the scanner works as expected when given proper input.
         """
@@ -100,7 +100,7 @@ class TestGenerator(object):
         reason='Scanner not of type RegularGrammar.',
         raises=TypeError,
     )
-    def test_set_invalid_scanner():
+    def test_scanner_set_invalid():
         """
         Ensure a TypeError is raised when overwriting the Generator's object
         scanner if is not of type RegularGrammar.
@@ -109,7 +109,7 @@ class TestGenerator(object):
         generator.set_scanner('invalid_scanner')
 
     @staticmethod
-    def test_get_parser():
+    def test_parser_get():
         """
         Ensure parser retrieval works as expected upon successful creation of a
         Generator object.
@@ -119,7 +119,7 @@ class TestGenerator(object):
         assert generator.get_parser() == parser, 'Invalid parser retrieved'
 
     @staticmethod
-    def test_set_parser():
+    def test_parser_set():
         """
         Ensure overwriting the parser works as expected when given proper input.
         """
@@ -134,7 +134,7 @@ class TestGenerator(object):
         reason='Parser not of type ContextFreeGrammar.',
         raises=TypeError,
     )
-    def test_set_invalid_parser():
+    def test_parser_set_invalid():
         """
         Ensure a TypeError is raised when overwriting the Generator's object
         parser if is not of type ContextFreeGrammar.
@@ -147,7 +147,7 @@ class TestGenerator(object):
         reason='Filename not of type str.',
         raises=TypeError,
     )
-    def test_output_invalid_filename():
+    def test_output_filename_invalid():
         """
         Ensure a TypeError is raised if the filename is not a string when
         attempting to output a scanner and/or parser.
@@ -160,7 +160,7 @@ class TestGenerator(object):
         reason='Filename is an empty string.',
         raises=ValueError,
     )
-    def test_output_empty_filename():
+    def test_output_filename_empty():
         """
         Ensure a ValueError is raised if the filename is an empty a string when
         attempting to output a scanner and/or parser.
@@ -255,7 +255,7 @@ class TestGenerator(object):
         reason='Invalid filename output of child Generator.',
         raises=TypeError,
     )
-    def test_translate_invalid_filename():
+    def test_translate_filename_invalid():
         """
         Ensure a TypeError is raised if a child Generator returns an invalid
         filename.
@@ -274,7 +274,7 @@ class TestGenerator(object):
         reason='Empty filename output of child Generator.',
         raises=ValueError,
     )
-    def test_translate_empty_filename():
+    def test_translate_filename_empty():
         """
         Ensure a ValueError is raised if a child Generator returns an empty
         filename.
@@ -293,7 +293,7 @@ class TestGenerator(object):
         reason='Invalid file contents output of child Generator.',
         raises=TypeError,
     )
-    def test_translate_invalid_content():
+    def test_translate_content_invalid():
         """
         Ensure a TypeError is raised if a child Generator returns invalid file
         contents.
@@ -312,7 +312,7 @@ class TestGenerator(object):
         reason='Empty file contents output of child Generator.',
         raises=ValueError,
     )
-    def test_translate_empty_content():
+    def test_translate_content_empty():
         """
         Ensure a ValueError is raised if a child Generator returns empty file
         contents.

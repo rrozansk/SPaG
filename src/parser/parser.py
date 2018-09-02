@@ -73,6 +73,9 @@ class ContextFreeGrammar(object):
         if not isinstance(productions, dict):
             raise TypeError('productions must be a dict')
 
+        if not productions:
+            raise ValueError('productions must be non empty')
+
         if self._start not in productions:
             raise ValueError('start production not present in given productions')
 
