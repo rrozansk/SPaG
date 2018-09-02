@@ -82,45 +82,53 @@ class RegularGrammar(object):
         Attempt to initialize a RegularGrammar object with the specified name,
         recognizing the given expressions. Expr's have a type/name/descriptor
         and an associated pattern/regular expression. If creation is
-        unsuccessful a value error will be thrown, otherwise the results can be
-        queried through the API provided below.
+        unsuccessful a TypeError or ValueError will be thrown, otherwise the
+        results can be queried through the API provided below.
 
         Input Types:
           name:        String
-          expressions: List[Tuple[String, String]]
+          expressions: Dict[String, String]
 
-        Output Type: None | raise ValueError
+        Output Type: None | raise ValueError | raise TypeError
         """
         if not isinstance(name, str):
             raise TypeError('name must be a string')
 
+        if not name:
+            raise ValueError('name must be non empty')
+
         self._name = name
 
-        if not isinstance(expressions, list):
-            raise TypeError('expressions must be a list')
+        if not isinstance(expressions, dict):
+            raise TypeError('expressions must be a dict')
+
+        if not expressions:
+            raise ValueError('expressions must be non empty')
+
+        self._expressions = {}
 
         nfa = []
-        self._exprs = []
-        for element in expressions:
-            if not isinstance(element, tuple):
-                raise TypeError('items in expressions must be tuples')
+        for identifier, pattern in expressions.items():
+            if not isinstance(identifier, str):
+                raise TypeError('token name/type must be a string')
 
-            name, pattern = element
-
-            if not isinstance(name, str):
-                raise TypeError('name must be a string')
+            if not identifier:
+                raise ValueError('token name/type must be non empty')
 
             if not isinstance(pattern, str):
-                raise TypeError('pattern must be a string')
+                raise TypeError('token pattern must be a string')
 
-            self._exprs.append((name, pattern))
+            if not pattern:
+                raise ValueError('token pattern must be non empty')
+
+            self._expressions[identifier] = pattern
 
             pattern = RegularGrammar._scan(pattern)
             pattern = RegularGrammar._expand_char_class_range(pattern)
             pattern = RegularGrammar._expand_concat(pattern)
             pattern = RegularGrammar._shunt(pattern)
 
-            nfa.append((RegularGrammar._nfa(name, pattern)))
+            nfa.append((RegularGrammar._nfa(identifier, pattern)))
 
         Q, V, T, S, F, G = RegularGrammar._dfa(*RegularGrammar._merge_nfa(nfa))
         Q, V, T, S, F, G = RegularGrammar._total(Q, V, T, S, F, G)
@@ -147,7 +155,7 @@ class RegularGrammar(object):
 
         Output Type: List[Tuple[String, String]]
         """
-        return deepcopy(self._exprs)
+        return deepcopy(self._expressions)
 
     def states(self):
         """

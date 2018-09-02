@@ -25,14 +25,9 @@ class TestScanner(object):
         assert len(expected) == len(actual), \
                'Incorrect expression size produced'
 
-        expected = sorted(expected, key=lambda x: x[0])
-
-        actual = sorted(actual, key=lambda x: x[0])
-
-        for idx, (name, pattern) in enumerate(actual):
-            _name, _pattern = expected[idx]
-            assert _name == name and _pattern == pattern, \
-                   'Incorrect token name/pattern created'
+        for name, pattern in actual.items():
+            assert expected.get(name, None) == pattern, \
+                   'Incorrect token name/pattern produced'
 
     @staticmethod
     def _compare_dfa(expected, actual):
@@ -105,18 +100,68 @@ class TestScanner(object):
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Invalid scanner name.',
+        reason='Name is not of type string.',
         raises=TypeError,
     )
-    def test_constructor_invalid_name():
+    def test_invalid_name():
         """
-        Ensure invalid scanner names produces the proper exception.
+        Ensure a TypeError is raised when constructing a RegularGrammar object
+        if the name is not of type string.
         """
         TestScanner._run(**{
             'name': ['Invalid Scanner Name'],
-            'expressions': [
-                ('invalid', 'foo')
-            ],
+            'expressions': {
+                'invalid': 'foo'
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Name must be non empty.',
+        raises=ValueError,
+    )
+    def test_empty_name():
+        """
+        Ensure a ValueError is raised when constructing a RegularGrammar object
+        if the name is an empty string.
+        """
+        TestScanner._run(**{
+            'name': '',
+            'expressions': {
+                'foo': 'bar'
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Expression is not of type dict.',
+        raises=TypeError,
+    )
+    def test_invalid_expressions():
+        """
+        Ensure a TypeError is raised when constructing a RegularGrammar object
+        if the expressions is not of type dict.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Scanner Expressions',
+            'expressions': None,
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Empty expressions.',
+        raises=ValueError,
+    )
+    def test_empty_expressions():
+        """
+        Ensure empty expressions produce the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Scanner Token',
+            'expressions': {},
             'DFA': {}
         })
 
@@ -125,14 +170,31 @@ class TestScanner(object):
         reason='Invalid expressions.',
         raises=TypeError,
     )
-    def test_constructor_invalid_expressions():
+    def test_invalid_expression_id():
         """
         Ensure invalid expressions produce the proper exception.
         """
         TestScanner._run(**{
-            'name': 'Invalid Scanner Expressions',
+            'name': 'Invalid Scanner Token Key',
             'expressions': {
-                'invalid': 'expression'
+                None: 'invalid_token'
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Exmpty expressions.',
+        raises=ValueError,
+    )
+    def test_empty_expression_id():
+        """
+        Ensure invalid expressions produce the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Scanner Token Key',
+            'expressions': {
+                '': 'invalid_token'
             },
             'DFA': {}
         })
@@ -142,49 +204,15 @@ class TestScanner(object):
         reason='Invalid expressions.',
         raises=TypeError,
     )
-    def test_constructor_invalid_token():
-        """
-        Ensure invalid expressions produce the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Scanner Token',
-            'expressions': [
-                'invalid_token',
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid expressions.',
-        raises=TypeError,
-    )
-    def test_constructor_invalid_token_key():
-        """
-        Ensure invalid expressions produce the proper exception.
-        """
-        TestScanner._run(**{
-            'name': 'Invalid Scanner Token Key',
-            'expressions': [
-                (True, 'invalid')
-            ],
-            'DFA': {}
-        })
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Invalid expressions.',
-        raises=TypeError,
-    )
-    def test_constructor_invalid_token_value():
+    def test_invalid_expression_pattern():
         """
         Ensure invalid expressions produce the proper exception.
         """
         TestScanner._run(**{
             'name': 'Invalid Scanner Token Value',
-            'expressions': [
-                ('invalid', True)
-            ],
+            'expressions': {
+                'invalid': True
+            },
             'DFA': {}
         })
 
@@ -193,15 +221,15 @@ class TestScanner(object):
         reason='Empty expression.',
         raises=ValueError,
     )
-    def test_empty_expression():
+    def test_empty_expression_pattern():
         """
         Ensure empty expressions produce the proper exception.
         """
         TestScanner._run(**{
             'name': 'Empty Expression',
-            'expressions': [
-                ('invalid', '')
-            ],
+            'expressions': {
+                'invalid': ''
+            },
             'DFA': {}
         })
 
@@ -216,9 +244,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Invalid Character',
-            'expressions': [
-                ('invalid', '\x99')
-            ],
+            'expressions': {
+                'invalid': '\x99'
+            },
             'DFA': {}
         })
 
@@ -233,9 +261,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Invalid Unicode Character',
-            'expressions': [
-                ('invalid', str(u'\0391'))
-            ],
+            'expressions': {
+                'invalid': str(u'\0391')
+            },
             'DFA': {}
         })
 
@@ -250,9 +278,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Empty Escape Sequence',
-            'expressions': [
-                ('invalid', '\\')
-            ],
+            'expressions': {
+                'invalid': '\\'
+            },
             'DFA': {}
         })
 
@@ -267,9 +295,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Invalid Escape Sequence',
-            'expressions': [
-                ('invalid', '\j')
-            ],
+            'expressions': {
+                'invalid': '\j'
+            },
             'DFA': {}
         })
 
@@ -278,15 +306,15 @@ class TestScanner(object):
         reason='Invalid character range.',
         raises=ValueError,
     )
-    def test_invalid_character_range_start():
+    def test_invalid_char_range_start():
         """
         Ensure an invalid character ranges produces the proper exception.
         """
         TestScanner._run(**{
             'name': 'Character Range/Class No Start',
-            'expressions': [
-                ('class/range', ']')
-            ],
+            'expressions': {
+                'class/range': ']'
+            },
             'DFA': {}
         })
 
@@ -295,15 +323,15 @@ class TestScanner(object):
         reason='Invalid character range.',
         raises=ValueError,
     )
-    def test_invalid_character_range_end():
+    def test_invalid_char_range_end():
         """
         Ensure an invalid character ranges produces the proper exception.
         """
         TestScanner._run(**{
             'name': 'Character Range/Class No End',
-            'expressions': [
-                ('class/range', '[')
-            ],
+            'expressions': {
+                'clas/range': '['
+            },
             'DFA': {}
         })
 
@@ -318,9 +346,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Empty Character Range/Class',
-            'expressions': [
-                ('class/range', '[]')
-            ],
+            'expressions': {
+                'class/range': '[]'
+            },
             'DFA': {}
         })
 
@@ -336,9 +364,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Invalid Expression * Arity',
-            'expressions': [
-                ('invalid', '*')
-            ],
+            'expressions': {
+                'invalid': '*'
+            },
             'DFA': {}
         })
 
@@ -354,9 +382,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Invalid Expression + Arity',
-            'expressions': [
-                ('invalid', '+')
-            ],
+            'expressions': {
+                'invalid': '+'
+            },
             'DFA': {}
         })
 
@@ -372,9 +400,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Invalid Expression ? Arity',
-            'expressions': [
-                ('invalid', '?')
-            ],
+            'expressions': {
+                'invalid': '?'
+            },
             'DFA': {}
         })
 
@@ -389,9 +417,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Invalid Expression | Arity',
-            'expressions': [
-                ('invalid', 'a|')
-            ],
+            'expressions': {
+                'invalid': 'a|'
+            },
             'DFA': {}
         })
 
@@ -406,9 +434,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Invalid Expression . Arity',
-            'expressions': [
-                ('invalid', 'a.')
-            ],
+            'expressions': {
+                'invalid': 'a.'
+            },
             'DFA': {}
         })
 
@@ -423,9 +451,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Unbalanced Left Paren',
-            'expressions': [
-                ('invalid', '(foo|bar')
-            ],
+            'expressions': {
+                'invalid': '(foo|bar'
+            },
             'DFA': {}
         })
 
@@ -440,9 +468,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Unbalanced Right Paren',
-            'expressions': [
-                ('invalid', 'foo|bar)')
-            ],
+            'expressions': {
+                'invalid': 'foo|bar)'
+            },
             'DFA': {}
         })
 
@@ -453,9 +481,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Single Alpha',
-            'expressions': [
-                ('alpha', 'a')
-            ],
+            'expressions': {
+                'alpha': 'a'
+            },
             'DFA': {
                 'Q': set(['S', 'A', 'Err']),
                 'V': set('a'),
@@ -480,9 +508,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Explicit Concatenation',
-            'expressions': [
-                ('concat', 'a.b')
-            ],
+            'expressions': {
+                'concat': 'a.b'
+            },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
@@ -507,9 +535,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Alternation',
-            'expressions': [
-                ('alt', 'a|b')
-            ],
+            'expressions': {
+                'alt': 'a|b'
+            },
             'DFA': {
                 'Q': set(['S', 'AB', 'Err']),
                 'V': set('ab'),
@@ -534,9 +562,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Kleene Star',
-            'expressions': [
-                ('star', 'a*')
-            ],
+            'expressions': {
+                'star': 'a*'
+            },
             'DFA': {
                 'Q': set(['A']),
                 'V': set('a'),
@@ -559,9 +587,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Kleene Plus',
-            'expressions': [
-                ('plus', 'a+')
-            ],
+            'expressions': {
+                'plus': 'a+'
+            },
             'DFA': {
                 'Q': set(['S', 'A']),
                 'V': set('a'),
@@ -584,9 +612,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Choice',
-            'expressions': [
-                ('maybe', 'a?')
-            ],
+            'expressions': {
+                'maybe': 'a?'
+            },
             'DFA': {
                 'Q': set(['S', 'A', 'Err']),
                 'V': set('a'),
@@ -610,9 +638,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Grouping',
-            'expressions': [
-                ('group', '(a|b)*')
-            ],
+            'expressions': {
+                'group': '(a|b)*'
+            },
             'DFA': {
                 'Q': set(['AB*']),
                 'V': set('ab'),
@@ -636,9 +664,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Association',
-            'expressions': [
-                ('assoc', 'a|b*')
-            ],
+            'expressions': {
+                'assoc': 'a|b*'
+            },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
@@ -663,18 +691,18 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Operator Alpha Literals',
-            'expressions': [
-                ('concat', '\.'),
-                ('alt', '\|'),
-                ('star', '\*'),
-                ('question', '\?'),
-                ('plus', '\+'),
-                ('slash', '\\\\'),
-                ('lparen', '\('),
-                ('rparen', '\)'),
-                ('lbracket', '\['),
-                ('rbracket', '\]')
-            ],
+            'expressions': {
+                'concat': '\.',
+                'alt': '\|',
+                'star': '\*',
+                'question': '\?',
+                'plus': '\+',
+                'slash': '\\\\',
+                'lparen': '\(',
+                'rparen': '\)',
+                'lbracket': '\[',
+                'rbracket': '\]',
+            },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('.|*?+\\()[]'),
@@ -716,12 +744,12 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Implicit Concatenation Characters',
-            'expressions': [
-                ('permutation1', 'ab'),
-                ('permutation2', 'a(b)'),
-                ('permutation3', '(a)b'),
-                ('permutation4', '(a)(b)')
-            ],
+            'expressions': {
+                'permutation1': 'ab',
+                'permutation2': 'a(b)',
+                'permutation3': '(a)b',
+                'permutation4': '(a)(b)'
+            },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
@@ -749,12 +777,12 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Implicit Concatenation Star Operator',
-            'expressions': [
-                ('permutation1', 'a*b'),
-                ('permutation2', 'a*(b)'),
-                ('permutation3', '(a)*b'),
-                ('permutation4', '(a)*(b)')
-            ],
+            'expressions': {
+                'permutation1': 'a*b',
+                'permutation2': 'a*(b)',
+                'permutation3': '(a)*b',
+                'permutation4': '(a)*(b)',
+            },
             'DFA': {
                 'Q': set(['A', 'B', 'Err']),
                 'V': set('ab'),
@@ -782,12 +810,12 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Implicit Concatenation Plus Operator',
-            'expressions': [
-                ('permutation1', 'a+b'),
-                ('permutation2', 'a+(b)'),
-                ('permutation3', '(a)+b'),
-                ('permutation4', '(a)+(b)')
-            ],
+            'expressions': {
+                'permutation1': 'a+b',
+                'permutation2': 'a+(b)',
+                'permutation3': '(a)+b',
+                'permutation4': '(a)+(b)'
+            },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
@@ -815,12 +843,12 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Implicit Concatenation Question Operator',
-            'expressions': [
-                ('permutation1', 'a?b'),
-                ('permutation2', 'a?(b)'),
-                ('permutation3', '(a)?b'),
-                ('permutation4', '(a)?(b)')
-            ],
+            'expressions': {
+                'permutation1': 'a?b',
+                'permutation2': 'a?(b)',
+                'permutation3': '(a)?b',
+                'permutation4': '(a)?(b)'
+            },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
@@ -848,9 +876,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Implicit Concatenation 10 - Mixed',
-            'expressions': [
-                ('concat', 'a.bc.de')
-            ],
+            'expressions': {
+                'concat': 'a.bc.de'
+            },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'C', 'D', 'E', 'Err']),
                 'V': set('abcde'),
@@ -878,9 +906,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Randomness 1',
-            'expressions': [
-                ('random', 'a*(b|cd)*')
-            ],
+            'expressions': {
+                'random': 'a*(b|cd)*'
+            },
             'DFA': {
                 'Q': set(['AC', 'B', 'DE', 'Err']),
                 'V': set('abcd'),
@@ -907,9 +935,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Randomness 2',
-            'expressions': [
-                ('random', 'a?b*')
-            ],
+            'expressions': {
+                'random': 'a?b*'
+            },
             'DFA': {
                 'Q': set(['A', 'B', 'Err']),
                 'V': set('ab'),
@@ -934,9 +962,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Randomness 3',
-            'expressions': [
-                ('random', '(a*b)|(a.bcd.e)')
-            ],
+            'expressions': {
+                'random': '(a*b)|(a.bcd.e)'
+            },
             'DFA': {
                 'Q': set(['S', 'A', 'A*', 'B', 'C', 'D', 'F', 'Err']),
                 'V': set('abcde'),
@@ -964,9 +992,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Randomness 4',
-            'expressions': [
-                ('random', '(foo)?(bar)+')
-            ],
+            'expressions': {
+                'random': '(foo)?(bar)+'
+            },
             'DFA': {
                 'Q': set(['S', 'F', 'FO', 'FOO', 'B', 'BA', 'BAR', 'Err']),
                 'V': set('fobar'),
@@ -994,9 +1022,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Forward Character Range',
-            'expressions': [
-                ('range', '[a-c]')
-            ],
+            'expressions': {
+                'range': '[a-c]'
+            },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('abc'),
@@ -1022,9 +1050,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Backward Character Range',
-            'expressions': [
-                ('range', '[c-a]')
-            ],
+            'expressions': {
+                'range': '[c-a]'
+            },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('abc'),
@@ -1050,9 +1078,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Literal Negation Character Range',
-            'expressions': [
-                ('range', '[a-^]')
-            ],
+            'expressions': {
+                'range': '[a-^]'
+            },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('^_`a'),
@@ -1079,9 +1107,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Negated Character Range',
-            'expressions': [
-                ('range', '[^!-~]*')
-            ],
+            'expressions': {
+                'range': '[^!-~]*'
+            },
             'DFA': {
                 'Q': set(['S']),
                 'V': set(' \t\n\r\f\v'),
@@ -1109,9 +1137,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Character Class',
-            'expressions': [
-                ('class', '[abc]')
-            ],
+            'expressions': {
+                'class': '[abc]'
+            },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('abc'),
@@ -1137,9 +1165,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Character Class with Copies',
-            'expressions': [
-                ('class', '[aaa]')
-            ],
+            'expressions': {
+                'class': '[aaa]'
+            },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('a'),
@@ -1163,9 +1191,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Character Class with Literal Right Bracket',
-            'expressions': [
-                ('class', '[\]]*')
-            ],
+            'expressions': {
+                'class': '[\]]*'
+            },
             'DFA': {
                 'Q': set(['S']),
                 'V': set(']'),
@@ -1188,9 +1216,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Negated Character Class',
-            'expressions': [
-                ('class', '[^^!"#$%&\'()*+,./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\\]_`abcdefghijklmnopqrstuvwxyz{|}~-]*')
-            ],
+            'expressions': {
+                'class': '[^^!"#$%&\'()*+,./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\\]_`abcdefghijklmnopqrstuvwxyz{|}~-]*'
+            },
             'DFA': {
                 'Q': set(['S']),
                 'V': set(' \t\n\r\f\v'),
@@ -1218,9 +1246,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Character Class Range Combo',
-            'expressions': [
-                ('class', '[abc-e]*')
-            ],
+            'expressions': {
+                'class': '[abc-e]*'
+            },
             'DFA': {
                 'Q': set(['S']),
                 'V': set('abcde'),
@@ -1247,9 +1275,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Character Range Class Combo',
-            'expressions': [
-                ('class', '[a-cde]*')
-            ],
+            'expressions': {
+                'class': '[a-cde]*'
+            },
             'DFA': {
                 'Q': set(['S']),
                 'V': set('abcde'),
@@ -1276,9 +1304,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Integer',
-            'expressions': [
-                ('int', "0|([-+]?[1-9][0-9]*)")
-            ],
+            'expressions': {
+                'int': "0|([-+]?[1-9][0-9]*)"
+            },
             'DFA': {
                 'Q': set(['S', 'Zero', 'Sign', 'Int', 'Err']),
                 'V': set('+-0123456789'),
@@ -1313,9 +1341,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Float',
-            'expressions': [
-                ('float', '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?')
-            ],
+            'expressions': {
+                'float': '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
+            },
             'DFA': {
                 'Q': set(['S', 'WholePart', 'ExpPart', 'FractionPart', 'eSignum', 'Sigfrac', 'Sigexp', 'Signum', 'Err']),
                 'V': set('+-.0123456789eE'),
@@ -1353,9 +1381,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'White Space',
-            'expressions': [  # FIXME: accepting weird input here
-                ('white', '( |\t|\n|\r|\f|\v|\\s|\\t|\\n|\\r|\\f|\\v)*')
-            ],
+            'expressions': {  # FIXME: accepting weird input here
+                'white': '( |\t|\n|\r|\f|\v|\\s|\\t|\\n|\\r|\\f|\\v)*'
+            },
             'DFA': {
                 'Q': set(['S']),
                 'V': set(' \t\n\r\f\v'),
@@ -1383,9 +1411,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Boolean',
-            'expressions': [
-                ('bool', '(true)|(false)')
-            ],
+            'expressions': {
+                'bool': '(true)|(false)'
+            },
             'DFA': {
                 'Q': set(['S', 'T', 'R', 'F', 'A', 'L', 'US', 'E', 'Err']),
                 'V': set('truefals'),
@@ -1416,9 +1444,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Line Comment',
-            'expressions': [
-                ('comment', '(#|;)[^\n]*\n')
-            ],
+            'expressions': {
+                'comment': '(#|;)[^\n]*\n'
+            },
             'DFA': {
                 'Q': set(['S', '_', 'F', 'Err']),
                 'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
@@ -1541,9 +1569,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Block Comment',
-            'expressions': [
-                ('comment', '/[*][^]*[*]/')
-            ],
+            'expressions': {
+                'comment': '/[*][^]*[*]/'
+            },
             'DFA': {
                 'Q': set(['BEGIN', 'SINK', 'FSLASH', 'SIGEND', 'END', 'ERR']),
                 'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
@@ -1666,9 +1694,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Character',
-            'expressions': [
-                ('char', "'[^]'")
-            ],
+            'expressions': {
+                'char': "'[^]'"
+            },
             'DFA': {
                 'Q': set(['S', '_1', '_2', 'F', 'Err']),
                 'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
@@ -1791,9 +1819,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'String',
-            'expressions': [
-                ('str', '"[^"]*"')
-            ],
+            'expressions': {
+                'str': '"[^"]*"'
+            },
             'DFA': {
                 'Q': set(['S', '_', 'F', 'Err']),
                 'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
@@ -1916,9 +1944,9 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'Identifiers',
-            'expressions': [
-                ('id', '[_a-zA-Z][_a-zA-Z0-9]*')
-            ],
+            'expressions': {
+                'id': '[_a-zA-Z][_a-zA-Z0-9]*'
+            },
             'DFA': {
                 'Q': set(['Char', 'DigitOrChar', 'Err']),
                 'V': set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'),
