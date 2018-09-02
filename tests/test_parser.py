@@ -137,7 +137,7 @@ class TestParser(object):
         """
         TestParser._run(**{
             'name': False,
-            'productions': {},
+            'productions': {'<S>': ''},
             'start': '<S>',
             'terminals': None,
             'nonterminals': None,
@@ -159,7 +159,7 @@ class TestParser(object):
         """
         TestParser._run(**{
             'name': '',
-            'productions': {},
+            'productions': {'<S>': ''},
             'start': '<S>',
             'terminals': None,
             'nonterminals': None,
@@ -181,7 +181,7 @@ class TestParser(object):
         """
         TestParser._run(**{
             'name': 'Invalid Start Type',
-            'productions': {},
+            'productions': {'<S>': ''},
             'start': False,
             'terminals': None,
             'nonterminals': None,
@@ -203,7 +203,7 @@ class TestParser(object):
         """
         TestParser._run(**{
             'name': 'Empty Start',
-            'productions': {},
+            'productions': {'<S>': ''},
             'start': '',
             'terminals': None,
             'nonterminals': None,
@@ -225,7 +225,7 @@ class TestParser(object):
         """
         TestParser._run(**{
             'name': 'Empty Start',
-            'productions': {},
+            'productions': {'<A>': ''},
             'start': '<S>',
             'terminals': None,
             'nonterminals': None,

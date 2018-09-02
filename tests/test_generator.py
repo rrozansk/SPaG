@@ -173,7 +173,7 @@ class TestGenerator(object):
         reason='Scanner or parser required for generation.',
         raises=ValueError,
     )
-    def test_output_no_targets():
+    def test_output_no_scanner_parser():
         """
         Ensure a ValueError is raised if generation to source language
         is attempted without a set scanner and parser.
@@ -219,7 +219,7 @@ class TestGenerator(object):
         reason='Invalid output type of child Generator.',
         raises=TypeError,
     )
-    def test_translate_not_dict():
+    def test_translate_return_invalid():
         """
         Ensure a TypeError is raised if a child Generator returns invalid data.
         """
@@ -237,7 +237,7 @@ class TestGenerator(object):
         reason='Empty output of child Generator.',
         raises=ValueError,
     )
-    def test_translate_empty_dict():
+    def test_translate_return_empty():
         """
         Ensure a ValueError is raised if a child Generator returns empty data.
         """
