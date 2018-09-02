@@ -10,7 +10,7 @@ with open('README.md', 'r') as fd:
 
 setup(
     name='scanner_parser_generator',
-    version='0.0.18',
+    version='1.0.0a0',
     license='MIT',
     author='Ryan Rozanski',
     author_email='',
@@ -50,15 +50,15 @@ setup(
     ]),
     packages=[
         'scanner_parser_generator',
+        'scanner_parser_generator.generators',
         'scanner_parser_generator.parser',
-        'scanner_parser_generator.scanner',
-        'scanner_parser_generator.generators'
+        'scanner_parser_generator.scanner'
     ],
     package_dir={
         'scanner_parser_generator': 'src',
+        'scanner_parser_generator.generators': 'src/generators',
         'scanner_parser_generator.parser': 'src/parser',
-        'scanner_parser_generator.scanner': 'src/scanner',
-        'scanner_parser_generator.generators': 'src/generators'
+        'scanner_parser_generator.scanner': 'src/scanner'
     },
     package_data={
         'scanner_parser_generator': [
