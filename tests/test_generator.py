@@ -1,3 +1,5 @@
+# pylint: disable=abstract-method
+# pylint: disable=too-many-public-methods
 """
 Testing for Generator objects located in src/generators/__init__.py
 """
@@ -18,20 +20,20 @@ class TestGenerator(object):
         Ensure successful creation of a Generator object with no scanner or
         parser.
         """
-        generator = Generator(None, None)
+        generator = Generator()
         assert generator is not None, 'Invalid Generator produced'
 
     @staticmethod
-    def test_constructor_valid_scanner():
+    def test_constructor_scanner():
         """
         Ensure successful creation of a Generator object with only a scanner.
         """
-        generator = Generator(RegularGrammar('test', []), None)
+        generator = Generator(RegularGrammar('test', {'foo': 'bar'}), None)
         assert generator is not None, 'Invalid Generator produced'
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Scanner is not of type RegularGrammar.',
+        reason='Scanner not of type RegularGrammar.',
         raises=TypeError,
     )
     def test_constructor_invalid_scanner():
@@ -42,16 +44,16 @@ class TestGenerator(object):
         Generator('invalid_scanner', None)
 
     @staticmethod
-    def test_constructor_valid_parser():
+    def test_constructor_parser():
         """
         Ensure successful creation of a Generator object with only a parser.
         """
-        generator = Generator(None, ContextFreeGrammar('test', {'S': ''}, 'S'))
+        generator = Generator(None, ContextFreeGrammar('test', {'S': 'a'}, 'S'))
         assert generator is not None, 'Invalid Generator produced'
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Parser is not of type ContextFreeGrammar.',
+        reason='Parser not of type ContextFreeGrammar.',
         raises=TypeError,
     )
     def test_constructor_invalid_parser():
@@ -62,45 +64,46 @@ class TestGenerator(object):
         Generator(None, 'invalid_parser')
 
     @staticmethod
-    def test_constructor_full():
+    def test_constructor_scanner_parser():
         """
-        Ensure successful creation of a Generator object with both scanner and
+        Ensure successful creation of a Generator object with both a scanner and
         parser.
         """
-        scanner = RegularGrammar('test', [])
-        parser = ContextFreeGrammar('test', {'S': ''}, 'S')
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = Generator(scanner, parser)
         assert generator is not None, 'Invalid Generator produced'
 
     @staticmethod
     def test_get_scanner():
         """
-        Ensure get_scanner works as expected.
+        Ensure scanner retrieval works as expected upon successful creation of a
+        Generator object.
         """
-        scanner = RegularGrammar('test', [])
+        scanner = RegularGrammar('test', {'foo': 'bar'})
         generator = Generator(scanner, None)
         assert generator.get_scanner() == scanner, 'Invalid scanner retrieved'
 
     @staticmethod
     def test_set_scanner():
         """
-        Ensure set_scanner works as expected when given proper input.
+        Ensure overwriting the scanner works as expected when given proper input.
         """
-        scanner_1 = RegularGrammar('test', [])
+        scanner_1 = RegularGrammar('test', {'foo': 'bar'})
         generator = Generator(scanner_1, None)
-        scanner_2 = RegularGrammar('test', [])
+        scanner_2 = RegularGrammar('test', {'foo': 'bar'})
         generator.set_scanner(scanner_2)
         assert generator.get_scanner() == scanner_2, 'Invalid scanner retrieved'
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Scanner is not of type RegularGrammar.',
+        reason='Scanner not of type RegularGrammar.',
         raises=TypeError,
     )
     def test_set_invalid_scanner():
         """
-        Ensure a TypeError is raised when setting the Generator's object scanner
-        if is not of type RegularGrammar.
+        Ensure a TypeError is raised when overwriting the Generator's object
+        scanner if is not of type RegularGrammar.
         """
         generator = Generator(None, None)
         generator.set_scanner('invalid_scanner')
@@ -108,57 +111,232 @@ class TestGenerator(object):
     @staticmethod
     def test_get_parser():
         """
-        Ensure get_parser works as expected.
+        Ensure parser retrieval works as expected upon successful creation of a
+        Generator object.
         """
-        parser = ContextFreeGrammar('test', {'S': ''}, 'S')
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = Generator(None, parser)
         assert generator.get_parser() == parser, 'Invalid parser retrieved'
 
     @staticmethod
     def test_set_parser():
         """
-        Ensure set_parser works as expected when given proper input.
+        Ensure overwriting the parser works as expected when given proper input.
         """
-        parser_1 = ContextFreeGrammar('test', {'S': ''}, 'S')
+        parser_1 = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = Generator(None, parser_1)
-        parser_2 = ContextFreeGrammar('test', {'S': ''}, 'S')
+        parser_2 = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator.set_parser(parser_2)
         assert generator.get_parser() == parser_2, 'Invalid parser retrieved'
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Parser is not of type ContextFreeGrammar.',
+        reason='Parser not of type ContextFreeGrammar.',
         raises=TypeError,
     )
     def test_set_invalid_parser():
         """
-        Ensure a TypeError is raised when setting the Generator's object parser
-        if is not of type ContextFreeGrammar.
+        Ensure a TypeError is raised when overwriting the Generator's object
+        parser if is not of type ContextFreeGrammar.
         """
         generator = Generator(None, None)
         generator.set_parser('invalid_parser')
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Filename is not of type str.',
+        reason='Filename not of type str.',
         raises=TypeError,
     )
     def test_output_invalid_filename():
         """
-        Ensure a TypeError is raised if the filename is not a string.
+        Ensure a TypeError is raised if the filename is not a string when
+        attempting to output a scanner and/or parser.
         """
         generator = Generator(None, None)
         generator.output(None)
 
     @staticmethod
     @pytest.mark.xfail(
+        reason='Filename is an empty string.',
+        raises=ValueError,
+    )
+    def test_output_empty_filename():
+        """
+        Ensure a ValueError is raised if the filename is an empty a string when
+        attempting to output a scanner and/or parser.
+        """
+        generator = Generator(None, None)
+        generator.output('')
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Scanner or parser required for generation.',
+        raises=ValueError,
+    )
+    def test_output_no_targets():
+        """
+        Ensure a ValueError is raised if generation to source language
+        is attempted without a set scanner and parser.
+        """
+        generator = Generator(None, None)
+        generator.output('test_failure.txt')
+
+    @staticmethod
+    @pytest.mark.xfail(
         reason='Output not handled by base Generator.',
         raises=NotImplementedError,
     )
-    def test_output_not_implemented():
+    def test_translate_not_implemented():
         """
         Ensure a NotImplementedError is raised if generation to source language
         is attempted with the base Generator.
         """
-        generator = Generator(None, None)
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = Generator(scanner, parser)
         generator.output('test_failure.txt')
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Output not overridden by child Generator.',
+        raises=NotImplementedError,
+    )
+    def test_translate_not_overridden():
+        """
+        Ensure a NotImplementedError is raised if a child Generator does not
+        override the private _translate(self, filename) method.
+        """
+        class _GenerateNothing(Generator):
+            pass
+
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = _GenerateNothing(scanner, parser)
+        generator.output('test_failure.txt')
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid output type of child Generator.',
+        raises=TypeError,
+    )
+    def test_translate_not_dict():
+        """
+        Ensure a TypeError is raised if a child Generator returns invalid data.
+        """
+        class _InvalidFiles(Generator):
+            def _translate(self, filename):
+                return list()
+
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = _InvalidFiles(scanner, parser)
+        generator.output('test_failure.txt')
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Empty output of child Generator.',
+        raises=ValueError,
+    )
+    def test_translate_empty_dict():
+        """
+        Ensure a ValueError is raised if a child Generator returns empty data.
+        """
+        class _EmptyFiles(Generator):
+            def _translate(self, filename):
+                return dict()
+
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = _EmptyFiles(scanner, parser)
+        generator.output('test_failure.txt')
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid filename output of child Generator.',
+        raises=TypeError,
+    )
+    def test_translate_invalid_filename():
+        """
+        Ensure a TypeError is raised if a child Generator returns an invalid
+        filename.
+        """
+        class _InvalidFilename(Generator):
+            def _translate(self, filename):
+                return {None: 'invalid'}
+
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = _InvalidFilename(scanner, parser)
+        generator.output('test_failure.txt')
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Empty filename output of child Generator.',
+        raises=ValueError,
+    )
+    def test_translate_empty_filename():
+        """
+        Ensure a ValueError is raised if a child Generator returns an empty
+        filename.
+        """
+        class _EmptyFilename(Generator):
+            def _translate(self, filename):
+                return {'': 'invalid'}
+
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = _EmptyFilename(scanner, parser)
+        generator.output('test_failure.txt')
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid file contents output of child Generator.',
+        raises=TypeError,
+    )
+    def test_translate_invalid_content():
+        """
+        Ensure a TypeError is raised if a child Generator returns invalid file
+        contents.
+        """
+        class _InvalidContent(Generator):
+            def _translate(self, filename):
+                return {filename+'.txt': None}
+
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = _InvalidContent(scanner, parser)
+        generator.output('test_failure.txt')
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Empty file contents output of child Generator.',
+        raises=ValueError,
+    )
+    def test_translate_empty_content():
+        """
+        Ensure a ValueError is raised if a child Generator returns empty file
+        contents.
+        """
+        class _EmptyContent(Generator):
+            def _translate(self, filename):
+                return {filename+'.txt': ''}
+
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = _EmptyContent(scanner, parser)
+        generator.output('test_failure.txt')
+
+    @staticmethod
+    def test_translate_requirements():
+        """
+        Ensure correctly overwriting the abstract method in the child Generator
+        works as expected.
+        """
+        class _OutputRequirements(Generator):
+            def _translate(self, filename):
+                return {filename+'.txt': 'hukarz'}
+
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = _OutputRequirements(scanner, parser)
+        generator.output('test_success.txt')

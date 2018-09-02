@@ -399,25 +399,11 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
         """.format(name, self._encode_bnf(name), self._generate_section_header("parser"))
         return parser_header, parser_source
 
-    def output(self, filename):
+    def _translate(self, filename):
         """
         Attempt to generate the c source(.c) and header(.h) files for the
         corresponding scanner and/or parser currently set in the object.
-
-        Input Type:
-          filename: String
-
-        Output Type: List[Tuple[String, String]] | ValueError
         """
-        if not isinstance(filename, str):
-            raise TypeError('[C Gen]: filename must be a string')
-
-        if filename == "":
-            raise TypeError('[C Gen]: filename must be non empty')
-
-        if self.scanner is None and self.parser is None:
-            raise ValueError('Must provide atleast a scanner or a parser for generation')
-
         author = '**AUTO GENERATED**'
         source = 'https://github.com/rrozansk/Scanner-Parser-Generator'
         warning = 'WARNING!! AUTO GENERATED FILE, DO NOT EDIT!'
@@ -460,4 +446,7 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
 #endif
 """.format(filename, header)
 
-        return [(filename+'.h', header), (filename+'.c', source)]
+        return {
+            filename+'.h': header,
+            filename+'.c': source,
+        }

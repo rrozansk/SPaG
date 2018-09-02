@@ -96,21 +96,62 @@ class Generator(object):
         """
         return self.parser
 
-    @staticmethod
-    def output(filename):
+    def _translate(self, filename):
         """
-        Override this method in subclasses which should return the files and
-        there content for the specific language to be generated.
-
-        Runtime: O(1) - constant.
+        Override this method in subclasses which should translate the internal
+        representation of the given scanner and/or parser to the targeted
+        language. It should return the files and there content in a dictionary
+        allowing multiple files to be returned for a given language. This is the
+        only required function a child generators must implement.
 
         Input Type:
           filename: String
 
-        Output Type: List[Tuple[String, String]] | TypeError |
+        Output Type: Dict[String, String] |
+                     NotImplementedError
+        """
+        raise NotImplementedError('Base Generator incapable of translation')
+
+    def output(self, filename):
+        """
+        Output the given scanner and or parser in the given language.
+
+        Input Type:
+          filename: String
+
+        Output Type: Dict[String, String] |
+                     TypeError |
+                     ValueError |
                      NotImplementedError
         """
         if not isinstance(filename, str):
             raise TypeError('filename not a string')
 
-        raise NotImplementedError('output not implemented for Generator')
+        if not filename:
+            raise ValueError('filename must be non empty')
+
+        if not self.scanner and not self.parser:
+            raise ValueError('Scanner and/or parser must be provided for generation')
+
+        files = self._translate(filename)
+
+        if not isinstance(files, dict):
+            raise TypeError('generated files must be of type dict')
+
+        if not files:
+            raise ValueError('generated files must be of non empty')
+
+        for name, content in files.items():
+            if not isinstance(name, str):
+                raise TypeError('generated file name must be of type string')
+
+            if not name:
+                raise ValueError('generated file name must be non empty')
+
+            if not isinstance(content, str):
+                raise TypeError('generated file content must be of type string')
+
+            if not content:
+                raise ValueError('generated file content must be non empty')
+
+        return files
