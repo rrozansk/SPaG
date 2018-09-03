@@ -379,13 +379,29 @@ class TestScanner(object):
     )
     def test_invalid_airty_maybe():
         """
-        Ensure invalid maybe (?) operator airty produces the proper
-        exception.
+        Ensure invalid maybe (?) operator airty produces the proper exception.
         """
         TestScanner._run(**{
             'name': 'Invalid Expression ? Arity',
             'expressions': {
                 'invalid': '?'
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Invalid operator arity.',
+        raises=ValueError,
+    )
+    def test_invalid_airty_group():
+        """
+        Ensure invalid group '()' operator airty produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Expression () Arity',
+            'expressions': {
+                'invalid': '()'
             },
             'DFA': {}
         })
@@ -402,7 +418,7 @@ class TestScanner(object):
         TestScanner._run(**{
             'name': 'Unbalanced Right Paren',
             'expressions': {
-                'invalid': 'foo|bar)'
+                'invalid': '('
             },
             'DFA': {}
         })
@@ -419,7 +435,7 @@ class TestScanner(object):
         TestScanner._run(**{
             'name': 'Unbalanced Left Paren',
             'expressions': {
-                'invalid': '(foo|bar'
+                'invalid': ')'
             },
             'DFA': {}
         })
@@ -1052,14 +1068,97 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_precedence():
+    def test_precedence_star_plus():
         """
         Ensure association operator precedence produces the expected output.
+        same precendence so nothing interesting here
         """
         TestScanner._run(**{
             'name': 'Association',
             'expressions': {
-                'assoc': 'a|b*'
+                'expression': 'a*+'
+            },
+            'DFA': {
+                'Q': set(['A']),
+                'V': set('a'),
+                'T': [
+                    [' ', 'A'],
+                    ['a', 'A']
+                ],
+                'S': 'A',
+                'F': set(['A']),
+                'G': {
+                    'expression': set(['A']),
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_star_maybe():
+        """
+        Ensure association operator precedence produces the expected output.
+        same precendence so nothing interesting here
+        """
+        TestScanner._run(**{
+            'name': 'Association',
+            'expressions': {
+                'expression': 'a*?'
+            },
+            'DFA': {
+                'Q': set(['A']),
+                'V': set('a'),
+                'T': [
+                    [' ', 'A'],
+                    ['a', 'A']
+                ],
+                'S': 'A',
+                'F': set(['A']),
+                'G': {
+                    'expression': set(['A']),
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_star_concat():
+        """
+        Ensure association operator precedence produces the expected output.
+        '*' is higher than '+' so a with any number of b instead of an number of
+        ab pairs
+        """
+        TestScanner._run(**{
+            'name': 'Association',
+            'expressions': {
+                'expression': 'a.b*'
+            },
+            'DFA': {
+                'Q': set(['A', 'B', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'A',   'B',   'Err'],
+                    ['a', 'B',   'Err', 'Err'],
+                    ['b', 'Err', 'B',   'Err']
+                ],
+                'S': 'A',
+                'F': set(['B']),
+                'G': {
+                    'expression': set(['B']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_star_alternate():
+        """
+        Ensure association operator precedence produces the expected output.
+        '*' is higher than '|' so a or any number of b's instead of an number
+        of a or b's
+        """
+        TestScanner._run(**{
+            'name': 'Association',
+            'expressions': {
+                'expression': 'a|b*'
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
@@ -1072,14 +1171,185 @@ class TestScanner(object):
                 'S': 'S',
                 'F': set(['S', 'A', 'B']),
                 'G': {
-                    'assoc': set(['S', 'A', 'B']),
+                    'expression': set(['S', 'A', 'B']),
                     '_sink': set(['Err'])
                 }
             }
         })
 
     @staticmethod
-    def test_precedence_x():
+    def test_precedence_plus_maybe():
+        """
+        Ensure association operator precedence produces the expected output.
+        same precendence so nothing interesting here
+        """
+        TestScanner._run(**{
+            'name': 'Association',
+            'expressions': {
+                'expression': 'a+?'
+            },
+            'DFA': {
+                'Q': set(['A']),
+                'V': set('a'),
+                'T': [
+                    [' ', 'A'],
+                    ['a', 'A']
+                ],
+                'S': 'A',
+                'F': set(['A']),
+                'G': {
+                    'expression': set(['A']),
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_plus_concat():
+        """
+        Ensure association operator precedence produces the expected output.
+        '+' is higher than '.' so a and 1 or more b's instead one or more ab+
+        pairs.
+        """
+        TestScanner._run(**{
+            'name': 'Association',
+            'expressions': {
+                'expression': 'a.b+'
+            },
+            'DFA': {
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'S',   'A',   'B',   'Err'],
+                    ['a', 'A',   'Err', 'Err', 'Err'],
+                    ['b', 'Err', 'B',   'B',   'Err']
+                ],
+                'S': 'S',
+                'F': set(['B']),
+                'G': {
+                    'expression': set(['B']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_plus_alternate():
+        """
+        Ensure association operator precedence produces the expected output.
+        '+' is higher than '|' so a or 1 or more b's instead one or more a or b
+        pairs.
+        """
+        TestScanner._run(**{
+            'name': 'Association',
+            'expressions': {
+                'expression': 'a|b+'
+            },
+            'DFA': {
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'S', 'A',   'B',   'Err'],
+                    ['a', 'A', 'Err', 'Err', 'Err'],
+                    ['b', 'B', 'Err', 'B',   'Err']
+                ],
+                'S': 'S',
+                'F': set(['A', 'B']),
+                'G': {
+                    'expression': set(['A', 'B']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_maybe_concat():
+        """
+        Ensure association operator precedence produces the expected output.
+        '?' is higher than '.' so a and possibly 1 b instead of possible one ab
+        pair.
+        """
+        TestScanner._run(**{
+            'name': 'Association',
+            'expressions': {
+                'expression': 'a.b?'
+            },
+            'DFA': {
+                'Q': set(['S', 'A', 'B', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'S',   'A',   'B',   'Err'],
+                    ['a', 'A',   'Err', 'Err', 'Err'],
+                    ['b', 'Err', 'B',   'Err', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['A', 'B']),
+                'G': {
+                    'expression': set(['A', 'B']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_maybe_alternate():
+        """
+        Ensure association operator precedence produces the expected output.
+        '?' is higher than '|' so a or possibly 1 b instead of 1 possible a or
+        b.
+        """
+        TestScanner._run(**{
+            'name': 'Association',
+            'expressions': {
+                'expression': 'a|b?'
+            },
+            'DFA': {
+                'Q': set(['S', 'AB', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'S',  'AB',  'Err'],
+                    ['a', 'AB', 'Err', 'Err'],
+                    ['b', 'AB', 'Err', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['S', 'AB']),
+                'G': {
+                    'expression': set(['S', 'AB']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_precedence_concat_alt():
+        """
+        Ensure association operator precedence produces the expected output.
+        '.' is higher than '|' so ab or possibly c instead a and b or c.
+        """
+        TestScanner._run(**{
+            'name': 'Association',
+            'expressions': {
+                'expression': 'a.b|c'
+            },
+            'DFA': {
+                'Q': set(['S', 'A', 'BC', 'Err']),
+                'V': set('abc'),
+                'T': [
+                    [' ', 'S',   'A',   'BC',  'Err'],
+                    ['a', 'A',   'Err', 'Err', 'Err'],
+                    ['b', 'Err', 'BC',  'Err', 'Err'],
+                    ['c', 'BC',  'Err', 'Err', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['BC']),
+                'G': {
+                    'expression': set(['BC']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_concat_implicit_star():
         """
         Ensure the expression produces the expected output.
         """
@@ -1112,7 +1382,7 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_precedence_xx():
+    def test_concat_implicit_plus():
         """
         Ensure the expression produces the expected output.
         """
@@ -1145,7 +1415,7 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_precedence_xxx():
+    def test_concat_implicit_maybe():
         """
         Ensure the expression produces the expected output.
         """
@@ -1178,7 +1448,40 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_precedence_xxxx():
+    def test_concat_implicit_alternate():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Implicit Concatenation Question Operator',
+            'expressions': {
+                'permutation1': 'a|b',
+                'permutation2': 'a|(b)',
+                'permutation3': '(a)|b',
+                'permutation4': '(a)|(b)'
+            },
+            'DFA': {
+                'Q': set(['S', 'AB', 'Err']),
+                'V': set('ab'),
+                'T': [
+                    [' ', 'S',  'AB',  'Err'],
+                    ['a', 'AB', 'Err', 'Err'],
+                    ['b', 'AB', 'Err', 'Err']
+                ],
+                'S': 'S',
+                'F': set(['AB']),
+                'G': {
+                    'permutation1': set(['AB']),
+                    'permutation2': set(['AB']),
+                    'permutation3': set(['AB']),
+                    'permutation4': set(['AB']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_miscellaneous_1():
         """
         Ensure the expression produces the expected output.
         """
@@ -1207,7 +1510,7 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_precedence_xxxxx():
+    def test_miscellaneous_2():
         """
         Ensure the expression produces the expected output.
         """
@@ -1234,7 +1537,7 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_precedence_xxxxxx():
+    def test_miscellaneous_3():
         """
         Ensure the expression produces the expected output.
         """
@@ -1264,7 +1567,7 @@ class TestScanner(object):
         })
 
     @staticmethod
-    def test_precedence_xxxxxxx():
+    def test_miscellaneous_4():
         """
         Ensure the expression produces the expected output.
         """
@@ -1300,7 +1603,7 @@ class TestScanner(object):
         """
         TestScanner._run(**{
             'name': 'White Space',
-            'expressions': {  # FIXME: accepting weird input here
+            'expressions': {
                 'white': '( |\t|\n|\r|\f|\v|\\s|\\t|\\n|\\r|\\f|\\v)*'
             },
             'DFA': {
