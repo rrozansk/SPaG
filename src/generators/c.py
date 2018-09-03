@@ -67,7 +67,7 @@ class C(Generator):
 
     def _generate_token_api(self, name):
         types = []
-        for token_name, pattern in self.scanner.expressions():
+        for token_name, pattern in self.scanner.expressions().items():
             types.append('  {0: <23} // {1}'.format(token_name.upper()+",", pattern))
         return """\
 {2}
@@ -203,7 +203,7 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
 """.format("{0}:".format(hex_repr), char_repr)
                 if end_state in final_states:
                     _type = None
-                    for pname, _ in expressions:
+                    for pname, _ in expressions.items():
                         if end_state in types[pname]:
                             _type = pname
                             break
@@ -429,6 +429,7 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
 
             header += token_header + scanner_header
             source += token_source + scanner_source
+
 
         if self.parser is not None:
             parse_func = self._sanatize(self.parser.name())
