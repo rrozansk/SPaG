@@ -65,6 +65,7 @@ setup(
             '../LICENSE.txt'
         ]
     },
+    scripts=['scripts/generate.py'],
     include_package_data=True,
     zip_safe=True,
     classifiers=(
