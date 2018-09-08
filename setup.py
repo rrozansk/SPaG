@@ -50,22 +50,16 @@ setup(
     ]),
     packages=[
         'scanner_parser_generator',
-        'scanner_parser_generator.generators',
-        'scanner_parser_generator.parser',
-        'scanner_parser_generator.scanner'
+        'scanner_parser_generator.generators'
     ],
-    package_dir={
-        'scanner_parser_generator': 'src',
-        'scanner_parser_generator.generators': 'src/generators',
-        'scanner_parser_generator.parser': 'src/parser',
-        'scanner_parser_generator.scanner': 'src/scanner'
-    },
     package_data={
         'scanner_parser_generator': [
             '../LICENSE.txt'
         ]
     },
-    scripts=['scripts/generate.py'],
+    scripts=[
+        'scripts/generate.py'
+    ],
     include_package_data=True,
     zip_safe=True,
     classifiers=(

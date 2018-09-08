@@ -2,7 +2,7 @@
 A scanner/parser generator targeting python.
 Generates a single python (.py) file.
 """
-from . import Generator
+from scanner_parser_generator.generator import Generator
 
 
 class Python(Generator):

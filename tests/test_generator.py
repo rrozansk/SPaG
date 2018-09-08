@@ -4,9 +4,9 @@
 Testing for Generator objects located in src/generators/__init__.py
 """
 import pytest
-from src.scanner.scanner import RegularGrammar
-from src.parser.parser import ContextFreeGrammar
-from src.generators import Generator
+from scanner_parser_generator.scanner import RegularGrammar
+from scanner_parser_generator.parser import ContextFreeGrammar
+from scanner_parser_generator.generator import Generator
 
 
 class TestGenerator(object):

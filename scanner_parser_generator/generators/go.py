@@ -2,7 +2,7 @@
 A scanner/parser generator targeting go.
 Generates a single golang (.go) file.
 """
-from . import Generator
+from scanner_parser_generator.generator import Generator
 
 
 class Go(Generator):

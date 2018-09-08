@@ -7,11 +7,11 @@ Scanner-Parser-Generator
     - [Methods](#methods)
       - [Source](#source)
         - [Prerequisites](#source-prerequisites)
+        - [Test](#source-test)
         - [Install](#source-install)
       - [Pip](#pip)
         - [Prerequisites](#pip-prerequisites)
         - [Install](#pip-install)
-    - [Test](#test)
   - [Usage](#usage)
     - [Library](#library)
     - [CLI](#cli)
@@ -61,14 +61,32 @@ These are the prerequisites required reguardless of choosen installation method.
 
   - git
   - setuptools
+  - pytest
+
+#### Source Test
+
+Run the tests to ensure compatibility before creating the distribution and installing.
+
+A pytest.ini file is included so the tests may also be run through pytest if desired.
+This is slightly more informative as it's output shows what tests are running
+and which passed and/or failed, etc.
+
+
+```sh
+# Obtain the source code.
+$ git clone https://github.com/rrozansk/Scanner-Parser-Generator.git
+
+# Install pytest.
+$ pip install 'pytest>=3.7.4'
+
+# Run the tests.
+$ pytest
+```
 
 #### Source Install
 
 ```sh
-# 1. Obtain the source code.
-$ git clone https://github.com/rrozansk/Scanner-Parser-Generator.git
-
-# 2. Install using the provided python setup script.
+# Install using the provided python setup script.
 $ python setup.py install
 ```
 
@@ -80,38 +98,12 @@ $ python setup.py install
 
 #### Pip Install
 
+Since pip packages are controlled via distribution of PyPI repositories the packages
+present are thoroughly tested before pushing in to the repo so no testing necessary.
+
 ```sh
 # Only step required!
 $ pip install scanner-parser-generator
-```
-
-## Test
-
-Run the tests to ensure compatibility and verify installation went correctly.
-
-NOTE: No output expected if all scanner and/or parser tests pass.
-
-```sh
-# 1. Run the scanner test suite.
-$ python -m scanner_parser_generator.tests.test_scanner
-
-# 2. Run the parser test suite.
-$ python -m scanner_parser_generator.tests.test_parser
-
-# 3. Check the generator CLI program installed correctly.
-$ python -m scanner_parser_generator.generate --help
-```
-
-A pytest.ini file is included so the tests may also be run through pytest if desired.
-This is slightly more informative as it's output shows what tests are running
-and which passed and/or failed, etc.
-
-```sh
-# Install pytest
-$ pip install 'pytest>=3.6.2'
-
-# Run the tests
-$ python -m pytest
 ```
 
 # Usage
@@ -139,6 +131,7 @@ Python 3.5.2 (default, Nov 23 2017, 16:37:01)
 Type "help", "copyright", "credits" or "license" for more information.
 >>> from scanner_parser_generator.scanner import RegularGrammar
 >>> from scanner_parser_generator.parser import ContextFreeGrammar
+>>> from scanner_parser_generator.generator import Generator
 >>> from scanner_parser_generator.generators.c import C
 >>> from scanner_parser_generator.generators.go import Go
 >>> from scanner_parser_generator.generators.python import Python
@@ -152,13 +145,16 @@ Shown below are some basic invocation's for help, scanner, and parser generation
 
 ```sh
 # Generate your scanner and/or parser! ...but first ask for help.
-$ python -m scanner_parser_generator.generate --help
+$ generate.py --help
 
-# Generate an ini scanner in c.
-$ python -m scanner_parser_generator.generate -s examples/INI/scanner.txt -g c -o scan
+# Generate an ini scanner in c and store in a file called 'scan'.
+$ generate.py -s examples/INI/scanner.txt -g c -o scan
 
-# Generate an ini parser in c.
-$ python -m scanner_parser_generator.generate -p examples/INI/parser.txt -g c -o parse
+# Generate an ini parser in c and store in a file called 'parse'.
+$ generate.py -p examples/INI/parser.txt -g c -o parse
+
+# It's also possible to generate multiple target languages at once.
+$ generate.py -p examples/INI/parser.txt -g c go python -o parse
 ```
 
 # Scanner
@@ -263,13 +259,13 @@ single file containing a single class definition and allows output to a new lang
 ### Template
 
 Using the below as a template create a new file with the given contents under
-scanner_parser_generator/generators, naming the file after the language being compiled to:
+scanner_parser_generators/generators, naming the file after the language being compiled to:
 
 ```python
 """
 A scanner/parser generator targeting {filename}.
 """
-from . import Generator
+from scanner_parser_generator import Generator
 
 
 class {Filename}(Generator):
@@ -277,17 +273,21 @@ class {Filename}(Generator):
     A simple object for compiling scanner's and/or parser's to {filename} programs.
     """
 
-    def output(self, filename):
+    def _translate(self, filename):
         """
-        Attempt to generate the {filename} file(s) with the corresponding
-        scanner and/or parser currently set in the object.
+        Override this method in subclasses which should translate the internal
+        representation of the given scanner and/or parser to the targeted
+        language. It should return the files and there content in a dictionary
+        allowing multiple files to be returned for a given language. This is the
+        only required function a child generators must implement.
 
         Input Type:
           filename: String
 
-        Output Type: List[Tuple[String, String]] | ValueError
+        Output Type: Dict[String, String] |
+                     NotImplementedError
         """
-        pass
+        raise NotImplementedError('Base Generator incapable of translation')
 ```
 
 NOTE: the class name is a capitalized version of the filename.
@@ -300,10 +300,10 @@ to the style guidlines of the rest of the project which provides a similiar look
 
 ```sh
 # Lint your new generator and save the output in a file.
-$ pylint scanner_parser_generator/generators/<new generator>.py > output.txt
+$ pylint scanner_parser_generators/generators/<new generator>.py > output.txt
 
 # Update accordingly as per pylint's comments in output.txt.
-$ vim output.txt scanner_parser_generator/generators/<new generator>.py
+$ vim output.txt src/generators/<new generator>.py
 ```
 
 # License

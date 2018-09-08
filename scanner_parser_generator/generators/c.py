@@ -3,7 +3,7 @@ A scanner/parser generator targeting c.
 Generates header (.h) and source (.c) files.
 """
 import datetime
-from . import Generator
+from scanner_parser_generator.generator import Generator
 
 
 class C(Generator):

@@ -4,16 +4,17 @@ parser and/or scanner used for code generation. Each targeted language for
 generation should be implemented as a subclass which only needs to override
 the output method.
 """
-from os import listdir
-from os.path import dirname, realpath
-from src.parser.parser import ContextFreeGrammar
-from src.scanner.scanner import RegularGrammar
+#from os import listdir
+#from os.path import dirname, realpath, join
+from scanner_parser_generator.parser import ContextFreeGrammar
+from scanner_parser_generator.scanner import RegularGrammar
 
 
-__all__ = []
-for _file in listdir(dirname(realpath(__file__))):
-    if _file.endswith('.py') and _file != '__init__.py':
-        __all__.append(_file.rsplit('.py', 1)[0])
+SUPPORTED = ['c', 'go', 'python']
+# FIXME/TODO dynamically find and populate SUPPORTED
+#for _file in listdir(join(dirname(realpath(__file__)), 'generators')):
+#    if _file.endswith('.py') and _file != '__init__.py':
+#        SUPPORTED.append(_file.rsplit('.py', 1)[0])
 
 
 class Generator(object):

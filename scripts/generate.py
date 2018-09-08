@@ -10,10 +10,30 @@ from argparse import ArgumentParser, Action
 from os.path import isfile
 from sys import stdout
 from time import time
-from scanner_parser_generator.generators import __all__ as languages
-from scanner_parser_generator.parser.parser import ContextFreeGrammar
-from scanner_parser_generator.scanner.scanner import RegularGrammar
+from scanner_parser_generator.generator import SUPPORTED as languages
+from scanner_parser_generator.parser import ContextFreeGrammar
+from scanner_parser_generator.scanner import RegularGrammar
 
+class DynamicGeneratorUninstall(Action):
+    """
+    Dynamically uninstall a generator and exit.
+    """
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        # TODO/FIXME
+        # rm file(s) from the distribution location of 'generators' dir
+        exit(0)
+
+
+class DynamicGeneratorInstall(Action):
+    """
+    Dynamically install a new generator for src code output and exit.
+    """
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        # TODO/FIXME
+        # cp file(s) to the distribution location of 'generators' dir
+        exit(0)
 
 class DynamicGeneratorImport(Action):
     """
@@ -21,6 +41,7 @@ class DynamicGeneratorImport(Action):
     """
 
     def __call__(self, parser, namespace, values, option_string=None):
+        # FIXME
         generators = []
         for language in values:
             cls = language.capitalize()
@@ -59,7 +80,7 @@ class CollectSpecification(Action):
 
 CLI = ArgumentParser(
     prog='Scanner Parser Generator',
-    usage='$ python -m scanner_parser_generator.generate --help',
+    usage='$ generate.py --help',
     description='''
     Simple CLI (Command Line Interface) program to generate lexer(s) and/or
     parser(s) for a given input specification to a set of specified output
@@ -68,18 +89,21 @@ CLI = ArgumentParser(
     src/parser/parser.py located here:
     https://github.com/rrozansk/Scanner-Parser-Generator
     ''',
-    # epilog='TODO'
+    epilog='''
+    Examples located here:
+    https://github.com/rrozansk/Scanner-Parser-Generator/examples
+    '''
 )
 
-CLI.add_argument('-V', '--version', action='version',
-                 version='Lexer/Parser Generator v1.0.0a0',
-                 help='show version information and exit')
 CLI.add_argument('-f', '--force', action='store_true',
                  help='overwrite output file(s) if already present')
 CLI.add_argument('-g', '--generate', type=str, nargs='+', default=[],
                  choices=languages, required=True,
                  action=DynamicGeneratorImport,
                  help='target language(s) for code generation')
+CLI.add_argument('-i', '--install', type=str, nargs='+', default=[],
+                 action=DynamicGeneratorInstall,
+                 help='install code generator(s)')
 CLI.add_argument('-o', '--output', action='store', type=str, default='out',
                  help='base filename to use for generated output')
 CLI.add_argument('-p', '--parser', type=open, action=CollectSpecification,
@@ -88,8 +112,14 @@ CLI.add_argument('-s', '--scanner', type=open, action=CollectSpecification,
                  help='file containing scanner name and type/token pairs')
 CLI.add_argument('-t', '--time', action='store_true',
                  help='display the wall time taken for each component')
+CLI.add_argument('-u', '--uninstall', type=str, nargs='+', default=[],
+                 action=DynamicGeneratorUninstall,
+                 help='uninstall code generator(s)')
 CLI.add_argument('-v', '--verbose', action='store_true',
                  help='output more information when running')
+CLI.add_argument('-V', '--version', action='version',
+                 version='Lexer/Parser Generator v1.0.0a0',
+                 help='show version information and exit')
 
 try:
     ARGS = vars(CLI.parse_args())
