@@ -45,7 +45,7 @@ class DynamicGeneratorImport(Action):
         generators = []
         for language in values:
             cls = language.capitalize()
-            module = __import__('scanner_parser_generator.generators.'+language, fromlist=[cls])
+            module = __import__('spag.generators.'+language, fromlist=[cls])
             generator = getattr(module, cls)
             generators.append(generator)
         setattr(namespace, self.dest, generators)

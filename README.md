@@ -1,4 +1,4 @@
-Scanner-Parser-Generator
+SPaG (Scanner, Parser, and Generator)
 ========================
 
   - [Introduction](#introduction)
@@ -74,7 +74,7 @@ and which passed and/or failed, etc.
 
 ```sh
 # Obtain the source code.
-$ git clone https://github.com/rrozansk/Scanner-Parser-Generator.git
+$ git clone https://github.com/rrozansk/SPaG.git
 
 # Install pytest.
 $ pip install 'pytest>=3.7.4'
@@ -103,7 +103,7 @@ present are thoroughly tested before pushing in to the repo so no testing necess
 
 ```sh
 # Only step required!
-$ pip install scanner-parser-generator
+$ pip install SPaG
 ```
 
 # Usage
@@ -129,12 +129,12 @@ $ /usr/bin/python3
 Python 3.5.2 (default, Nov 23 2017, 16:37:01)
 [GCC 5.4.0 20160609] on linux
 Type "help", "copyright", "credits" or "license" for more information.
->>> from scanner_parser_generator.scanner import RegularGrammar
->>> from scanner_parser_generator.parser import ContextFreeGrammar
->>> from scanner_parser_generator.generator import Generator
->>> from scanner_parser_generator.generators.c import C
->>> from scanner_parser_generator.generators.go import Go
->>> from scanner_parser_generator.generators.python import Python
+>>> from spag.scanner import RegularGrammar
+>>> from spag.parser import ContextFreeGrammar
+>>> from spag.generator import Generator
+>>> from spag.generators.c import C
+>>> from spag.generators.go import Go
+>>> from spag.generators.python import Python
 ```
 
 ## CLI
@@ -247,9 +247,9 @@ the choosen language.
 
 Below shows the current status of the generators:
 
-  * [![C](https://img.shields.io/badge/C-Developing-yellow.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/scanner_parser_generator/generators/c.py)
-  * [![Golang](https://img.shields.io/badge/Golang-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/scanner_parser_generator/generators/go.py)
-  * [![Python](https://img.shields.io/badge/Python-Planned-red.svg)](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/scanner_parser_generator/generators/python.py)
+  * [![C](https://img.shields.io/badge/C-Developing-yellow.svg)](https://github.com/rrozansk/SPaG/blob/master/spag/generators/c.py)
+  * [![Golang](https://img.shields.io/badge/Golang-Planned-red.svg)](https://github.com/rrozansk/SPaG/blob/master/spag/generators/go.py)
+  * [![Python](https://img.shields.io/badge/Python-Planned-red.svg)](https://github.com/rrozansk/SPaG/blob/master/spag/generators/python.py)
 
 ## Extension
 
@@ -259,13 +259,13 @@ single file containing a single class definition and allows output to a new lang
 ### Template
 
 Using the below as a template create a new file with the given contents under
-scanner_parser_generators/generators, naming the file after the language being compiled to:
+spag/generators, naming the file after the language being compiled to:
 
 ```python
 """
 A scanner/parser generator targeting {filename}.
 """
-from scanner_parser_generator import Generator
+from spag import Generator
 
 
 class {Filename}(Generator):
@@ -308,4 +308,4 @@ $ vim output.txt src/generators/<new generator>.py
 
 # License
 
-[MIT](https://github.com/rrozansk/Scanner-Parser-Generator/blob/master/LICENSE.txt)
+[MIT](https://github.com/rrozansk/SPaG/blob/master/LICENSE.txt)
