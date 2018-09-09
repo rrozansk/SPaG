@@ -1,3 +1,9 @@
+# pylint: disable=anomalous-backslash-in-string
+# pylint: disable=too-many-boolean-expressions
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-locals
+# pylint: disable=too-many-statements
+# pylint: disable=unused-argument
 """
  scanner.py includes the implementation of RegularGrammar objects.
 
@@ -38,11 +44,11 @@
                escape is needed if mentioned ([\]]). All other characters are
                treated as literals.
     - concat can be either implicit or explicit
-    - supported escape sequences:
-        operator literals   -> \?, \*, \., \+, \|
-        grouping literals   -> \(, \), \[, \]
-        whitespace literals -> \s, \t, \n, \r, \f, \v
-        escape literal      -> \\\\
+    - supported escape sequences with a backslash (\):
+        operator literals   -> ?, *, ., +, |
+        grouping literals   -> (, ), [, ]
+        whitespace literals -> s, t, n, r, f, v
+        escape literal      -> \
 """
 from uuid import uuid4
 from string import printable

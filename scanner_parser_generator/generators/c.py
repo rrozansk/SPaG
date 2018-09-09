@@ -1,3 +1,6 @@
+# pylint: disable=invalid-name
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-locals
 """
 A scanner/parser generator targeting c.
 Generates header (.h) and source (.c) files.
