@@ -6,8 +6,8 @@ the output method.
 """
 #from os import listdir
 #from os.path import dirname, realpath, join
-from scanner_parser_generator.parser import ContextFreeGrammar
-from scanner_parser_generator.scanner import RegularGrammar
+from spag.parser import ContextFreeGrammar
+from spag.scanner import RegularGrammar
 
 
 SUPPORTED = ['c', 'go', 'python']

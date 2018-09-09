@@ -9,7 +9,7 @@ Testing for RegularGrammar objects located in src/scanner/scanner.py
 """
 from itertools import permutations
 import pytest
-from scanner_parser_generator.scanner import RegularGrammar
+from spag.scanner import RegularGrammar
 
 
 class TestScanner(object):

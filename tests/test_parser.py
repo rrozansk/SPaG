@@ -2,7 +2,7 @@
 Testing for ContextFreeGrammar objects located in src/parser/parser.py
 """
 import pytest
-from scanner_parser_generator.parser import ContextFreeGrammar
+from spag.parser import ContextFreeGrammar
 
 
 class TestParser(object):

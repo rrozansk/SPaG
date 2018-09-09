@@ -9,7 +9,7 @@ with open('README.md', 'r') as fd:
     README = fd.read()
 
 setup(
-    name='scanner_parser_generator',
+    name='spag',
     version='1.0.0a0',
     license='MIT',
     author='Ryan Rozanski',
@@ -23,8 +23,8 @@ setup(
     ),
     long_description=README,
     long_description_content_type='text/markdown',
-    url='https://github.com/rrozansk/Scanner-Parser-Generator',
-    download_url='https://github.com/rrozansk/Scanner-Parser-Generator',
+    url='https://github.com/rrozansk/SPaG',
+    download_url='https://github.com/rrozansk/SPaG',
     python_requires='>= 2.7.0',
     keywords=' '.join([
         'bnf',
@@ -49,11 +49,11 @@ setup(
         'tokens'
     ]),
     packages=[
-        'scanner_parser_generator',
-        'scanner_parser_generator.generators'
+        'spag',
+        'spag.generators'
     ],
     package_data={
-        'scanner_parser_generator': [
+        'spag': [
             '../LICENSE.txt'
         ]
     },

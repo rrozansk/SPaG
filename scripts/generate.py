@@ -10,9 +10,9 @@ from argparse import ArgumentParser, Action
 from os.path import isfile
 from sys import stdout
 from time import time
-from scanner_parser_generator.generator import SUPPORTED as languages
-from scanner_parser_generator.parser import ContextFreeGrammar
-from scanner_parser_generator.scanner import RegularGrammar
+from spag.generator import SUPPORTED as languages
+from spag.parser import ContextFreeGrammar
+from spag.scanner import RegularGrammar
 
 class DynamicGeneratorUninstall(Action):
     """
@@ -87,11 +87,11 @@ CLI = ArgumentParser(
     languages. For information on data input, capabilities, limitation and
     more see the README or have a look at src/scanner/scanner.py and
     src/parser/parser.py located here:
-    https://github.com/rrozansk/Scanner-Parser-Generator
+    https://github.com/rrozansk/SPaG
     ''',
     epilog='''
     Examples located here:
-    https://github.com/rrozansk/Scanner-Parser-Generator/examples
+    https://github.com/rrozansk/SPaG/examples
     '''
 )
 
