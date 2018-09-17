@@ -54,9 +54,9 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=redefined-outer-name,
+disable=broad-except,
+        redefined-outer-name,
         superfluous-parens,
-        broad-except
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -219,7 +219,6 @@ min-similarity-lines=10
 
 # List of note tags to take in consideration, separated by a comma.
 notes=FIXME,
-      XXX,
       TODO
 
 
@@ -233,7 +232,7 @@ logging-modules=logging
 [FORMAT]
 
 # Expected format of line ending, e.g. empty (any line ending), LF or CRLF.
-expected-line-ending-format=
+expected-line-ending-format=LF
 
 # Regexp for a line that is allowed to be longer than the limit.
 ignore-long-lines=^\s*(# )?<?https?://\S+>?$
@@ -331,7 +330,6 @@ good-names=i,
            r,
            s,
            t,
-           test_constructor_scanner_invalid,
            Q,
            V,
            T,
@@ -349,7 +347,7 @@ good-names=i,
            _
 
 # Include a hint for the correct naming format with invalid-name
-include-naming-hint=no
+include-naming-hint=yes
 
 # Naming style matching correct inline iteration names
 inlinevar-naming-style=any
@@ -465,8 +463,7 @@ min-public-methods=2
 
 # List of method names used to declare (i.e. assign) instance attributes.
 defining-attr-methods=__init__,
-                      __new__,
-                      setUp
+                      __new__
 
 # List of member names, which should be excluded from the protected access
 # warning.
