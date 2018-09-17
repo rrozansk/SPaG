@@ -9,7 +9,7 @@ with open('README.md', 'r') as fd:
     README = fd.read()
 
 setup(
-    name='spag',
+    name='SPaG',
     version='1.0.0a0',
     license='MIT',
     author='Ryan Rozanski',
@@ -17,9 +17,12 @@ setup(
     maintainer='Ryan Rozanski',
     maintainer_email='',
     description=(
-        'A CLI program bundled with importable scanner, parser, and generator '
-        'libraries which are used to generate scanners and/or parsers from '
-        'regular expressions and LL(1) BNF grammar specifications respectively.'
+        'A module containing scanner (regular expression) and parser (BNF) '
+        'compilers as well as a base generator which all target language '
+        'generators must inherit from, allowing any specific language of '
+        'interest to be targeted. A script is also included which reads the '
+        'respective specification(s) from file and outputs the resulting code '
+        'to disk.'
     ),
     long_description=README,
     long_description_content_type='text/markdown',
@@ -43,8 +46,8 @@ setup(
         'parser-generator',
         'regular-expression(s)',
         'regular-grammar',
-        'scanner-generator',
         'scanner',
+        'scanner-generator',
         'tokenizer',
         'tokens'
     ]),
