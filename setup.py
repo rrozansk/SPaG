@@ -61,7 +61,7 @@ setup(
         ]
     },
     scripts=[
-        'scripts/generate.py'
+        'scripts/spag-cli.py'
     ],
     include_package_data=True,
     zip_safe=True,

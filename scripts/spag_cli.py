@@ -55,7 +55,7 @@ class CollectSpecification(Action):
 
 CLI = ArgumentParser(
     prog='SPaG-CLI',
-    usage='$ generate.py --help',
+    usage='$ spag_cli.py --help',
     description='''
     A simple CLI (Command Line Interface) script which reads some input file
     specification(s) to generate lexers and/or parsers for a given set of
