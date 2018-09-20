@@ -61,7 +61,7 @@ setup(
         ]
     },
     scripts=[
-        'scripts/spag-cli.py'
+        'scripts/spag_cli.py'
     ],
     include_package_data=True,
     zip_safe=True,
