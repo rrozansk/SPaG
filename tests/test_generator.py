@@ -1,5 +1,6 @@
 # pylint: disable=abstract-method
 # pylint: disable=too-many-public-methods
+# pylint: disable=invalid-name
 """
 Testing for Generator objects located in src/generators/__init__.py
 """
@@ -82,7 +83,7 @@ class TestGenerator(object):
         """
         scanner = RegularGrammar('test', {'foo': 'bar'})
         generator = Generator(scanner, None)
-        assert generator.get_scanner() == scanner, 'Invalid scanner retrieved'
+        assert generator.get_scanner() is scanner, 'Invalid scanner retrieved'
 
     @staticmethod
     def test_scanner_set():
@@ -93,7 +94,7 @@ class TestGenerator(object):
         generator = Generator(scanner_1, None)
         scanner_2 = RegularGrammar('test', {'foo': 'bar'})
         generator.set_scanner(scanner_2)
-        assert generator.get_scanner() == scanner_2, 'Invalid scanner retrieved'
+        assert generator.get_scanner() is scanner_2, 'Invalid scanner retrieved'
 
     @staticmethod
     @pytest.mark.xfail(
@@ -116,7 +117,7 @@ class TestGenerator(object):
         """
         parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = Generator(None, parser)
-        assert generator.get_parser() == parser, 'Invalid parser retrieved'
+        assert generator.get_parser() is parser, 'Invalid parser retrieved'
 
     @staticmethod
     def test_parser_set():
@@ -127,7 +128,7 @@ class TestGenerator(object):
         generator = Generator(None, parser_1)
         parser_2 = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator.set_parser(parser_2)
-        assert generator.get_parser() == parser_2, 'Invalid parser retrieved'
+        assert generator.get_parser() is parser_2, 'Invalid parser retrieved'
 
     @staticmethod
     @pytest.mark.xfail(
@@ -144,32 +145,6 @@ class TestGenerator(object):
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Filename not of type str.',
-        raises=TypeError,
-    )
-    def test_output_filename_invalid():
-        """
-        Ensure a TypeError is raised if the filename is not a string when
-        attempting to output a scanner and/or parser.
-        """
-        generator = Generator(None, None)
-        generator.output(None)
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Filename is an empty string.',
-        raises=ValueError,
-    )
-    def test_output_filename_empty():
-        """
-        Ensure a ValueError is raised if the filename is an empty a string when
-        attempting to output a scanner and/or parser.
-        """
-        generator = Generator(None, None)
-        generator.output('')
-
-    @staticmethod
-    @pytest.mark.xfail(
         reason='Scanner or parser required for generation.',
         raises=ValueError,
     )
@@ -179,7 +154,82 @@ class TestGenerator(object):
         is attempted without a set scanner and parser.
         """
         generator = Generator(None, None)
-        generator.output('test_failure.txt')
+        generator.output({'filename': 'test_failure.txt'})
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Options not of type dict.',
+        raises=TypeError,
+    )
+    def test_output_options_invalid():
+        """
+        Ensure a TypeError is raised if the options is not a dict when
+        attempting to output a scanner and/or parser.
+        """
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = Generator(scanner, parser)
+        generator.output(None)
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Options is an empty dict.',
+        raises=ValueError,
+    )
+    def test_output_options_empty():
+        """
+        Ensure a ValueError is raised if the options is an empty dict when
+        attempting to output a scanner and/or parser.
+        """
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = Generator(scanner, parser)
+        generator.output(dict())
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Options invalid dict key.',
+        raises=TypeError,
+    )
+    def test_output_options_key_invalid():
+        """
+        Ensure a TypeError is raised if the options provided when attempting to
+        output a scanner and/or parser contain an invalid key.
+        """
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = Generator(scanner, parser)
+        generator.output({True: 'foo'})
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Options empty dict key.',
+        raises=ValueError,
+    )
+    def test_output_options_key_empty():
+        """
+        Ensure a ValueError is raised if the options provided when attempting to
+        output a scanner and/or parser contain an empty key.
+        """
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = Generator(scanner, parser)
+        generator.output({'': 'bar'})
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Options invalid dict value.',
+        raises=TypeError,
+    )
+    def test_output_options_value_invalid():
+        """
+        Ensure a TypeError is raised if the options provided when attempting to
+        output a scanner and/or parser contain an invalid value type.
+        """
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = Generator(scanner, parser)
+        generator.output({'invalid': scanner})
 
     @staticmethod
     @pytest.mark.xfail(
@@ -194,7 +244,7 @@ class TestGenerator(object):
         scanner = RegularGrammar('test', {'foo': 'bar'})
         parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = Generator(scanner, parser)
-        generator.output('test_failure.txt')
+        generator.output({'filename': 'test_failure.txt'})
 
     @staticmethod
     @pytest.mark.xfail(
@@ -212,7 +262,7 @@ class TestGenerator(object):
         scanner = RegularGrammar('test', {'foo': 'bar'})
         parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = _GenerateNothing(scanner, parser)
-        generator.output('test_failure.txt')
+        generator.output({'filename': 'test_failure.txt'})
 
     @staticmethod
     @pytest.mark.xfail(
@@ -224,13 +274,13 @@ class TestGenerator(object):
         Ensure a TypeError is raised if a child Generator returns invalid data.
         """
         class _InvalidFiles(Generator):
-            def _translate(self, filename):
+            def _translate(self, options):
                 return list()
 
         scanner = RegularGrammar('test', {'foo': 'bar'})
         parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = _InvalidFiles(scanner, parser)
-        generator.output('test_failure.txt')
+        generator.output({'filename': 'test_failure.txt'})
 
     @staticmethod
     @pytest.mark.xfail(
@@ -242,13 +292,13 @@ class TestGenerator(object):
         Ensure a ValueError is raised if a child Generator returns empty data.
         """
         class _EmptyFiles(Generator):
-            def _translate(self, filename):
+            def _translate(self, options):
                 return dict()
 
         scanner = RegularGrammar('test', {'foo': 'bar'})
         parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = _EmptyFiles(scanner, parser)
-        generator.output('test_failure.txt')
+        generator.output({'filename': 'test_failure.txt'})
 
     @staticmethod
     @pytest.mark.xfail(
@@ -261,13 +311,13 @@ class TestGenerator(object):
         filename.
         """
         class _InvalidFilename(Generator):
-            def _translate(self, filename):
+            def _translate(self, options):
                 return {None: 'invalid'}
 
         scanner = RegularGrammar('test', {'foo': 'bar'})
         parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = _InvalidFilename(scanner, parser)
-        generator.output('test_failure.txt')
+        generator.output({'filename': 'test_failure.txt'})
 
     @staticmethod
     @pytest.mark.xfail(
@@ -280,13 +330,13 @@ class TestGenerator(object):
         filename.
         """
         class _EmptyFilename(Generator):
-            def _translate(self, filename):
+            def _translate(self, options):
                 return {'': 'invalid'}
 
         scanner = RegularGrammar('test', {'foo': 'bar'})
         parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = _EmptyFilename(scanner, parser)
-        generator.output('test_failure.txt')
+        generator.output({'filename': 'test_failure.txt'})
 
     @staticmethod
     @pytest.mark.xfail(
@@ -299,13 +349,13 @@ class TestGenerator(object):
         contents.
         """
         class _InvalidContent(Generator):
-            def _translate(self, filename):
-                return {filename+'.txt': None}
+            def _translate(self, options):
+                return {options['filename']+'.txt': None}
 
         scanner = RegularGrammar('test', {'foo': 'bar'})
         parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = _InvalidContent(scanner, parser)
-        generator.output('test_failure.txt')
+        generator.output({'filename': 'test_failure.txt'})
 
     @staticmethod
     @pytest.mark.xfail(
@@ -318,13 +368,13 @@ class TestGenerator(object):
         contents.
         """
         class _EmptyContent(Generator):
-            def _translate(self, filename):
-                return {filename+'.txt': ''}
+            def _translate(self, options):
+                return {options['filename']+'.txt': ''}
 
         scanner = RegularGrammar('test', {'foo': 'bar'})
         parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = _EmptyContent(scanner, parser)
-        generator.output('test_failure.txt')
+        generator.output({'filename': 'test_failure.txt'})
 
     @staticmethod
     def test_translate_requirements():
@@ -333,10 +383,32 @@ class TestGenerator(object):
         works as expected.
         """
         class _OutputRequirements(Generator):
-            def _translate(self, filename):
-                return {filename+'.txt': 'hukarz'}
+            def _translate(self, options):
+                return {options['filename']+'.txt': 'hukarz'}
 
         scanner = RegularGrammar('test', {'foo': 'bar'})
         parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
         generator = _OutputRequirements(scanner, parser)
-        generator.output('test_success.txt')
+        generator.output({'filename': 'test_success.txt'})
+
+    @staticmethod
+    def test_translate_option_types():
+        """
+        Ensure correctly overwriting the abstract method in the child Generator
+        works as expected when given option with the correct types.
+        """
+        class _OutputRequirements(Generator):
+            def _translate(self, options):
+                return {options['filename']+'.txt': 'hukarz'}
+
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        generator = _OutputRequirements(scanner, parser)
+        generator.output({
+            'filename': 'test_success.txt',
+            'encoding': 'direct',
+            'foo': False,
+            'bar': 45,
+            'baz': 4.7,
+            'ber': 450L
+        })

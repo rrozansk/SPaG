@@ -1,20 +1,22 @@
+"""Golang generator.
+
+A scanner/parser generator targeting go. Generates a single golang (.go) file.
 """
-A scanner/parser generator targeting go.
-Generates a single golang (.go) file.
-"""
-from scanner_parser_generator.generator import Generator
+from spag.generator import Generator
 
 
 class Go(Generator):
-    """
+    """Golang generator.
+
     A simple object for compiling scanner's and/or parser's to golang programs.
     """
 
-    def _translate(self, filename):
-        """
+    def _translate(self, options):
+        """Override the superclass method to generate source code.
+
         Attempt to generate the golang (.go) source file with the corresponding
         scanner and/or parser currently set in the object.
         """
         return {
-            filename+'.go': super(Go, self)._translate(filename)
+            options['filename']+'.go': super(Go, self)._translate(options)
         }

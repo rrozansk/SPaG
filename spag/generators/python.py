@@ -1,20 +1,23 @@
+"""Python generator.
+
+A scanner/parser generator targeting python. Generates a single python (.py)
+file.
 """
-A scanner/parser generator targeting python.
-Generates a single python (.py) file.
-"""
-from scanner_parser_generator.generator import Generator
+from spag.generator import Generator
 
 
 class Python(Generator):
-    """
+    """Python generator.
+
     A simple object for compiling scanner's and/or parser's to python programs.
     """
 
-    def _translate(self, filename):
-        """
+    def _translate(self, options):
+        """Override the superclass method to generate source code.
+
         Attempt to generate the python (.py) source file with the corresponding
         scanner and/or parser currently set in the object.
         """
         return {
-            filename+'.py': super(Python, self)._translate(filename)
+            options['filename']+'.py': super(Python, self)._translate(options)
         }

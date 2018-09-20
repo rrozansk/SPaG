@@ -1,40 +1,42 @@
+"""Base Generator which protects against bad input and return values.
+
+The Generator is a simple superclass which protect subclasses from bad user
+input when trying to generate output programs. Likewise, it also protects the
+user from bad developer output. It does this by performing simple validations
+before and after program generation is attempted. The base Generator also
+controls the getting/setting of the parser and/or scanner used for code
+generation. Each targeted language for generation should be implemented as a
+subclass which only needs to override the '_translate(self, options)' method.
 """
-The Generator is a simple superclass to control the getting/setting of the
-parser and/or scanner used for code generation. Each targeted language for
-generation should be implemented as a subclass which only needs to override
-the output method.
-"""
-#from os import listdir
-#from os.path import dirname, realpath, join
 from spag.parser import ContextFreeGrammar
 from spag.scanner import RegularGrammar
 
 
-SUPPORTED = ['c', 'go', 'python']
-# FIXME/TODO dynamically find and populate SUPPORTED
-#for _file in listdir(join(dirname(realpath(__file__)), 'generators')):
-#    if _file.endswith('.py') and _file != '__init__.py':
-#        SUPPORTED.append(_file.rsplit('.py', 1)[0])
-
-
 class Generator(object):
-    """
-    A simple superclass object for getting and setting RegularGrammars and/or
-    ContextFreeGrammars so subclasses which override the output method may
-    generate a scanner and/or parser for the specified language of interest.
+    """The Base Generator which performs [in/out]put validations.
+
+    A simple superclass object for performing validation on user input as well
+    as developer output so subclasses can focus on translating the IR returned
+    by the ContextFreeGrammar and RegularGrammar classes.
+
+    Attributes:
+      scanner (RegularGrammar): The scanner to be used for generation.
+      parser  (ContextFreeGrammar): The parser to be used for generation.
     """
 
     def __init__(self, scanner=None, parser=None):
-        """
-        Set the scanner and/or parser to be used for code generation, if any.
+        """Construct a new base Generator.
 
-        Runtime: O(1) - constant.
+        Set the scanner and/or parser to be used for code generation, if any,
+        during the construction of the base generator.
 
-        Input Type:
-          scanner:      None | RegularGrammar
-          parser:       None | ContextFreeGrammar
+        Args:
+          scanner (RegularGrammar): The scanner to be used for generation.
+          parser  (ContextFreeGrammar): The parser to be used for generation.
 
-        Output Type: Generator | TypeError
+        Raises:
+          TypeError: If `scanner` is not None or a RegularGrammar.
+          TypeError: If `parser` is not None or a ContextFreeGrammar.
         """
         if not isinstance(scanner, (RegularGrammar, type(None))):
             raise TypeError('scanner not a RegularGrammar')
@@ -45,16 +47,17 @@ class Generator(object):
         self.scanner = scanner
         self.parser = parser
 
-    def set_scanner(self, scanner):
-        """
-        Set the scanner to be used for code generation, if any.
+    def set_scanner(self, scanner=None):
+        """Set the scanner to be used for generation.
 
-        Runtime: O(1) - constant.
+        [Re]Set the scanner to be used for code generation, if any. This allows
+        The child language Generators to be reused rather than recreated.
 
-        Input Type:
-          scanner: None | RegularGrammar
+        Args:
+          scanner (RegularGrammar): The scanner to be used for generation.
 
-        Output Type: None | TypeError
+        Raises:
+          TypeError: If `scanner` is not None or a RegularGrammar.
         """
         if not isinstance(scanner, (RegularGrammar, type(None))):
             raise TypeError('scanner not a RegularGrammar or None')
@@ -62,25 +65,27 @@ class Generator(object):
         self.scanner = scanner
 
     def get_scanner(self):
-        """
+        """Get the scanner to be used for generation.
+
         Query for the scanner to be used for code generation, if any.
 
-        Runtime: O(1) - constant.
-
-        Output Type: None | RegularGrammar
+        Return:
+          None: If the scanner is not set.
+          RegularGrammar: If scanner was set.
         """
         return self.scanner
 
-    def set_parser(self, parser):
-        """
-        Set the parser to be used for code generation, if any.
+    def set_parser(self, parser=None):
+        """Set the parser to be used for generation.
 
-        Runtime: O(1) - constant.
+        [Re]Set the parser to be used for code generation, if any. This allows
+        The child language Generators to be reused rather than recreated.
 
-        Input Type:
-          parser: None | ContextFreeGrammar
+        Args:
+          parser (ContextFreeGrammar): The parser to be used for generation.
 
-        Output Type: None | TypeError
+        Raises:
+          TypeError: If `parser` is not None or a ContextFreeGrammar.
         """
         if not isinstance(parser, (ContextFreeGrammar, type(None))):
             raise TypeError('parser not a ContextFreeGrammar or None')
@@ -88,54 +93,87 @@ class Generator(object):
         self.parser = parser
 
     def get_parser(self):
-        """
+        """Get the parser to be used for generation.
+
         Query for the parser to be used for code generation, if any.
 
-        Runtime: O(1) - constant.
-
-        Output Type: None | ContextFreeGrammar
+        Return:
+          None: If the parser is not set.
+          ContextFreeGrammar: If the parser was set.
         """
         return self.parser
 
-    def _translate(self, filename):
-        """
-        Override this method in subclasses which should translate the internal
-        representation of the given scanner and/or parser to the targeted
-        language. It should return the files and there content in a dictionary
-        allowing multiple files to be returned for a given language. This is the
-        only required function a child generators must implement.
+    def _translate(self, options):
+        """The method which subclasses must override to construct the output.
 
-        Input Type:
-          filename: String
+        Override this method in subclasses which should translate the (IR)
+        intermediate representation of the given scanner and/or parser to the
+        targeted language. It should return the files and there content in a
+        dictionary allowing multiple files to be returned for a given language.
+        This is the only required function a child generators must implement.
 
-        Output Type: Dict[String, String] |
-                     NotImplementedError
+        Args:
+          options (dict[str, union[str, bool, int, float, long]]): Choices to be
+              used for code generation.
+
+        Return:
+          dict[str, str]: Generated file names/paths and associated content.
+
+        Raises:
+          NotImplementedError: If not overriden in subclasses.
         """
         raise NotImplementedError('Base Generator incapable of translation')
 
-    def output(self, filename):
+    @staticmethod
+    def _verify_options(options):
+        """Verify the given options for generation.
+
+        Ensure the options given for generation are valid and non-empty.
+
+        Args:
+          options (dict[str, union[str, bool, int, float, long]]): Choices to be
+              used for code generation.
+
+        Raises:
+          TypeError:  If options not a dictionary.
+          ValueError: If options is empty.
+          TypeError:  If option name not of type string.
+          ValueError: If option name is empty.
+          TypeError:  If option value is not a str, bool, int, float, or long.
         """
-        Output the given scanner and or parser in the given language.
+        if not isinstance(options, dict):
+            raise TypeError('options not a dict')
 
-        Input Type:
-          filename: String
+        if not options:
+            raise ValueError('options must be non empty')
 
-        Output Type: Dict[String, String] |
-                     TypeError |
-                     ValueError |
-                     NotImplementedError
+        for option, value in options.items():
+            if not isinstance(option, str):
+                raise TypeError('option name must be of type string')
+
+            if not option:
+                raise ValueError('option name must be non empty')
+
+            if not isinstance(value, (str, bool, int, float, long)):
+                raise TypeError('option value must be of type: str, bool, int, float, long')
+
+    @staticmethod
+    def _verify_output(files):
+        """Verify the output returned from the subclass generator.
+
+        Ensure the subclasses generated files/content are valid and non-empty.
+
+        Args:
+          files (dict[str, str]): Generated file names/paths and content.
+
+        Raises:
+          TypeError:  If the generated output is not of type dict.
+          ValueError: If no output was generated.
+          TypeError:  If any generated filename is not of type string.
+          ValueError: If an empty filename was generated.
+          TypeError:  If any generated content is not of type string.
+          ValueError: If generated file contents are empty.
         """
-        if not isinstance(filename, str):
-            raise TypeError('filename not a string')
-
-        if not filename:
-            raise ValueError('filename must be non empty')
-
-        if not self.scanner and not self.parser:
-            raise ValueError('Scanner and/or parser must be provided for generation')
-
-        files = self._translate(filename)
-
         if not isinstance(files, dict):
             raise TypeError('generated files must be of type dict')
 
@@ -154,5 +192,47 @@ class Generator(object):
 
             if not content:
                 raise ValueError('generated file content must be non empty')
+
+    def output(self, options):
+        """Generate a scanner and/or parser with the given options.
+
+        Translate the compiled intermediate representation (IR) of the set
+        scanner and/or parser to a given output language confined by the choices
+        present in options. well known option include:
+          filename (str):  the basename to be used for naming.
+          encoding (str):  'direct' or 'table' encoding of scanner/parser.
+          scanner  (bool): whether or not to generate a scanner.
+          parser   (bool): whether or not to generate a parser.
+
+        Args:
+          options (dict[str, union[str, bool, int, float, long]]): Choices to be
+              used for code generation.
+
+        Return:
+          dict[str, str]: Generated file names/paths and associated content.
+
+        Raises:
+          NotImplementedError: If generation is attempted with base Generator.
+          ValueError: If no scanner or parser is provided for generation.
+          TypeError:  If options not a dictionary.
+          ValueError: If options is empty.
+          TypeError:  If option name not of type string.
+          ValueError: If option name is empty.
+          TypeError:  If option value must not of type string or bool.
+          TypeError:  If the generated output is not of type dict.
+          ValueError: If no output was generated.
+          TypeError:  If any generated filename is not of type string.
+          ValueError: If an empty filename was generated.
+          TypeError:  If any generated content is not of type string.
+          ValueError: If generated file contents are empty.
+        """
+        if not self.scanner and not self.parser:
+            raise ValueError('scanner and/or parser must be provided for generation')
+
+        Generator._verify_options(options)
+
+        files = self._translate(options)
+
+        Generator._verify_output(files)
 
         return files

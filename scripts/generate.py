@@ -1,47 +1,24 @@
 #! /usr/bin/python
 # pylint: disable=too-few-public-methods
 
-"""
-A python CLI script to drive the scanner/parser generation. It deals with all
-the file I/O including the definition of the input specification. It also
-properly handles the dynamic importing required for the generators of interest.
+"""A Python CLI script for scanner/parser generation using SPaG.
+
+This script deals with all the file I/O including the definition of the input
+file specification. It also properly handles the dynamic importing required
+for the generators of interest.
 """
 from argparse import ArgumentParser, Action
 from os.path import isfile
 from sys import stdout
 from time import time
-from spag.generator import SUPPORTED as languages
+from spag.generators import __all__ as languages
 from spag.parser import ContextFreeGrammar
 from spag.scanner import RegularGrammar
 
-class DynamicGeneratorUninstall(Action):
-    """
-    Dynamically uninstall a generator and exit.
-    """
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        # TODO/FIXME
-        # rm file(s) from the distribution location of 'generators' dir
-        exit(0)
-
-
-class DynamicGeneratorInstall(Action):
-    """
-    Dynamically install a new generator for src code output and exit.
-    """
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        # TODO/FIXME
-        # cp file(s) to the distribution location of 'generators' dir
-        exit(0)
-
 class DynamicGeneratorImport(Action):
-    """
-    Dynamically import the required generators for src code output.
-    """
+    """Dynamically import the generator(s) required for source output."""
 
     def __call__(self, parser, namespace, values, option_string=None):
-        # FIXME
         generators = []
         for language in values:
             cls = language.capitalize()
@@ -51,9 +28,7 @@ class DynamicGeneratorImport(Action):
         setattr(namespace, self.dest, generators)
 
 class CollectSpecification(Action):
-    """
-    Collect the specification for a scanner and/or parser from a file.
-    """
+    """Collect the specification for a scanner or parser from file."""
 
     def __call__(self, parser, namespace, values, option_string=None):
         name, rules = None, []
@@ -79,31 +54,30 @@ class CollectSpecification(Action):
         setattr(namespace, self.dest, {'name': name, 'rules': rules})
 
 CLI = ArgumentParser(
-    prog='Scanner Parser Generator',
+    prog='SPaG-CLI',
     usage='$ generate.py --help',
     description='''
-    Simple CLI (Command Line Interface) program to generate lexer(s) and/or
-    parser(s) for a given input specification to a set of specified output
-    languages. For information on data input, capabilities, limitation and
-    more see the README or have a look at src/scanner/scanner.py and
-    src/parser/parser.py located here:
-    https://github.com/rrozansk/SPaG
+    A simple CLI (Command Line Interface) script which reads some input file
+    specification(s) to generate lexers and/or parsers for a given set of
+    output languages with the use of SPaG.
     ''',
     epilog='''
-    Examples located here:
-    https://github.com/rrozansk/SPaG/examples
+    For more information on SPaG, it capabilities, limitation, and more, as well
+    as numerous input file examples for scanners and parsers see the README.md
+    and examples/ directory located in the github repository here:
+    https://github.com/rrozansk/SPaG
     '''
 )
 
+CLI.add_argument('-e', '--encoding', type=str, default='direct',
+                 choices=('table', 'direct'),
+                 help='encoding to use for the generated output')
 CLI.add_argument('-f', '--force', action='store_true',
                  help='overwrite output file(s) if already present')
 CLI.add_argument('-g', '--generate', type=str, nargs='+', default=[],
                  choices=languages, required=True,
                  action=DynamicGeneratorImport,
                  help='target language(s) for code generation')
-CLI.add_argument('-i', '--install', type=str, nargs='+', default=[],
-                 action=DynamicGeneratorInstall,
-                 help='install code generator(s)')
 CLI.add_argument('-o', '--output', action='store', type=str, default='out',
                  help='base filename to use for generated output')
 CLI.add_argument('-p', '--parser', type=open, action=CollectSpecification,
@@ -112,9 +86,6 @@ CLI.add_argument('-s', '--scanner', type=open, action=CollectSpecification,
                  help='file containing scanner name and type/token pairs')
 CLI.add_argument('-t', '--time', action='store_true',
                  help='display the wall time taken for each component')
-CLI.add_argument('-u', '--uninstall', type=str, nargs='+', default=[],
-                 action=DynamicGeneratorUninstall,
-                 help='uninstall code generator(s)')
 CLI.add_argument('-v', '--verbose', action='store_true',
                  help='output more information when running')
 CLI.add_argument('-V', '--version', action='version',
@@ -158,13 +129,20 @@ try:
             stdout.write('Elapsed time (parser): {0}\n'.format(END-START))
             stdout.flush()
 
+
+    OPTIONS = {
+        'filename': ARGS['output'],
+        'encoding': ARGS['encoding'],
+        'scanner': True if ARGS['scanner'] else False,
+        'parser': True if ARGS['parser'] else False
+    }
     for GENERATOR in ARGS['generate']:
         GENERATOR = GENERATOR(SCANNER, PARSER)
         if ARGS['verbose']:
             stdout.write('Generating {0} code...'.format(type(GENERATOR)))
             stdout.flush()
         START = time()
-        FILES = GENERATOR.output(ARGS['output'])
+        FILES = GENERATOR.output(OPTIONS)
         END = time()
         if ARGS['verbose']:
             stdout.write('done\n')

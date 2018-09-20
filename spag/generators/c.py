@@ -1,16 +1,18 @@
 # pylint: disable=invalid-name
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
-"""
-A scanner/parser generator targeting c.
-Generates header (.h) and source (.c) files.
+"""C generator.
+
+A scanner/parser generator targeting c. Generates header (.h) and source (.c)
+files.
 """
 import datetime
-from scanner_parser_generator.generator import Generator
+from spag.generator import Generator
 
 
 class C(Generator):
-    """
+    """C generator.
+
     A simple object for compiling scanner's and/or parser's to c programs.
     """
 
@@ -239,7 +241,7 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
 
         return program
 
-    # FIXME:
+    # NOTE:
     # - switch to internal buffer, allowing for pipes.
         # -> more scanner state and a buffer API?
         # - NFA to be updated with types in final state for uniqueness when ->dfa->hopcroft??
@@ -370,14 +372,14 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
 """.format(name, self._encode_dfa(name), self._generate_section_header("scanner"))
 
     def _generate_ast_api(self, name):
-        # TODO: define AST prototypes and defs
+        # NOTE: define AST prototypes and defs
         _ = name
         _ = self
         ast_header, ast_source = "", ""
         return ast_header, ast_source
 
     def _encode_bnf(self, name):
-        # TODO: graph encoded as GOTOs;
+        # NOTE: graph encoded as GOTOs;
         # automatically throw away tokens not in the bnf (whitespace, comments, etc)
         _ = name
         _ = self
@@ -396,21 +398,23 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
         #            self._parser.start(), production_rules)
 
     def _generate_parser_api(self, name):
-        # TODO: define parser prototypes and defs
+        # NOTE: define parser prototypes and defs
         parser_header, parser_source = "", """\
         {0} {1} {2}
         """.format(name, self._encode_bnf(name), self._generate_section_header("parser"))
         return parser_header, parser_source
 
-    def _translate(self, filename):
-        """
+    def _translate(self, options):
+        """Override the superclass method to generate source code.
+
         Attempt to generate the c source(.c) and header(.h) files for the
         corresponding scanner and/or parser currently set in the object.
         """
         author = '**AUTO GENERATED**'
         source = 'https://github.com/rrozansk/Scanner-Parser-Generator'
         warning = 'WARNING!! AUTO GENERATED FILE, DO NOT EDIT!'
-        libs = ["stdio"]
+        libs = ['stdio']
+        filename = options['filename']
 
         header = self._generate_file_header(filename+".h",
                                             author,
