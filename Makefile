@@ -17,15 +17,19 @@
 ################################################################################
 .PHONY: help
 help:
-	@printf '*********************** SUPPORTED COMMANDS ***********************\n'
-	@printf '$$ make help       Print this message and exit.\n'
-	@printf '$$ make env        Construct a virtual env with dependencies.\n'
-	@printf '$$ make lint       Lint all the code using pylint.\n'
-	@printf '$$ make test       Unit test SPaG using pytest.\n'
-	@printf '$$ make distro     Build varying distributions of SPaG.\n'
-	@printf '$$ make install    Install SPaG from source.\n'
-	@printf '$$ make clean      Remove compiled, temp, and any installed files.\n'
-	@printf '$$ make sanity     Perform sanity with the help of other recipes.\n'
+	@printf '****************************** SUPPORTED COMMANDS ******************************\n'
+	@printf '$$ make help             Print this message and exit.\n'
+	@printf '$$ make env              Construct a virtual env with dependencies.\n'
+	@printf '$$ make lint             Lint all the code using pylint.\n'
+	@printf '$$ make test             Unit test SPaG using pytest.\n'
+	@printf '$$ make distro           Build varying distributions of SPaG.\n'
+	@printf '$$ make install          Install SPaG from source.\n'
+	@printf '$$ make clean            Remove compiled, temp, and any installed files.\n'
+	@printf '$$ make sanity           Perform sanity with the help of other recipes.\n'
+	@printf '$$ make test_upload      Test repository upload with test PyPI.\n'
+	@printf '$$ make upload           Upload built distributions to PyPI.\n'
+	@printf '$$ make test_download    Test SPaG download and install from test PyPI.\n'
+	@printf '$$ make download         Download and install SPaG from PyPI.\n'
 
 ################################################################################
 #                                                                              #
@@ -89,9 +93,9 @@ distro: setup.py
 .PHONY: clean
 clean:
 	\rm -rf testing_venv
-	\rm -rf spag.egg-info/ build/ dist/
+	\rm -rf SPaG.egg-info/ build/ dist/
 	\rm -rf /usr/local/bin/generate.py
-	\rm -rf /usr/local/lib/python2.7/dist-packages/spag-*
+	\rm -rf /usr/local/lib/python2.7/dist-packages/SPaG-*
 	\find . -type f -name '*~' -delete
 	\find . -type f -name '*.o' -delete
 	\find . -type f -name '*.swp' -delete
@@ -109,3 +113,42 @@ clean:
 sanity: env
 	-. testing_venv/bin/activate; make lint && make test; deactivate
 	$(MAKE) clean
+
+################################################################################
+#                                                                              #
+# Test built SPaG package distributions are uploaded properly by pushing them  #
+# to the test PyPI repository.                                                 #
+# NOTE: Requires authentication. Must be an authorized maintainer.             #
+#                                                                              #
+################################################################################
+.PHONY: test_upload
+test_upload: distro
+	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+################################################################################
+#                                                                              #
+# Upload built SPaG package distributions to the PyPI repository.              #
+# NOTE: Requires authentication. Must be an authorized maintainer.             #
+#                                                                              #
+################################################################################
+.PHONY: upload
+upload: distro
+	twine upload --repository-url https://pypi.org/legacy/ dist/*
+
+################################################################################
+#                                                                              #
+# Test SPaG package download and installation from the test PyPI repository.   #
+#                                                                              #
+################################################################################
+.PHONY: test_download
+test_download:
+	pip install --index-url https://test.pypi.org/simple/ SPaG
+
+################################################################################
+#                                                                              #
+# Download and install the SPaG package distribution from the PyPI repository. #
+#                                                                              #
+################################################################################
+.PHONY: download
+download:
+	pip install --index-url https://pypi.org/simple/ SPaG
