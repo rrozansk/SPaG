@@ -5,7 +5,7 @@
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-public-methods
 """
-Testing for RegularGrammar objects located in src/scanner/scanner.py
+Testing for RegularGrammar objects located in spag/scanner.py
 """
 from itertools import permutations
 import pytest

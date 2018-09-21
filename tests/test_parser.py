@@ -1,5 +1,5 @@
 """
-Testing for ContextFreeGrammar objects located in src/parser/parser.py
+Testing for ContextFreeGrammar objects located in spag/parser.py
 """
 import pytest
 from spag.parser import ContextFreeGrammar

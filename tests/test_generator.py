@@ -2,7 +2,7 @@
 # pylint: disable=too-many-public-methods
 # pylint: disable=invalid-name
 """
-Testing for Generator objects located in src/generators/__init__.py
+Testing for Generator objects located in src/generator.py
 """
 import pytest
 from spag.scanner import RegularGrammar
