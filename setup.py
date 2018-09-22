@@ -1,6 +1,7 @@
-"""
+"""SPaG package management.
+
 Create the PyPI package distribution(s) for use with python pip or install
-directly.
+directly from source.
 """
 from setuptools import setup
 
@@ -18,11 +19,10 @@ setup(
     maintainer_email='',
     description=(
         'A module containing scanner (regular expression) and parser (BNF) '
-        'compilers as well as a base generator which all target language '
-        'generators must inherit from, allowing any specific language of '
-        'interest to be targeted. A script is also included which reads the '
-        'respective specification(s) from file and outputs the resulting code '
-        'to disk.'
+        'compilers as well as a base generator, which provides protection and '
+        'validation, from which all target language generators must inherit '
+        'from. A script is also included which reads the respective '
+        'specification(s) from file and outputs the resulting code to disk.'
     ),
     long_description=README,
     long_description_content_type='text/markdown',
@@ -30,24 +30,54 @@ setup(
     download_url='https://github.com/rrozansk/SPaG',
     python_requires='>= 2.7.0',
     keywords=' '.join([
+        'abstract-syntax-tree',
+        'ast',
+        'AST',
+        'Backus-Naur-form',
+        'Backus-normal-form',
         'bnf',
         'BNF',
+        'command-line-interface',
         'cli',
         'CLI',
         'code-generation',
+        'compiler',
         'context-free-grammar',
+        'deterministic-finite-automaton',
+        'dfa',
+        'DFA',
+        'dfa-minimization',
+        'direct-encoding',
+        'finite-state-machine',
+        'first-set',
+        'follow-set',
+        'fsm',
+        'FSM',
+        'lexeme',
         'lexer',
         'lexer-generator',
         'lexical-analysis',
         'll1',
         'LL1',
         'LL(1)',
+        'longest-match',
+        'maximal-munch',
+        'nfa',
+        'NFA',
+        'nondeterministic-finite-automaton',
+        'nonterminal(s)',
         'parser',
         'parser-generator',
+        'production-rule(s)',
         'regular-expression(s)',
         'regular-grammar',
         'scanner',
         'scanner-generator',
+        'script',
+        'state-transition-table',
+        'table-encoding',
+        'terminal(s)',
+        'tokenization',
         'tokenizer',
         'tokens'
     ]),
