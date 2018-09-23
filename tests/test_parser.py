@@ -374,12 +374,12 @@ class TestParser(object):
             'first': {
                 'a': set(['a']),
                 'b': set(['b']),
-                '<S>': set(['b', 'a', 1]),
-                '<E>': set(['b', 1])
+                '<S>': set(['b', 'a', ContextFreeGrammar.EPSILON]),
+                '<E>': set(['b', ContextFreeGrammar.EPSILON])
             },
             'follow': {
-                '<S>': set([0]),
-                '<E>': set([0, 'a'])
+                '<S>': set([ContextFreeGrammar.END_OF_INPUT]),
+                '<E>': set([ContextFreeGrammar.END_OF_INPUT, 'a'])
             },
             'rules': [
                 ('<S>', ['<E>']),
@@ -388,7 +388,7 @@ class TestParser(object):
                 ('<E>', [])
             ],
             'table': [
-                [' ', 'a', 0, 'b'],
+                [' ', 'a', ContextFreeGrammar.END_OF_INPUT, 'b'],
                 ['<S>', set([1]), set([0]), set([0, 1])],
                 ['<E>', set([3]), set([3]), set([2])]
             ]
@@ -416,10 +416,10 @@ class TestParser(object):
                 'a': set(['a']),
                 'b': set(['b']),
                 '<S>': set(['a']),
-                '<A>': set(['a', 1])
+                '<A>': set(['a', ContextFreeGrammar.EPSILON])
             },
             'follow': {
-                '<S>': set([0]),
+                '<S>': set([ContextFreeGrammar.END_OF_INPUT]),
                 '<A>': set(['a'])
             },
             'rules': [
@@ -428,7 +428,7 @@ class TestParser(object):
                 ('<A>', [])
             ],
             'table': [
-                [' ', 'a', 0, 'b'],
+                [' ', 'a', ContextFreeGrammar.END_OF_INPUT, 'b'],
                 ['<S>', set([0]), set([]), set([])],
                 ['<A>', set([1, 2]), set([]), set([])]
             ]
@@ -470,11 +470,11 @@ class TestParser(object):
                 '<F>': set(['(', 'id'])
             },
             'follow': {
-                '<E>': set([0, '+', '-', ')']),
+                '<E>': set([ContextFreeGrammar.END_OF_INPUT, '+', '-', ')']),
                 '<A>': set(['(', 'id']),
-                '<T>': set([0, '+', '-', '*', ')']),
+                '<T>': set([ContextFreeGrammar.END_OF_INPUT, '+', '-', '*', ')']),
                 '<M>': set(['(', 'id']),
-                '<F>': set([0, '+', '-', '*', ')'])
+                '<F>': set([ContextFreeGrammar.END_OF_INPUT, '+', '-', '*', ')'])
             },
             'rules': [
                 ('<E>', ['<E>', '<A>', '<T>']),
@@ -488,7 +488,7 @@ class TestParser(object):
                 ('<F>', ['id'])
             ],
             'table': [
-                [' ', 0, 'id', ')', '(', '+', '*', '-'],
+                [' ', ContextFreeGrammar.END_OF_INPUT, 'id', ')', '(', '+', '*', '-'],
                 ['<E>', set([]), set([0, 1]), set([]), set([0, 1]), set([]),
                  set([]), set([])],
                 ['<A>', set([]), set([]), set([]), set([]), set([2]), set([]),
@@ -521,11 +521,11 @@ class TestParser(object):
                 'a': set(['a']),
                 'b': set(['b']),
                 '<S>': set(['a', 'b']),
-                '<A>': set([1]),
-                '<B>': set([1])
+                '<A>': set([ContextFreeGrammar.EPSILON]),
+                '<B>': set([ContextFreeGrammar.EPSILON])
             },
             'follow': {
-                '<S>': set([0]),
+                '<S>': set([ContextFreeGrammar.END_OF_INPUT]),
                 '<A>': set(['b', 'a']),
                 '<B>': set(['a', 'b'])
             },
@@ -536,7 +536,7 @@ class TestParser(object):
                 ('<B>', [])
             ],
             'table': [
-                [' ', 0, 'a', 'b'],
+                [' ', ContextFreeGrammar.END_OF_INPUT, 'a', 'b'],
                 ['<S>', set([]), set([0]), set([1])],
                 ['<A>', set([]), set([2]), set([2])],
                 ['<B>', set([]), set([3]), set([3])]
@@ -572,21 +572,21 @@ class TestParser(object):
                 ')': set([')']),
                 'id': set(['id']),
                 '<E>': set(['(', 'id']),
-                '<E\'>': set(['+', '-', 1]),
+                '<E\'>': set(['+', '-', ContextFreeGrammar.EPSILON]),
                 '<A>': set(['+', '-']),
                 '<T>': set(['(', 'id']),
-                '<T\'>': set([1, '*']),
+                '<T\'>': set([ContextFreeGrammar.EPSILON, '*']),
                 '<M>': set(['*']),
                 '<F>': set(['(', 'id'])
             },
             'follow': {
-                '<E>': set([0, ')']),
-                '<E\'>': set([0, ')']),
+                '<E>': set([ContextFreeGrammar.END_OF_INPUT, ')']),
+                '<E\'>': set([ContextFreeGrammar.END_OF_INPUT, ')']),
                 '<A>': set(['(', 'id']),
-                '<T>': set([')', '+', '-', 0]),
-                '<T\'>': set([')', '+', '-', 0]),
+                '<T>': set([')', '+', '-', ContextFreeGrammar.END_OF_INPUT]),
+                '<T\'>': set([')', '+', '-', ContextFreeGrammar.END_OF_INPUT]),
                 '<M>': set(['(', 'id']),
-                '<F>': set([')', '+', '-', '*', 0])
+                '<F>': set([')', '+', '-', '*', ContextFreeGrammar.END_OF_INPUT])
             },
             'rules': [
                 ('<E>', ['<T>', '<E\'>']),
@@ -602,7 +602,7 @@ class TestParser(object):
                 ('<F>', ['id'])
             ],
             'table': [
-                [' ', 0, 'id', ')', '(', '+', '*', '-'],
+                [' ', ContextFreeGrammar.END_OF_INPUT, 'id', ')', '(', '+', '*', '-'],
                 ['<E>', set([]), set([0]), set([]), set([0]), set([]), set([]),
                  set([])],
                 ['<E\'>', set([2]), set([]), set([2]), set([]), set([1]),
@@ -661,7 +661,7 @@ class TestParser(object):
                 '}': set(['}']),
                 '<STMT>': set(['constant', '++', 'zero?', 'while', 'not', '--',
                                'id', 'if']),
-                '<STMTS>': set([1, 'constant', '++', 'zero?', 'while', 'not',
+                '<STMTS>': set([ContextFreeGrammar.EPSILON, 'constant', '++', 'zero?', 'while', 'not',
                                 '--', 'id', 'if']),
                 '<BLOCK>': set(['constant', '++', 'zero?', 'while', 'not', '--',
                                 '{', 'id', 'if']),
@@ -669,13 +669,13 @@ class TestParser(object):
                 '<EXPR>': set(['++', 'not', 'constant', 'zero?', '--', 'id'])
             },
             'follow': {
-                '<STMT>': set([0, 'constant', '++', 'not', 'while', 'zero?',
+                '<STMT>': set([ContextFreeGrammar.END_OF_INPUT, 'constant', '++', 'not', 'while', 'zero?',
                                '--', '}', 'id', 'if']),
-                '<STMTS>': set([0, '}']),
+                '<STMTS>': set([ContextFreeGrammar.END_OF_INPUT, '}']),
                 '<BLOCK>': set([]),
-                '<TERM>': set([0, 'then', 'constant', 'do', 'not', 'id', 'if',
+                '<TERM>': set([ContextFreeGrammar.END_OF_INPUT, 'then', 'constant', 'do', 'not', 'id', 'if',
                                '++', '--', 'while', 'zero?', '->', '}']),
-                '<EXPR>': set([0, 'then', 'constant', 'do', '++', '--',
+                '<EXPR>': set([ContextFreeGrammar.END_OF_INPUT, 'then', 'constant', 'do', '++', '--',
                                'while', 'not', 'zero?', '}', 'id', 'if'])
             },
             'rules': [
@@ -695,7 +695,7 @@ class TestParser(object):
                 ('<STMTS>', [])
             ],
             'table': [
-                [' ', 0, 'then', 'constant', 'do', '++', 'zero?', 'while',
+                [' ', ContextFreeGrammar.END_OF_INPUT, 'then', 'constant', 'do', '++', 'zero?', 'while',
                  'not', '--', '{', '->', '}', 'id', 'if'],
                 ['<STMT>', set([]), set([]), set([2]), set([]), set([2]),
                  set([2]), set([1]), set([2]), set([2]), set([]), set([]),
@@ -757,23 +757,23 @@ class TestParser(object):
                 '<OBJECT\'>': set(['}', 'string']),
                 '<MEMBERS>': set(['string']),
                 '<PAIR>': set(['string']),
-                '<MEMBERS\'>': set([1, ',']),
+                '<MEMBERS\'>': set([ContextFreeGrammar.EPSILON, ',']),
                 '<ARRAY>': set(['[']),
                 '<ARRAY\'>': set([']', 'string', 'number', 'bool', 'null', '{',
                                   '[']),
                 '<ELEMENTS>': set(['string', 'number', 'bool', 'null', '{',
                                    '[']),
-                '<ELEMENTS\'>': set([1, ','])
+                '<ELEMENTS\'>': set([ContextFreeGrammar.EPSILON, ','])
             },
             'follow': {
-                '<VALUE>': set([0, ']', '}', ',']),
-                '<OBJECT>': set([0, ']', '}', ',']),
-                '<OBJECT\'>': set([0, ']', '}', ',']),
+                '<VALUE>': set([ContextFreeGrammar.END_OF_INPUT, ']', '}', ',']),
+                '<OBJECT>': set([ContextFreeGrammar.END_OF_INPUT, ']', '}', ',']),
+                '<OBJECT\'>': set([ContextFreeGrammar.END_OF_INPUT, ']', '}', ',']),
                 '<MEMBERS>': set(['}']),
                 '<PAIR>': set(['}', ',']),
                 '<MEMBERS\'>': set(['}']),
-                '<ARRAY>': set([0, ']', '}', ',']),
-                '<ARRAY\'>': set([0, ']', '}', ',']),
+                '<ARRAY>': set([ContextFreeGrammar.END_OF_INPUT, ']', '}', ',']),
+                '<ARRAY\'>': set([ContextFreeGrammar.END_OF_INPUT, ']', '}', ',']),
                 '<ELEMENTS>': set([']']),
                 '<ELEMENTS\'>': set([']'])
             },
@@ -798,7 +798,7 @@ class TestParser(object):
                 ('<ELEMENTS\'>', [',', '<ELEMENTS>']),
                 ('<ELEMENTS\'>', [])
             ],
-            'table': [[' ', 0, ':', 'string', ']', 'number', ',', 'bool', '{',
+            'table': [[' ', ContextFreeGrammar.END_OF_INPUT, ':', 'string', ']', 'number', ',', 'bool', '{',
                        'null', '}', '['],
                       ['<PAIR>', set([]), set([]), set([10]), set([]),
                        set([]), set([]), set([]), set([]), set([]),
@@ -861,22 +861,22 @@ class TestParser(object):
                 '=': set(['=']),
                 '[': set(['[']),
                 ']': set([']']),
-                '<INI>': set([1, '[']),
+                '<INI>': set([ContextFreeGrammar.EPSILON, '[']),
                 '<SECTION>': set(['[']),
                 '<HEADER>': set(['[']),
-                '<SETTINGS>': set([1, 'string']),
+                '<SETTINGS>': set([ContextFreeGrammar.EPSILON, 'string']),
                 '<KEY>': set(['string']),
                 '<SEP>': set([':', '=']),
                 '<VALUE>': set(['string', 'number', 'bool'])
             },
             'follow': {
-                '<INI>': set([0]),
-                '<SECTION>': set([0, '[']),
-                '<HEADER>': set([0, '[', 'string']),
-                '<SETTINGS>': set([0, '[']),
+                '<INI>': set([ContextFreeGrammar.END_OF_INPUT]),
+                '<SECTION>': set([ContextFreeGrammar.END_OF_INPUT, '[']),
+                '<HEADER>': set([ContextFreeGrammar.END_OF_INPUT, '[', 'string']),
+                '<SETTINGS>': set([ContextFreeGrammar.END_OF_INPUT, '[']),
                 '<KEY>': set([':', '=']),
                 '<SEP>': set(['string', 'number', 'bool']),
-                '<VALUE>': set([0, '[', 'string'])
+                '<VALUE>': set([ContextFreeGrammar.END_OF_INPUT, '[', 'string'])
             },
             'rules': [
                 ('<INI>', ['<SECTION>', '<INI>']),
@@ -892,7 +892,7 @@ class TestParser(object):
                 ('<VALUE>', ['number']),
                 ('<VALUE>', ['bool'])
             ],
-            'table': [[' ', 0, 'bool', 'string', '=', '[', ':', ']', 'number'],
+            'table': [[' ', ContextFreeGrammar.END_OF_INPUT, 'bool', 'string', '=', '[', ':', ']', 'number'],
                       ['<VALUE>', set([]), set([11]), set([9]), set([]),
                        set([]), set([]), set([]), set([10])],
                       ['<KEY>', set([]), set([]), set([6]), set([]),
@@ -944,9 +944,9 @@ class TestParser(object):
                                      'int', 'nil', 'string', 'symbol'])
             },
             'follow': {
-                '<atom>': set([0, ')', '.']),
-                '<pair>': set([0, ')', '.']),
-                '<expression>': set([0, ')', '.'])
+                '<atom>': set([ContextFreeGrammar.END_OF_INPUT, ')', '.']),
+                '<pair>': set([ContextFreeGrammar.END_OF_INPUT, ')', '.']),
+                '<expression>': set([ContextFreeGrammar.END_OF_INPUT, ')', '.'])
             },
             'rules': [
                 ('<expression>', ['<atom>']),
@@ -961,7 +961,7 @@ class TestParser(object):
                 ('<atom>', ['nil'])
             ],
             'table': [
-                [' ', 0, 'symbol', 'character', 'string', 'boolean', 'int',
+                [' ', ContextFreeGrammar.END_OF_INPUT, 'symbol', 'character', 'string', 'boolean', 'int',
                  'float', 'nil', '(', '.', ')'],
                 ['<expression>', set([]), set([0]), set([0]), set([0]),
                  set([0]), set([0]), set([0]), set([0]), set([1]), set([]),

@@ -1,58 +1,69 @@
-"""
- parser.py includes the implementation of ContextFreeGrammar objects.
+"""Programmatic creation of parsers through ContextFreeGrammar objects.
 
- The ContextFreeGrammar object represents a BNF (Backus-Naur form) input grammar
- programatically transformed into a parse table. While it is possible for any
- grammar to be specified, only LL(1) grammars are supported with the following
- requirements to successfully produce a parse table:
-
-   1. No left recursion (direct or indirect)
-   2. Must be left factored
-   3. No ambiguity
-
- If any of the above requirements are violated, or the grammar specified is not
- LL(1), there will be a conflict in the table. This manifests itself as an entry
- with more than one member. This means with the given set of input productions
- and with the aid of a single look ahead token it cannot be known what rule to
- choose in order to successfully produce a parse.
-
- BNF grammars must be specified following these guidelines:
-    - no syntax rules are enforced on nonterminals, but by conventions should be
-      delimited by a pair of angle brackets '< >'
-    - multiple productions per nonterminal may be specified, but each must be
-      delimited by a '|'
-    - production symbols must be delimited by whitespace
-    - epsilon may be specified by declaring an empty production
+The ContextFreeGrammar object represents a BNF (Backus-[Naur/Normal] Form)
+grammar which is programmatically transformed into a parse table. This is done
+by utilizing the grammars first and follow sets, which are computed internally,
+and applying that information to properly construct the resulting parse table.
 """
 from copy import deepcopy
 
 
 class ContextFreeGrammar(object):
-    """
-    ContextFreeGrammar represents a Backus-Naur form (BNF) input grammar
-    programatically transformed into a parse table.
+    """The ContextFreeGrammar object responsible for creating parse tables.
+
+    ContextFreeGrammar represents a Backus-[Naur/Normal] Form (BNF) language
+    grammar which is programmatically transformed into a parse table by finding
+    and utilizing the languages first and follow sets. Once created the object
+    cannot be mutated, and it will remain static for the rest of it's lifetime.
+    All information to properly understand and consume the parse table can be
+    queried through the exposed API functions.
+
+    Attributes:
+      END_OF_INPUT (int): The marker to use for End Of Input (i.e. '$').
+      EPSILON      (int): The marker to use for Epsilon.
     """
 
-    EOI = 0  # end of input marker ($)
-    EPS = 1  # Epsilon marker
+    END_OF_INPUT = 0
+    EPSILON = 1
 
     def __init__(self, name, productions, start):
-        """
+        """Construct a parse table for the given BNF grammar.
+
         Attempt to initialize a ContextFreeGramamr object with the specified
-        name, production rules and start rule name. Production rules are a dict
-        where each key is a nonterminal and the corresponding value is the
-        production rule. Multiple productions may be specified by seperating
-        them by a vertical bar (|). An empty production specifies an epsilon.
+        name, production rule(s) and start rule identifier. While it is possible
+        for any type of grammar to be specified, only left factored LL(1)
+        grammars will produce a parse table with a single member per entry. To
+        properly specify a LL(1) grammar the following requirements must be met:
 
-        If creation is unsuccessful a TypeError or ValueError will be thrown,
-        otherwise the results can be queried through the API provided below.
+          * No left recursion (direct or indirect)
+          * Must be left factored
+          * No ambiguity
 
-        Input Type:
-          name:        String
-          productions: Dict[String, String]
-          start:       String
+        If any of the above requirements are violated, or the grammar specified
+        is not LL(1), there will be a conflict in the table. This means with the
+        given set of input productions and with the aid of a single look ahead
+        token it cannot be known what rule to choose in order to successfully
+        produce a parse without backtracking.
 
-        Output Type: None | raise TypeError | raise ValueError
+        Args:
+          name (str): The name of the input grammar.
+          productions (dict[str, str]): The production rules of the grammar.
+              Dictionary keys are nonterminals and values are rules. an empty
+              rule can be used for epsilon and multiple rules may be specified
+              by delimiting them with a vertical bar ('|').
+          start (str): The start productions nonterminal identifier of the grammar.
+
+        Raises:
+          TypeError: if `name` is not a string
+          ValueError: if `name` is empty
+          TypeError: if `start` is not a string
+          ValueError: if `start` is empty
+          TypeError: if `productions` is not a dict
+          ValueError: if `productions` is empty
+          ValueError: if `start` not in `productions`
+          TypeError: if any `productions` nonterminal is not a string
+          ValueError: if any `productions` nonterminal is empty
+          TypeError: if any `productions` rule is not a string
         """
         if not isinstance(name, str):
             raise TypeError('name must be a string')
@@ -102,81 +113,107 @@ class ContextFreeGrammar(object):
                       self._first_set, self._follow_set, self._rules)
 
     def name(self):
-        """
-        Query for the name of the grammar.
+        """Query for the name of the grammar.
 
-        Output Type: String
+        Copy the grammar's name to protect against user mutations.
+
+        Return:
+          str: The given input name of the grammar.
         """
         return deepcopy(self._name)
 
     def start(self):
-        """
-        Query for the start state of the grammar.
+        """Query for the start production's nonterminal of the grammar.
 
-        Output Type: String
+        Copy the grammar's start production nonterminal to protect against user
+        mutations.
+
+        Return:
+          str: The given start production nonterminal.
         """
         return deepcopy(self._start)
 
     def terminals(self):
-        """
-        Query for the terminals of the grammar.
+        """Query for the terminal set of the grammar.
 
-        Output Type: Set[String]
+        Copy the grammar's terminal set to protect against user mutations.
+
+        Return:
+          set[str]: The set of terminal symbols contained in the grammar.
         """
         return deepcopy(self._terminals)
 
     def nonterminals(self):
-        """
-        Query for the nonterminals of the grammar.
+        """Query for the nonterminal set of the grammar.
 
-        Output Type: Set[String]
+        Copy the grammar's nonterminal set to protect against user mutations.
+
+        Return:
+          set[str]: The set of nonterminal production symbols in the grammar.
         """
         return deepcopy(self._nonterminals)
 
     def first(self):
-        """
-        Query for the first set's of the grammar's terminals and nonterminals.
+        """Query for the first set(s) of the grammar's [non]terminal(s).
 
-        Output Type: Dict[String, Set[String, Int]]
+        Copy the first set(s) of the grammar's [non]terminal(s) to protect
+        against user mutations.
+
+        Return:
+          dict[str, set[str, int]]: The first set of every [non]terminal.
         """
         return deepcopy(self._first_set)
 
     def follow(self):
-        """
-        Query for the follow set's of the grammar's nonterminals.
+        """Query for the follow set(s) of the grammar's nonterminal(s).
 
-        Output Type: Dict[String, Set[String, Int]]
+        Copy the follow set(s) grammar's nonterminals to protect against user
+        mutations.
+
+        Return:
+          dict[str, set[str, int]]: The follow set of every nonterminal.
         """
         return deepcopy(self._follow_set)
 
     def rules(self):
-        """
-        Query for the production rules of the grammar.
+        """Query for the production rules of the grammar.
 
-        Output Type: List[Tuple[String, List[String]]]
+        Copy the grammar's flattened production rules to protect against user
+        mutations.
+
+        Return:
+          list[tuple[str, list[str]]]: A flattened list of production rules.
         """
         return deepcopy(self._rules)
 
     def table(self):
-        """
-        Query for the parse table of the grammar.
+        """Query for the parse table of the given input grammar.
 
-        Output Type: List[List[Set[Int]]] x Dict[String, Int] x Dict[String, Int]
+        Copy the grammar's parse table to protect against user mutations.
+
+        Return:
+          list[list[set[int]]]: row-major parse table with list rule
+            inidice(s) entries. (i.e. Table[nonterminal][terminal] -> rules)
+          dict[str, int]: Mapping for row (nonterminal) symbol to table index.
+          dict[str, int]: Mapping for column (terminal) symbol to table index.
         """
-        return deepcopy(self._parse_table), deepcopy(self._rows), deepcopy(self._cols)
+        return deepcopy(self._parse_table), \
+               deepcopy(self._rows), \
+               deepcopy(self._cols)
 
     @staticmethod
     def _symbols(productions):
-        """
+        """Collect the [non]terminals from the given input productions.
+
         Report all literal terminal symbols and non terminal production symbols
-        appearing  in the grammar.
+        appearing in the productions present.
 
-        Runtime: O(n) - linear to the number symbols in the grammar.
+        Args:
+          productions (list[tuple[str, list[str]]]): The input production rules.
 
-        Input Type:
-          productions: List[Tuple[String, List[String]]]
-
-        Output Type: Set[String] x Set[String]
+        Return:
+          set[str]: The set of terminal symbols contained in the grammar.
+          set[str]: The set of nonterminal production symbols in the grammar.
         """
         terminals, nonterminals = set(), set()
         for nonterminal, rule in productions:
@@ -187,42 +224,42 @@ class ContextFreeGrammar(object):
 
     @staticmethod
     def _first_production(production, first):
-        """
-        Compute the first set of a single nonterminal's rhs/production following
-        the algorithm at:
+        """Derive the first set given a single production rule.
+
+        Compute the first set for a single nonterminal's production rule
+        following the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
 
-        Runtime: O(n) - linear to the length of the production rule.
+        Args:
+          production (list[str]): a series of [non]terminal symbols.
+          first (dict[str, set[str, int]]): first sets for [non]terminals.
 
-        Input Type:
-          production: List[String]
-          first:      Dict[String, Set[String, Int]]
-
-        Output Type: Set[String, Int]
+        Return:
+          set[str, int]: possible symbols first encountered for `production`.
         """
-        _first = set([ContextFreeGrammar.EPS])
+        _first = set([ContextFreeGrammar.EPSILON])
         for symbol in production:
             _first.update(first[symbol])
-            if ContextFreeGrammar.EPS not in first[symbol]:
-                _first.discard(ContextFreeGrammar.EPS)
+            if ContextFreeGrammar.EPSILON not in first[symbol]:
+                _first.discard(ContextFreeGrammar.EPSILON)
                 break
         return _first
 
     @staticmethod
     def _first(terminals, nonterminals, productions):
-        """
-        Calculate the first set for each terminal and nonterminal in the grammar
-        following the algorithm at:
+        """Derive the grammars first sets.
+
+        Calculate the first set for each [non]terminal in the grammar following
+        the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
 
-        Runtime: O(?) - ?
+        Args:
+          terminals (set[str]): set of grammar terminal symbols.
+          nonterminals (set[str]): set of grammar nonterminal symbols.
+          productions (list[tuple[str, list[str]]]): flattened list of rules.
 
-        Input Type:
-          terminals:    Set[String]
-          nonterminals: Set[String]
-          productions:  List[Tuple[String, List[String]]]
-
-        Output Type: Dict[String, Set[String, Int]]
+        Return:
+          dict[str, set[str, int]]: The first set of every [non]terminal.
         """
         first = {}
 
@@ -249,25 +286,26 @@ class ContextFreeGrammar(object):
 
     @staticmethod
     def _follow(nonterminals, start, first, productions):
-        """
+        """Derive the grammars follow sets.
+
         Calculate the follow set for each nonterminal in the grammar following
         the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
 
-        Runtime: O(?) - ?
+        Args:
+          nonterminals (set[str]): set of grammar nonterminal symbols.
+          start (str): The given start production nonterminal.
+          first (dict[str, set[str, int]]): first sets for [non]terminals.
+          productions (list[tuple[str, list[str]]]): flattened list of rules.
 
-        Input Type:
-          nonterminals: Set[String]
-          first:        Dict[String, Set[String, Int]]
-          productions:  List[Tuple[String, List[String]]]
-
-        Output Type: Dict[String, Set[String, Int]]
+        Return:
+          dict[str, set[str, int]]: The follow set of every nonterminal.
         """
         # foreach elem A of NONTERMS do follow[A] = {}
         follow = {nonterminal: set() for nonterminal in nonterminals}
 
         # put $ (end of input marker) in follow(<Start>)
-        follow[start] = set([ContextFreeGrammar.EOI])
+        follow[start] = set([ContextFreeGrammar.END_OF_INPUT])
 
         # loop until nothing new happens updating the follow sets
         while True:
@@ -277,8 +315,8 @@ class ContextFreeGrammar(object):
                 for (idx, elem) in enumerate(production):
                     if elem in nonterminals:
                         new = ContextFreeGrammar._first_production(production[idx+1:], first)
-                        if ContextFreeGrammar.EPS in new:
-                            new.discard(ContextFreeGrammar.EPS)
+                        if ContextFreeGrammar.EPSILON in new:
+                            new.discard(ContextFreeGrammar.EPSILON)
                             new.update(follow[nonterminal])
 
                         new = new - follow[elem]
@@ -291,31 +329,35 @@ class ContextFreeGrammar(object):
 
     @staticmethod
     def _table(terminals, nonterminals, first, follow, productions):
-        """
-        Construct the LL(1) parse table indexed by nonterminal x terminal by
-        finding the predict sets following the algorithm at:
+        """Programmatically construct the grammars parse table.
+
+        Construct the parse table indexed by nonterminal x terminal. This is
+        done by finding the predict sets, derived from the first sets,
+        following the algorithm at:
         http://marvin.cs.uidaho.edu/Teaching/CS445/firstfollow.txt
 
-        Runtime: O(?) - ?
+        Args:
+          terminals (set[str]): set of grammar terminal symbols.
+          nonterminals (set[str]): set of grammar nonterminal symbols.
+          first (dict[str, set[str, int]]): first sets for [non]terminals.
+          follow (dict[str, set[str, int]]): follow sets for terminals.
+          productions (list[tuple[str, list[str]]]): flattened list of rules.
 
-        Input Type:
-          terminals:    Set[String]
-          nonterminals: Set[String]
-          first:        Dict[String, Set[String, Int]]
-          follow:       Dict[String, Set[String, Int]]
-          productions:  List[Tuple[String, List[String]]]
-
-        Output Type: List[List[Set[Int]]] x Dict[String] x Dict[String, Int]
+        Return:
+          list[list[set[int]]]: row-major parse table with list rule
+            inidice(s) entries. (i.e. Table[nonterminal][terminal] -> rules)
+          dict[str, int]: Mapping for row (nonterminal) symbol to table index.
+          dict[str, int]: Mapping for column (terminal) symbol to table index.
         """
         rows = {n:i for i, n in enumerate(nonterminals)}
-        cols = {t:i for i, t in enumerate(terminals | set([ContextFreeGrammar.EOI]))}
+        cols = {t:i for i, t in enumerate(terminals | set([ContextFreeGrammar.END_OF_INPUT]))}
 
         table = [[set() for _ in cols] for _ in rows]
 
         for (rule, (nonterminal, production)) in enumerate(productions):
             predict = ContextFreeGrammar._first_production(production, first)
-            if ContextFreeGrammar.EPS in predict:
-                predict.discard(ContextFreeGrammar.EPS)
+            if ContextFreeGrammar.EPSILON in predict:
+                predict.discard(ContextFreeGrammar.EPSILON)
                 predict.update(follow[nonterminal])
             for terminal in predict:
                 table[rows[nonterminal]][cols[terminal]].add(rule)
