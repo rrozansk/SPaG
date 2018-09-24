@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+# pylint: disable=too-many-public-methods
 """
 Testing for ContextFreeGrammar objects located in spag/parser.py
 """
@@ -137,7 +139,7 @@ class TestParser(object):
         """
         TestParser._run(**{
             'name': False,
-            'productions': {'<S>': ''},
+            'productions': {'<S>': [['a']]},
             'start': '<S>',
             'terminals': None,
             'nonterminals': None,
@@ -159,7 +161,7 @@ class TestParser(object):
         """
         TestParser._run(**{
             'name': '',
-            'productions': {'<S>': ''},
+            'productions': {'<S>': [['a']]},
             'start': '<S>',
             'terminals': None,
             'nonterminals': None,
@@ -181,7 +183,7 @@ class TestParser(object):
         """
         TestParser._run(**{
             'name': 'Invalid Start Type',
-            'productions': {'<S>': ''},
+            'productions': {'<S>': [['a']]},
             'start': False,
             'terminals': None,
             'nonterminals': None,
@@ -203,7 +205,7 @@ class TestParser(object):
         """
         TestParser._run(**{
             'name': 'Empty Start',
-            'productions': {'<S>': ''},
+            'productions': {'<S>': [['a']]},
             'start': '',
             'terminals': None,
             'nonterminals': None,
@@ -225,7 +227,7 @@ class TestParser(object):
         """
         TestParser._run(**{
             'name': 'Empty Start',
-            'productions': {'<A>': ''},
+            'productions': {'<A>': [['a']]},
             'start': '<S>',
             'terminals': None,
             'nonterminals': None,
@@ -292,8 +294,8 @@ class TestParser(object):
         TestParser._run(**{
             'name': 'Invalid Production Rules',
             'productions': {
-                '<A>': '<A> | <A> a',
-                None: '<B> | <B> b'
+                '<A>': [['<A>'], ['<A>', 'a']],
+                None: [['<B>'], ['<B>', 'b']]
             },
             'start': '<A>',
             'terminals': None,
@@ -317,8 +319,8 @@ class TestParser(object):
         TestParser._run(**{
             'name': 'Invalid Production Rules',
             'productions': {
-                '': 'b',
-                '<E>': '<E> | <E> a'
+                '': [['b']],
+                '<E>': [['<E>'], ['<E>', 'a']]
             },
             'start': '<E>',
             'terminals': None,
@@ -331,18 +333,114 @@ class TestParser(object):
 
     @staticmethod
     @pytest.mark.xfail(
-        reason='Productions rules are not of type string.',
+        reason='Productions rules are not of type list.',
         raises=TypeError,
     )
-    def test_production_rule_invalid():
+    def test_production_rules_invalid():
         """
         Ensure a TypeError is raised when constructing a ContextFreeGrammar
-        object if the production rules are not of type string.
+        object if the production rules are not of type list.
         """
         TestParser._run(**{
             'name': 'Invalid Nonterminal',
             'productions': {
                 '<S>': None
+            },
+            'start': '<S>',
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Productions rules are empty.',
+        raises=ValueError,
+    )
+    def test_production_rules_empty():
+        """
+        Ensure a ValueError is raised when constructing a ContextFreeGrammar
+        object if the production rules are empty.
+        """
+        TestParser._run(**{
+            'name': 'Invalid Nonterminal',
+            'productions': {
+                '<S>': []
+            },
+            'start': '<S>',
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Production rule must be of type list.',
+        raises=TypeError,
+    )
+    def test_production_rule_invalid():
+        """
+        Ensure a TypeError is raised when constructing a ContextFreeGrammar
+        object if the production rule is not of type list.
+        """
+        TestParser._run(**{
+            'name': 'Invalid Nonterminal',
+            'productions': {
+                '<S>': [None]
+            },
+            'start': '<S>',
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Production rule symbols must be of type string.',
+        raises=TypeError,
+    )
+    def test_prod_rule_symbol_invalid():
+        """
+        Ensure a TypeError is raised when constructing a ContextFreeGrammar
+        object if the production rule symbol is not of type string.
+        """
+        TestParser._run(**{
+            'name': 'Invalid Nonterminal',
+            'productions': {
+                '<S>': [[None]]
+            },
+            'start': '<S>',
+            'terminals': None,
+            'nonterminals': None,
+            'first': None,
+            'follow': None,
+            'rules': None,
+            'table': None
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Production rule symbols must be empty.',
+        raises=ValueError,
+    )
+    def test_prod_rule_symbol_empty():
+        """
+        Ensure a ValueError is raised when constructing a ContextFreeGrammar
+        object if the production rule symbol is an empty string.
+        """
+        TestParser._run(**{
+            'name': 'Invalid Nonterminal',
+            'productions': {
+                '<S>': [['']]
             },
             'start': '<S>',
             'terminals': None,
@@ -365,8 +463,8 @@ class TestParser(object):
         TestParser._run(**{
             'name': 'First/First Conflict',
             'productions': {
-                '<S>': '<E> | <E> a',
-                '<E>': 'b |'
+                '<S>': [['<E>'], ['<E>', 'a']],
+                '<E>': [['b'], []]
             },
             'start': '<S>',
             'terminals': set(['a', 'b']),
@@ -406,8 +504,8 @@ class TestParser(object):
         TestParser._run(**{
             'name': 'First/Follow Conflict',
             'productions': {
-                '<S>': '<A> a b',
-                '<A>': 'a |'
+                '<S>': [['<A>', 'a', 'b']],
+                '<A>': [['a'], []]
             },
             'start': '<S>',
             'terminals': set(['a', 'b']),
@@ -447,11 +545,11 @@ class TestParser(object):
         TestParser._run(**{
             'name': 'Left Recursion',
             'productions': {
-                '<E>': '<E> <A> <T> | <T>',
-                '<A>': '+ | -',
-                '<T>': '<T> <M> <F> | <F>',
-                '<M>': '*',
-                '<F>': '( <E> ) | id'
+                '<E>': [['<E>', '<A>', '<T>'], ['<T>']],
+                '<A>': [['+'], ['-']],
+                '<T>': [['<T>', '<M>', '<F>'], ['<F>']],
+                '<M>': [['*']],
+                '<F>': [['(', '<E>', ')'], ['id']]
             },
             'start': '<E>',
             'terminals': set(['(', ')', '+', '*', '-', 'id']),
@@ -510,9 +608,9 @@ class TestParser(object):
         TestParser._run(**{
             'name': 'No Epsilon',
             'productions': {
-                '<S>': '<A> a <A> b | <B> b <B> a',
-                '<A>': '',
-                '<B>': ''
+                '<S>': [['<A>', 'a', '<A>', 'b'], ['<B>', 'b', '<B>', 'a']],
+                '<A>': [[]],
+                '<B>': [[]]
             },
             'start': '<S>',
             'terminals': set(['a', 'b']),
@@ -552,13 +650,13 @@ class TestParser(object):
         TestParser._run(**{
             'name': 'Epsilon',
             'productions': {
-                '<E>': '<T> <E\'>',
-                '<E\'>': '<A> <T> <E\'> |',
-                '<A>': '+ | - ',
-                '<T>': '<F> <T\'>',
-                '<T\'>': '<M> <F> <T\'> |',
-                '<M>': '*',
-                '<F>': '( <E> ) | id'
+                '<E>': [['<T>', '<E\'>']],
+                '<E\'>': [['<A>', '<T>', '<E\'>'], []],
+                '<A>': [['+'], ['-']],
+                '<T>': [['<F>', '<T\'>']],
+                '<T\'>': [['<M>', '<F>', '<T\'>'], []],
+                '<M>': [['*']],
+                '<F>': [['(', '<E>', ')'], ['id']]
             },
             'start': '<E>',
             'terminals': set(['+', '-', '*', '(', ')', 'id']),
@@ -628,17 +726,21 @@ class TestParser(object):
         TestParser._run(**{
             'name': 'Simple language',
             'productions': {
-                '<STMT>': 'if <EXPR> then <STMT>\
-                            | while <EXPR> do <STMT>\
-                            | <EXPR>',
-                '<EXPR>': '<TERM> -> id\
-                            | zero? <TERM>\
-                            | not <EXPR>\
-                            | ++ id\
-                            | -- id',
-                '<TERM>': 'id | constant',
-                '<BLOCK>': '<STMT> | { <STMTS> }',
-                '<STMTS>': '<STMT> <STMTS> |'
+                '<STMT>': [
+                    ['if', '<EXPR>', 'then', '<STMT>'],
+                    ['while', '<EXPR>', 'do', '<STMT>'],
+                    ['<EXPR>']
+                ],
+                '<EXPR>': [
+                    ['<TERM>', '->', 'id'],
+                    ['zero?', '<TERM>'],
+                    ['not', '<EXPR>'],
+                    ['++', 'id'],
+                    ['--', 'id']
+                ],
+                '<TERM>': [['id'], ['constant']],
+                '<BLOCK>': [['<STMT>'], ['{', '<STMTS>', '}']],
+                '<STMTS>': [['<STMT>', '<STMTS>'], []]
             },
             'start': '<STMTS>',
             'terminals': set(['if', 'then', 'while', 'do', '->', 'zero?',
@@ -723,16 +825,23 @@ class TestParser(object):
         TestParser._run(**{
             'name': 'JSON',
             'productions': {
-                '<VALUE>': 'string | number | bool | null | <OBJECT> | <ARRAY>',
-                '<OBJECT>': '{ <OBJECT\'>',
-                '<OBJECT\'>': '} | <MEMBERS> }',
-                '<MEMBERS>': '<PAIR> <MEMBERS\'>',
-                '<PAIR>': 'string : <VALUE>',
-                '<MEMBERS\'>': ', <MEMBERS> |',
-                '<ARRAY>': '[ <ARRAY\'>',
-                '<ARRAY\'>': '] | <ELEMENTS> ]',
-                '<ELEMENTS>': '<VALUE> <ELEMENTS\'>',
-                '<ELEMENTS\'>': ', <ELEMENTS> |'
+                '<VALUE>': [
+                    ['string'],
+                    ['number'],
+                    ['bool'],
+                    ['null'],
+                    ['<OBJECT>'],
+                    ['<ARRAY>']
+                ],
+                '<OBJECT>': [['{', '<OBJECT\'>']],
+                '<OBJECT\'>': [['}'], ['<MEMBERS>', '}']],
+                '<MEMBERS>': [['<PAIR>', '<MEMBERS\'>']],
+                '<PAIR>': [['string', ':', '<VALUE>']],
+                '<MEMBERS\'>': [[',', '<MEMBERS>'], []],
+                '<ARRAY>': [['[', '<ARRAY\'>']],
+                '<ARRAY\'>': [[']'], ['<ELEMENTS>', ']']],
+                '<ELEMENTS>': [['<VALUE>', '<ELEMENTS\'>']],
+                '<ELEMENTS\'>': [[',', '<ELEMENTS>'], []]
             },
             'start': '<VALUE>',
             'terminals': set(['{', '}', ',', '[', ']', ':', 'string', 'number',
@@ -841,13 +950,13 @@ class TestParser(object):
         TestParser._run(**{
             'name': 'INI',
             'productions': {
-                '<INI>': '<SECTION> <INI> |',
-                '<SECTION>': '<HEADER> <SETTINGS>',
-                '<HEADER>': '[ string ]',
-                '<SETTINGS>': '<KEY> <SEP> <VALUE> <SETTINGS> |',
-                '<KEY>': 'string',
-                '<SEP>': ': | =',
-                '<VALUE>': 'string | number | bool'
+                '<INI>': [['<SECTION>', '<INI>'], []],
+                '<SECTION>': [['<HEADER>', '<SETTINGS>']],
+                '<HEADER>': [['[', 'string', ']']],
+                '<SETTINGS>': [['<KEY>', '<SEP>', '<VALUE>', '<SETTINGS>'], []],
+                '<KEY>': [['string']],
+                '<SEP>': [[':'], ['=']],
+                '<VALUE>': [['string'], ['number'], ['bool']]
             },
             'start': '<INI>',
             'terminals': set(['string', 'number', 'bool', ':', '=', '[', ']']),
@@ -918,9 +1027,17 @@ class TestParser(object):
         TestParser._run(**{
             'name': 'Lisp',
             'productions': {
-                '<expression>': '<atom> | <pair>',
-                '<pair>': '( <expression> . <expression> )',
-                '<atom>': 'symbol | character | string | boolean | int | float | nil',
+                '<expression>': [['<atom>'], ['<pair>']],
+                '<pair>': [['(', '<expression>', '.', '<expression>', ')']],
+                '<atom>': [
+                    ['symbol'],
+                    ['character'],
+                    ['string'],
+                    ['boolean'],
+                    ['int'],
+                    ['float'],
+                    ['nil']
+                ]
             },
             'start': '<expression>',
             'terminals': set(['(', '.', ')', 'symbol', 'character', 'string',

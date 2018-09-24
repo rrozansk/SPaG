@@ -42,7 +42,7 @@ class TestGenerator(object):
         Make sure the 'C' generator properly overrides the output method.
         """
         scanner = RegularGrammar('test', {'foo': 'bar'})
-        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         module = __import__('spag.generators.c', fromlist=['C'])
         generator = getattr(module, 'C')(scanner, parser)
         assert generator, 'constructor failed'
@@ -64,7 +64,7 @@ class TestGenerator(object):
         Make sure the 'Go' generator properly overrides the output method.
         """
         scanner = RegularGrammar('test', {'foo': 'bar'})
-        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         module = __import__('spag.generators.go', fromlist=['Go'])
         generator = getattr(module, 'Go')(scanner, parser)
         assert generator, 'constructor failed'
@@ -86,7 +86,7 @@ class TestGenerator(object):
         Make sure the 'Python' generator properly overrides the output method.
         """
         scanner = RegularGrammar('test', {'foo': 'bar'})
-        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         module = __import__('spag.generators.python', fromlist=['Python'])
         generator = getattr(module, 'Python')(scanner, parser)
         assert generator, 'constructor failed'

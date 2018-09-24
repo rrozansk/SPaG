@@ -1,3 +1,4 @@
+# pylint: disable=too-many-branches
 """Programmatic creation of parsers through ContextFreeGrammar objects.
 
 The ContextFreeGrammar object represents a BNF (Backus-[Naur/Normal] Form)
@@ -47,10 +48,10 @@ class ContextFreeGrammar(object):
 
         Args:
           name (str): The name of the input grammar.
-          productions (dict[str, str]): The production rules of the grammar.
-              Dictionary keys are nonterminals and values are rules. an empty
-              rule can be used for epsilon and multiple rules may be specified
-              by delimiting them with a vertical bar ('|').
+          productions (dict[str, list[list[str]]): The production rules of the
+              grammar. Dictionary keys are nonterminals and values are a list of
+              rules, which are a series of [non]terminal string identifiers. An
+              empty rule can be used for epsilon.
           start (str): The start productions nonterminal identifier of the grammar.
 
         Raises:
@@ -63,7 +64,11 @@ class ContextFreeGrammar(object):
           ValueError: if `start` not in `productions`
           TypeError: if any `productions` nonterminal is not a string
           ValueError: if any `productions` nonterminal is empty
-          TypeError: if any `productions` rule is not a string
+          TypeError: if any `productions` nonterminal rules is not a list
+          ValueError: if any `productions` nonterminal rules is empty
+          TypeError: if any `productions` nonterminal rule is not a list
+          TypeError: if any `productions` nonterminal rule contain non strings
+          ValueError: if any `productions` nonterminal rule contain empty strings
         """
         if not isinstance(name, str):
             raise TypeError('name must be a string')
@@ -98,11 +103,24 @@ class ContextFreeGrammar(object):
             if not nonterminal:
                 raise ValueError('production nonterminal must be non empty')
 
-            if not isinstance(rhs, str):
-                raise TypeError('production rule(s) must be a string')
+            if not isinstance(rhs, list):
+                raise TypeError('production rules must be a list')
 
-            for rule in rhs.split('|'):
-                self._rules.append((nonterminal, rule.split()))
+            if not rhs:
+                raise ValueError('production rules must be non empty')
+
+            for rule in rhs:
+                if not isinstance(rule, list):
+                    raise TypeError('production rule must be a list')
+
+                for symbol in rule:
+                    if not isinstance(symbol, str):
+                        raise TypeError('production rule symbol must be a string')
+
+                    if not symbol:
+                        raise ValueError('production rule symbol must be non empty')
+
+                self._rules.append((nonterminal, rule))
 
         self._terminals, self._nonterminals = self._symbols(self._rules)
         self._first_set = self._first(self._terminals, self._nonterminals, self._rules)

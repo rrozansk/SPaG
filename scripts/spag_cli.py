@@ -1,6 +1,5 @@
 #! /usr/bin/python
 # pylint: disable=too-few-public-methods
-
 """A Python CLI script for scanner/parser generation using SPaG.
 
 This script deals with all the file I/O including the definition of the input
@@ -118,8 +117,9 @@ try:
             stdout.write('Compiling parser specification...')
             stdout.flush()
         START = time()
+        PRODUCTIONS = {ID:[(ID, rule) for rule in rhs.split('|')] for ID, rhs in ARGS['parser']['rules']},
         PARSER = ContextFreeGrammar(ARGS['parser']['name'],
-                                    dict(ARGS['parser']['rules']),
+                                    PRODUCTIONS,
                                     ARGS['parser']['rules'][0][0])
         END = time()
         if ARGS['verbose']:
