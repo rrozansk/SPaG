@@ -364,15 +364,13 @@ class RegularGrammar(object):
         stack, queue = [], []  # operators, output expression
 
         for token in expr:
-            if token in RegularGrammar._characters:
-                queue.append(token)
-            elif token == RegularGrammar._operators['(']:
+            if token == RegularGrammar._operators['(']:
                 stack.append(RegularGrammar._operators['('])
             elif token == RegularGrammar._operators[')']:
                 while stack and stack[-1] != RegularGrammar._operators['(']:
                     queue.append(stack.pop())
                 if not stack:
-                    raise ValueError('Error: unbalanced parenthesis')
+                    raise ValueError('Error: unbalanced right parenthesis')
                 stack.pop()
             elif token in RegularGrammar._precedence:
                 while stack and stack[-1] != RegularGrammar._operators['('] and\
@@ -381,14 +379,13 @@ class RegularGrammar(object):
                       and RegularGrammar._precedence[token][1]:  # left-associative?
                     queue.append(stack.pop())
                 stack.append(token)
-            else:
-                raise ValueError('Error: invalid input in shuting yard')
+            else:  # token in RegularGrammar._characters:
+                queue.append(token)
 
         while stack:
             token = stack.pop()
-            if token == RegularGrammar._operators['('] or \
-               token == RegularGrammar._operators[')']:
-                raise ValueError('Error: unbalanced parenthesis')
+            if token == RegularGrammar._operators['(']:
+                raise ValueError('Error: unbalanced left parenthesis')
             queue.append(token)
 
         return queue
@@ -448,11 +445,7 @@ class RegularGrammar(object):
 
         stk = []  # NFA machine stk
         for token in expr:
-            if token in RegularGrammar._characters:
-                S, F = RegularGrammar._state(), RegularGrammar._state()
-                V.add(token)
-                T.add((S, token, F))
-            elif token == RegularGrammar._operators['.']:
+            if token == RegularGrammar._operators['.']:
                 if len(stk) < 2:
                     raise ValueError('Error: not enough args to op .')
                 p, F = stk.pop()
@@ -493,8 +486,10 @@ class RegularGrammar(object):
                 e_update(S, p)
                 e_update(S, F)
                 e_update(q, F)
-            else:
-                raise ValueError('Error: invalid input in NFA construction')
+            else:  # token in RegularGrammar._characters:
+                S, F = RegularGrammar._state(), RegularGrammar._state()
+                V.add(token)
+                T.add((S, token, F))
             Q.update([S, F])
             stk.append((S, F))
 
