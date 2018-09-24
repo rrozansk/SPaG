@@ -3,6 +3,8 @@ Testing for Generator subclass objects located in src/generators/*.py
 """
 import pytest
 from spag.generators import __all__
+from spag.scanner import RegularGrammar
+from spag.parser import ContextFreeGrammar
 
 
 class TestGenerator(object):
@@ -13,7 +15,7 @@ class TestGenerator(object):
     @staticmethod
     def test_supported_generators():
         """
-        Ensure __all__ (i.e. the generators we support officially) is what is
+        Assert __all__ (i.e. the generators we support officially) is what is
         expected.
         """
         assert len(__all__) == 3
@@ -25,8 +27,8 @@ class TestGenerator(object):
     @staticmethod
     def test_importable_generators():
         """
-        Ensure all __all__ (i.e. the generators we support officially) are
-        importable and follow the proper conventions for naming.
+        Ensure all supported generators are importable and follow the proper
+        naming conventions.
         """
         for language in __all__:
             cls = language.capitalize()
@@ -35,12 +37,63 @@ class TestGenerator(object):
             assert generator(), 'constructor failed'
 
     @staticmethod
+    def test_overrides_output_c():
+        """
+        Make sure the 'C' generator properly overrides the output method.
+        """
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        module = __import__('spag.generators.c', fromlist=['C'])
+        generator = getattr(module, 'C')(scanner, parser)
+        assert generator, 'constructor failed'
+        result = generator.output({
+            'filename': 'out',
+            'scanner': True,
+            'parser': True,
+            'encoding': 'direct'
+        })
+        assert result, 'no result returned'
+
+    @staticmethod
     @pytest.mark.xfail(
         reason='Calls super (base Generator) output method.',
         raises=NotImplementedError,
     )
-    def test_overrides_output():
+    def test_overrides_output_go():
         """
-        ...
+        Make sure the 'Go' generator properly overrides the output method.
         """
-        pass
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        module = __import__('spag.generators.go', fromlist=['Go'])
+        generator = getattr(module, 'Go')(scanner, parser)
+        assert generator, 'constructor failed'
+        result = generator.output({
+            'filename': 'out',
+            'scanner': True,
+            'parser': True,
+            'encoding': 'direct'
+        })
+        assert result, 'no result returned'
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Calls super (base Generator) output method.',
+        raises=NotImplementedError,
+    )
+    def test_overrides_output_python():
+        """
+        Make sure the 'Python' generator properly overrides the output method.
+        """
+        scanner = RegularGrammar('test', {'foo': 'bar'})
+        parser = ContextFreeGrammar('test', {'S': 'a'}, 'S')
+        module = __import__('spag.generators.python', fromlist=['Python'])
+        generator = getattr(module, 'Python')(scanner, parser)
+        assert generator, 'constructor failed'
+        result = generator.output({
+            'filename': 'out',
+            'scanner': True,
+            'parser': True,
+            'encoding': 'direct'
+        })
+        assert result, 'no result returned'
