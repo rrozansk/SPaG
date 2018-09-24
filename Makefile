@@ -38,11 +38,11 @@ help:
 #                                                                              #
 ################################################################################
 .PHONY: env
-env:
+env: requirements.txt
 	pip install virtualenv==16.0.0
 	virtualenv testing_venv
 	. testing_venv/bin/activate; \
-	pip install pylint==1.9.1 pytest==3.8.0 pytest-cov==2.6.0; \
+	pip install -r requirements.txt; \
 	make install; \
 	deactivate
 
