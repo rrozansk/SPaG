@@ -102,29 +102,29 @@ class TestParser(object):
                                                   kwargs['productions'],
                                                   kwargs['start'])
 
-        assert context_free_grammar.name() == kwargs['name'], \
+        assert context_free_grammar.name == kwargs['name'], \
                'Invalid name produced'
 
-        assert context_free_grammar.start() == kwargs['start'], \
+        assert context_free_grammar.start == kwargs['start'], \
                'Invalid start production produced'
 
-        assert context_free_grammar.terminals() == kwargs['terminals'], \
+        assert context_free_grammar.terminals == kwargs['terminals'], \
                'Invalid terminal set produced'
 
-        assert context_free_grammar.nonterminals() == kwargs['nonterminals'], \
+        assert context_free_grammar.nonterminals == kwargs['nonterminals'], \
               'Invalid nonterminal set produced'
 
         TestParser._compare_first_sets(kwargs['first'],
-                                       context_free_grammar.first())
+                                       context_free_grammar.first)
 
         TestParser._compare_follow_sets(kwargs['follow'],
-                                        context_free_grammar.follow())
+                                        context_free_grammar.follow)
 
         mapping = TestParser._compare_rules(kwargs['rules'],
-                                            context_free_grammar.rules())
+                                            context_free_grammar.rules)
 
         TestParser._compare_tables(kwargs['table'],
-                                   context_free_grammar.table(),
+                                   context_free_grammar.table,
                                    mapping)
 
     @staticmethod

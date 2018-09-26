@@ -130,6 +130,7 @@ class ContextFreeGrammar(object):
           self._table(self._terminals, self._nonterminals,
                       self._first_set, self._follow_set, self._rules)
 
+    @property
     def name(self):
         """Query for the name of the grammar.
 
@@ -140,6 +141,7 @@ class ContextFreeGrammar(object):
         """
         return deepcopy(self._name)
 
+    @property
     def start(self):
         """Query for the start production's nonterminal of the grammar.
 
@@ -151,6 +153,7 @@ class ContextFreeGrammar(object):
         """
         return deepcopy(self._start)
 
+    @property
     def terminals(self):
         """Query for the terminal set of the grammar.
 
@@ -161,6 +164,7 @@ class ContextFreeGrammar(object):
         """
         return deepcopy(self._terminals)
 
+    @property
     def nonterminals(self):
         """Query for the nonterminal set of the grammar.
 
@@ -171,6 +175,7 @@ class ContextFreeGrammar(object):
         """
         return deepcopy(self._nonterminals)
 
+    @property
     def first(self):
         """Query for the first set(s) of the grammar's [non]terminal(s).
 
@@ -182,6 +187,7 @@ class ContextFreeGrammar(object):
         """
         return deepcopy(self._first_set)
 
+    @property
     def follow(self):
         """Query for the follow set(s) of the grammar's nonterminal(s).
 
@@ -193,6 +199,7 @@ class ContextFreeGrammar(object):
         """
         return deepcopy(self._follow_set)
 
+    @property
     def rules(self):
         """Query for the production rules of the grammar.
 
@@ -204,6 +211,7 @@ class ContextFreeGrammar(object):
         """
         return deepcopy(self._rules)
 
+    @property
     def table(self):
         """Query for the parse table of the given input grammar.
 
