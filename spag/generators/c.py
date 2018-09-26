@@ -72,7 +72,7 @@ class C(Generator):
 
     def _generate_token_api(self, name):
         types = []
-        for token_name, pattern in self.scanner.expressions().items():
+        for token_name, pattern in self.scanner.expressions.items():
             types.append('  {0: <23} // {1}'.format(token_name.upper()+",", pattern))
         return """\
 {2}
@@ -168,10 +168,10 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
 """.format(name, self._generate_section_header("tokens"))
 
     def _encode_dfa(self, name):
-        state, symbol, T = self.scanner.transitions()
-        final_states = self.scanner.accepting()
-        expressions = self.scanner.expressions()
-        types = self.scanner.types()
+        state, symbol, T = self.scanner.transitions
+        final_states = self.scanner.accepting
+        expressions = self.scanner.expressions
+        types = self.scanner.types
 
         labels, label = {}, 0
         for state_id in state.keys():
@@ -181,7 +181,7 @@ unsigned long column({0}_token_t *{0}_token) {{ return {0}_token->column; }}
         program = """\
   goto {0};
 
-""".format(labels[self.scanner.start()])
+""".format(labels[self.scanner.start])
 
         for in_state, state_key in state.items():
             if in_state in types.get('_sink', set()):
@@ -430,7 +430,7 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
                                             libs)
 
         if self.scanner is not None:
-            scan_func = self._sanatize(self.scanner.name())
+            scan_func = self._sanatize(self.scanner.name)
             token_header, token_source = self._generate_token_api(scan_func)
             scanner_header, scanner_source = self._generate_scanner_api(scan_func)
 

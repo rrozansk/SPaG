@@ -176,6 +176,7 @@ class RegularGrammar(object):
         self._finals = F
         self._types = G
 
+    @property
     def name(self):
         """Query for the name of the scanner.
 
@@ -186,6 +187,7 @@ class RegularGrammar(object):
         """
         return deepcopy(self._name)
 
+    @property
     def expressions(self):
         """Query for the patterns recognized by the scanner.
 
@@ -197,6 +199,7 @@ class RegularGrammar(object):
         """
         return deepcopy(self._expressions)
 
+    @property
     def states(self):
         """Query for states in the grammars equivalent minimal DFA.
 
@@ -207,6 +210,7 @@ class RegularGrammar(object):
         """
         return deepcopy(self._states)
 
+    @property
     def alphabet(self):
         """Query for alphabet of characters recognized by the grammars DFA.
 
@@ -217,6 +221,7 @@ class RegularGrammar(object):
         """
         return deepcopy(self._alphas)
 
+    @property
     def transitions(self):
         """Query for the state transitions defining the grammars DFA.
 
@@ -228,6 +233,7 @@ class RegularGrammar(object):
         """
         return deepcopy(self._deltas)
 
+    @property
     def start(self):
         """Query for the start state of the grammars DFA.
 
@@ -238,6 +244,7 @@ class RegularGrammar(object):
         """
         return deepcopy(self._start)
 
+    @property
     def accepting(self):
         """Query for all accepting states of the grammars DFA.
 
@@ -249,6 +256,7 @@ class RegularGrammar(object):
         """
         return deepcopy(self._finals)
 
+    @property
     def types(self):
         """Query for the dictionary labeling all types to ther final state(s).
 

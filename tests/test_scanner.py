@@ -35,23 +35,23 @@ class TestScanner(object):
         Check if DFA's are isomorphic by attempting to find a bijection
         between if they look 'similar' is size and shape.
         """
-        V = actual.alphabet()
+        V = actual.alphabet
         assert V == expected['V'], \
                'Incorrect alphabet produced'
 
-        Q = actual.states()
+        Q = actual.states
         assert len(Q) == len(expected['Q']), \
                'Incorrect number of states produced'
 
-        F = actual.accepting()
+        F = actual.accepting
         assert len(F) == len(expected['F']), \
                'Incorrect number of finish states produced'
 
-        G = actual.types()
+        G = actual.types
         assert len(G) == len(expected['G']), \
                'Incorrect number of types produced'
 
-        state, symbol, T = actual.transitions()
+        state, symbol, T = actual.transitions
         assert len(T) == len(expected['T'])-1 or \
                (T and len(T[0]) == len(expected['T'][0])-1), \
                'Incorrect number of transitions produced'
@@ -62,7 +62,7 @@ class TestScanner(object):
             _symbol = {s:idx for idx, s in enumerate([row.pop(0) for row in expected['T']])}
             Tp = expected['T']
 
-        S = actual.start()
+        S = actual.start
         Qp = expected['Q']
 
         map_generator = (dict(zip(Q, perm)) for perm in permutations(Qp, len(Qp)))
@@ -90,11 +90,11 @@ class TestScanner(object):
         """
         regular_grammar = RegularGrammar(kwargs['name'], kwargs['expressions'])
 
-        assert regular_grammar.name() == kwargs['name'], \
+        assert regular_grammar.name == kwargs['name'], \
                'Incorrect DFA name returned'
 
         TestScanner._compare_expressions(kwargs['expressions'],
-                                         regular_grammar.expressions())
+                                         regular_grammar.expressions)
 
         TestScanner._compare_dfa(kwargs['DFA'], regular_grammar)
 
