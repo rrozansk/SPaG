@@ -4,51 +4,13 @@
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 # pylint: disable=unused-argument
-"""
- scanner.py includes the implementation of RegularGrammar objects.
+"""Programmatic creation of scanners through RegularGrammar objects.
 
- The RegularGrammar object represents a group of formal regular expressions
- which can be programatically transformed into a minimal DFA.
-
- The entire transformation on the input can be visualized as:
-
-   regular expression => epsilon NFA => DFA => minimal DFA
-
- The final DFA produced will have a complete delta (transition) function and
- will include an extra sink/error state to absorb all invalid input if needed.
- It will also include a dictionary mapping types (i.e. named pattern expression)
- to there corresponding final state(s) in the DFA.
-
- Regular expressions must be specified following these guidelines:
-    - only printable ascii characters (33-126) and spaces are supported
-    - supported operators:
-        |                (union -> choice -> either or)
-        ?                (question -> choice -> 1 or none)
-        .                (concatenation -> combine)
-        *                (kleene star -> repitition >= 0)
-        +                (plus -> repitition >= 1)
-        ()               (grouping -> disambiguation -> any expression)
-        [ab]             (character class -> choice -> any specified char)
-        [a-c] or [c-a]   (character range -> choice -> any char between the two)
-        [^ab] or [^a-c]  (character negation -> choice -> all but the specified)
-        NOTES: '^' is required to come first after the bracket for negation.
-               If alone ([^]) it is translated as all alphabet characters.
-               It is still legal for character ranges as well ([b-^] and
-               negated as [^^-b]). Note that the reverse range was needed. If
-               the first character is a '^' it will always mean negation! If a
-               single '^' is wanted then there is no need to use a class/range.
-               Classes and ranges can be combined between the same set of
-               brackets ([abc-z]), even multiple times if wanted/needed. Due to
-               this though the '-' char must come as the last character in the
-               class if the literal is wanted. For literal right brackets an
-               escape is needed if mentioned ([\]]). All other characters are
-               treated as literals.
-    - concat can be either implicit or explicit
-    - supported escape sequences with a backslash (\):
-        operator literals   -> ?, *, ., +, |
-        grouping literals   -> (, ), [, ]
-        whitespace literals -> s, t, n, r, f, v
-        escape literal      -> \
+The RegularGrammar object represents a group of formal regular expressions
+which can be programatically transformed into a minimal DFA (Deterministic
+Finite Automata) recognizing the given input pattern(s). This is done through a
+series of transformations on the input taking it from an expression to an
+epsilon NFA and finally to a minimal DFA.
 """
 from uuid import uuid4
 from string import printable
@@ -56,9 +18,15 @@ from copy import deepcopy
 
 
 class RegularGrammar(object):
-    """
-    RegularGrammar represents a collection of formal regular expressions which
-    can be programatically compiled into a minmal DFA.
+    """The RegularGrammar object responsible for creating the minimal DFA.
+
+    RegularGrammar represents a collection of named formal regular expressions
+    which can be programatically compiled into a minmal DFA capable of
+    recognizing the input patterns. The resulting DFA is encoded as a table with
+    a total delta (transition) function. Once created the object cannot be
+    mutated, and it will remain static for the rest of it's lifetime. All
+    information to properly understand and consume the DFA table can be queried
+    through the exposed API functions.
     """
 
     # Map internal representation of operators -> literals
@@ -76,26 +44,87 @@ class RegularGrammar(object):
     _precedence = {
         _operators['(']: (3, None),
         _operators[')']: (3, None),
-        _operators['*']: (2, False),  # right-associative
         _operators['+']: (2, False),  # right-associative
+        _operators['*']: (2, False),  # right-associative
         _operators['?']: (2, False),  # right-associative
         _operators['.']: (1, True),   # left-associative
         _operators['|']: (0, True),   # left-associative
     }
 
     def __init__(self, name, expressions):
-        """
+        """Construct a scanner DFA given the input regular expressions.
+
         Attempt to initialize a RegularGrammar object with the specified name,
-        recognizing the given expressions. Expr's have a type/name/descriptor
-        and an associated pattern/regular expression. If creation is
-        unsuccessful a TypeError or ValueError will be thrown, otherwise the
-        results can be queried through the API provided below.
+        recognizing the given named expression(s). Regular expressions must be
+        specified following these guidelines:
 
-        Input Types:
-          name:        String
-          expressions: Dict[String, String]
+           * only printable ascii characters (uppercase, lowercase, digits,
+             punctuation, whitespace) are supported.
+           * supported core operators (and extensions) include:
+               * '|'    (union -> choice -> either or)
+               * '.'    (concatenation -> combine)
+               * '?'    (question -> choice -> 1 or none)
+               * '*'    (kleene star -> repitition >= 0)
+               * '+'    (kleene plus -> repitition >= 1)
+               * ()     (grouping -> disambiguation -> any expression)
+               * [ab]   (character class -> choice -> any specified character)
+               * [a-c]  (character range -> choice -> any char between the two)
+               * [^ab]  (character negation -> choice -> all but the specified)
+           * other things to keep in mind (potential gotcha's):
+               * character classes and ranges can be combined in the same set
+                 of brackets, possibly multiple times (e.g. [abc-pqrs-z]).
+               * character ranges can be specified as forward or backwards
+                 (e.g. [a-c] or [c-a]).
+               * '^' is required to come first after the bracket for
+                 negation to properly work. In fact, '^' directly following a
+                 bracket is always interpreted as negation.
+               * '^' may be used with character classes or ranges.
+               * if '^' is alone in the brackets (e.g. [^]) it is translated
+                 as any possible input character (i.e. a 'wildcard').
+               * if a literal '-' if required in a character class or range it
+                 must be specified last so as to not be interpreted as a range.
+               * for literal right brackets inside character ranges or classes
+                 an escape is needed (e.g. [\]]).
+               * concatenation can be either implicit or explicit in the
+                 given input expression(s).
+               * operator literals (i.e. '|.?*+()[]') can be specified through
+                 escape sequences using a backslash (i.e. '\').
 
-        Output Type: None | raise ValueError | raise TypeError
+        The input is then taken through a series of transformations taking it
+        from a regular expression to an epsilon NFA and finally to a minimal
+        DFA. The final minimal DFA produced will be minimized with respect to
+        unreachable and nondistinguishable states. It will also have a total
+        delta (transition) function, possibly including an sink/error state if
+        necessary. It will also include a dictionary mapping the named input
+        expressions (i.e. types) to there corresponding final state(s) within
+        the resulting DFA.
+
+        Args:
+          name (str): the name of the scanner.
+          expressions (dict[str, str]): token name/type and there pattern(s).
+
+        Raises:
+          TypeError: if name is not a string
+          ValueError: if name is empty
+          TypeError: if expressions is not a dict
+          ValueError: if expressions is empty
+          TypeError: if token identifier/type is not a string
+          ValueError: if token identifier/type is empty
+          TypeError: if token pattern is not a string
+          ValueError: if token pattern is empty
+          ValueError: if an invalid escape sequence is encountered.
+          ValueError: if an unrecognized escape sequence is encountered.
+          ValueError: if an empty escape sequence is encountered.
+          ValueError: if character range has no starting bracket.
+          ValueError: if character range has no ending bracket.
+          ValueError: if left parenthesis are unbalanaced.
+          ValueError: if right parenthesis are unbalanaced.
+          ValueError: if concatentation is supplied with an improper arguments
+          ValueError: if alternation is supplied with an improper arguments
+          ValueError: if kleene star is supplied with an improper arguments
+          ValueError: if kleene plus is supplied with an improper arguments
+          ValueError: if choice is supplied with an improper arguments
+          ValueError: if the input expression is invalid
         """
         if not isinstance(name, str):
             raise TypeError('name must be a string')
@@ -148,92 +177,105 @@ class RegularGrammar(object):
         self._types = G
 
     def name(self):
-        """
-        Query for the name of the grammar.
+        """Query for the name of the scanner.
 
-        Output Type: String
+        Copy the scanners's name to protect against user mutations.
+
+        Return:
+          str: The given input name of the scanner.
         """
         return deepcopy(self._name)
 
     def expressions(self):
-        """
-        Query for the patterns recognized by the grammar.
+        """Query for the patterns recognized by the scanner.
 
-        Output Type: List[Tuple[String, String]]
+        Copy the scanners's token name/expression pairs to protect against user
+        mutations.
+
+        Return:
+          list[tuple[str, str]]: the token name/expression pairs
         """
         return deepcopy(self._expressions)
 
     def states(self):
-        """
-        Query for states in the grammars equivalent minimal DFA.
+        """Query for states in the grammars equivalent minimal DFA.
 
-        Output Type: Set[String]
+        Copy the scanner's states to protect against user mutation.
+
+        Return:
+          set[str]: all possible states in the resulting DFA.
         """
         return deepcopy(self._states)
 
     def alphabet(self):
-        """
-        Query for alphabet of characters recognized by the grammars DFA.
+        """Query for alphabet of characters recognized by the grammars DFA.
 
-        Output Type: Set[String]
+        Copy the scannner's alphabet to protect against user mutation.
+
+        Return:
+          set[str]: all possible input characters to the resulting DFA.
         """
         return deepcopy(self._alphas)
 
     def transitions(self):
-        """
-        Query for the state transitions defining the grammars DFA.
+        """Query for the state transitions defining the grammars DFA.
 
-        Output Type: Tuple[
-                           Dict[String, Int],
-                           Dict[String, Int],
-                           List[List[String]]
-                          ]
+        Copy the scannner's transitions to protect against user mutation.
+
+        Return:
+          tuple[dict[str, int], dict[str, int], list[list[str]]]: the DFA
+            encoded as a table.
         """
         return deepcopy(self._deltas)
 
     def start(self):
-        """
-        Query for the start state of the grammars DFA.
+        """Query for the start state of the grammars DFA.
 
-        Output Type: String
+        Copy the scanner's start state to protect against user manipulation.
+
+        Return:
+          str: the start state of the grammars DFA.
         """
         return deepcopy(self._start)
 
     def accepting(self):
-        """
-        Query for all accepting states of the grammars DFA.
+        """Query for all accepting states of the grammars DFA.
 
-        Output Type: Set[String]
+        Copy the scanner's accepting states to protect against user
+        manipulation.
+
+        Return:
+          set[str]: the resulting DFA's accepting states.
         """
         return deepcopy(self._finals)
 
     def types(self):
-        """
-        Query for the dictionary which labels all named pattern expressions
-        (types) with there corresponding associated final state(s).
+        """Query for the dictionary labeling all types to ther final state(s).
 
-        Output Type: Dict[String, Set[String]]
+        Copy the scanner's types to protect against user manipulation.
+
+        Return:
+          dict[str, set[str]]: the resulting DFA's token types.
         """
         return deepcopy(self._types)
 
     @staticmethod
     def _scan(expr):
-        """
+        """transform the external representation to an internal one.
+
         Convert an external representation of a token (regular expression) to
         an internal one. Ensures all characters and escape sequences are valid.
 
-        Character conversions:
-          meta -> internal representation (integer enum)
-          escaped meta -> character
-          escaped escape -> escape
-          escaped whitespace -> whitespace
+        Args:
+          expr (str): an external representation of a regular expression.
 
-        Runtime: O(n) - linear to the length of expr.
+        Return:
+          list[str, int]: an internal representation of a regular expression.
 
-        Input Type:
-          expr: String
-
-        Output Type: List[String, Int] | raise ValueError
+        Raises:
+          ValueError: if an invalid escape sequence is encountered.
+          ValueError: if an unrecognized escape sequence is encountered.
+          ValueError: if an empty escape sequence is encountered.
         """
         output = []
         escape = False
@@ -273,16 +315,22 @@ class RegularGrammar(object):
 
     @staticmethod
     def _expand_char_class_range(expr):
-        """
+        """expand any character classes/ranges present in the expression.
+
         Expand the internal representation of the expression so that
         character classes and ranges are eliminated.
 
-        Runtime: O(n) - linear to the length of expr.
+        Args:
+          expr (list[str, int]): an internal representation of a regular
+              expression possible with character ranges and/or classes.
 
-        Input Type:
-          expr: List[String, Int]
+        Return:
+          list[str, int]: an internal representation of a regular expression
+              with all character classes and ranges elimintated.
 
-        Output Type: List[String, Int] | raise ValueError
+        Raises:
+          ValueError: if character range has no starting bracket.
+          ValueError: if character range has no ending bracket.
         """
         output, literals = [], []
         expansion, negation, prange = False, False, False
@@ -324,16 +372,18 @@ class RegularGrammar(object):
 
     @staticmethod
     def _expand_concat(expr):
-        """
+        """make concatenation explicit throughout the expression.
+
         Expand the internal representation of the expression so that
         concatentation is explicit throughout.
 
-        Runtime: O(n) - linear to the length of expr.
+        Args:
+          expr (list[str, int]): an internal representation of a regular
+              expression possibly using implicit concatenation.
 
-        Input Type:
-          expr: List[String, Int]
-
-        Output Type: List[String, Int]
+        Return:
+          list[str, int]: an internal representation of a regular expression
+              with concatenation explicit throughout.
         """
         output = []
         for elem in expr:
@@ -348,18 +398,22 @@ class RegularGrammar(object):
 
     @staticmethod
     def _shunt(expr):
-        """
+        """Convert infix regular expression notation to postfix.
+
         Convert the input expression to be entirely in postfix notation (RPN;
         Reverse Polish Notation) allowing all parenthesis to be dropped.
         Adapted from Dijkstra's Shunting yard algorithm which can be viewed
         @https://en.wikipedia.org/wiki/Shunting-yard_algorithm.
 
-        Runtime: O(n) - linear to the length of expr.
+        Args:
+          expr (list[str, int]): an infix regular expression.
 
-        Input Type:
-          expr: List[String, Int]
+        Return:
+          list[str, int]: a postfix regular expression.
 
-        Output Type: List[String, Int] | raise ValueError
+        Raises:
+          ValueError: if left parenthesis are unbalanaced.
+          ValueError: if right parenthesis are unbalanaced.
         """
         stack, queue = [], []  # operators, output expression
 
@@ -392,18 +446,19 @@ class RegularGrammar(object):
 
     @staticmethod
     def _state():
-        """
-        Generate a new universally unique state name/label.
+        """Generate a new universally unique state label.
 
-        Runtime: O(1) - constant.
+        The state label is a string prepresentation of a UUID type 4.
 
-        Output Type: String
+        Return:
+          str: a unique state name
         """
         return str(uuid4())
 
     @staticmethod
     def _nfa(name, expr):
-        """
+        """convert a postfix notation regular expression to an epsilon NFA.
+
         Attempt to convert an internal representation of a regular expression
         in RPN to an epsilon NFA. Operators handled: union |, kleene star *,
         concatenation ., literals, and syntax extensions kleene plus + and
@@ -413,20 +468,26 @@ class RegularGrammar(object):
         algorithms' by Bruce Watson,
         located @http://alexandria.tue.nl/extra1/wskrap/publichtml/9313452.pdf
 
-        Runtime: O(n) - linear to the length of expr.
+        Args:
+          name (str): the identifier/type of the expression.
+          expr (list[str, int]): a regular expression in postfix notation.
 
-        Input Type:
-          name: String
-          expr: List[String, Int]
+        Return:
+          set[str]: the set of states, Q
+          set[str]: the set of alphabet characters, V
+          set[tuple[str, str, str]]: the set of state transitions, T
+          dict[str, set[str]]: the set of epsilon transitions, E
+          str: the start state, S
+          str: the final state, F
+          dict[str, str]: map of identifier/type to final state, G
 
-        Output Types:
-          Set[String]
-          x Set[String]
-          x Set[Tuple[String, String, String]]
-          x Dict[String, Set[String]]
-          x String
-          x String
-          x Dict[String, String]
+        Raises:
+          ValueError: if concatentation is supplied with an improper arguments
+          ValueError: if alternation is supplied with an improper arguments
+          ValueError: if kleene star is supplied with an improper arguments
+          ValueError: if kleene plus is supplied with an improper arguments
+          ValueError: if choice is supplied with an improper arguments
+          ValueError: if the input expression is invalid
         """
         Q = set()   # states
         V = set()   # input symbols (alphabet)
@@ -437,9 +498,7 @@ class RegularGrammar(object):
         G = dict()  # map type to the final state(s)
 
         def e_update(start, final):
-            """
-            Small internal helper to update epsilon dictionary.
-            """
+            """An internal helper to update the epsilon dictionary cache."""
             E[start] = E.get(start, set())
             E[start].add(final)
 
@@ -501,33 +560,30 @@ class RegularGrammar(object):
 
     @staticmethod
     def _merge_nfa(nfa):
-        """
-        Merge multiple NFAs with a new single start state containing epsilon
-        transitions to each individual machine.
+        """merge a list of NFAs into a single NFA.
 
-        Runtime: O(n) - linear in the number of NFA's.
+        Merge multiple NFAs into a single NFA with a new start state containing
+        epsilon transitions to each individual machine's start state.
 
-        Input Type:
-          NFAs: List[
-                     Tuple[
-                           Set[String],
-                           Set[String],
-                           Set[Tuple[String, String, String]],
-                           Dict[String, Set[String]],
-                           String,
-                           String,
-                           Dict[String, String]
-                          ]
-                    ]
+        Args:
+          nfa: list[tuple[
+                          set[str],
+                          set[str],
+                          set[tuple[str, str, str]],
+                          dict[str, set[str]],
+                          str,
+                          str,
+                          dict[str, str]
+                    ]]: the input NFAs to merge together.
 
-        Output Type:
-          Set[String]
-          x Set[String]
-          x Set[Tuple[String, String, String]]
-          x Dict[String, Set[String]]
-          x String
-          x String
-          x Dict[String, String]
+        Return:
+          set[str]: the merged set of states, Q
+          set[str]: the merged set of alphabet characters, V
+          set[tuple[str, str, str]]: the merged set of state transitions, T
+          dict[str, set[str]]: the merged set of epsilon transitions, E
+          str: the new start state, S
+          set[str]: the merged set of final states, F
+          dict[str, str]: merged mapping of expression type to final state(s), G
         """
         S = RegularGrammar._state()
         Q, V, T, E, S, F, G = set(), set(), set(), dict(), S, set(), dict()
@@ -546,21 +602,21 @@ class RegularGrammar(object):
 
     @staticmethod
     def _e_closure(q, E, cache):
-        """
-        Find the epsilon closure of state q and epsilon transitions E. A cache
-        is utilized to speed things up for repeated invocations. Stated in set
-        notation: { q' | q ->*e q' }, from a given start state q find all
+        """find the epsilon closure of the current state and cache the result.
+
+        Find the epsilon closure of a given state given all epsilon transitions.
+        A cache is utilized to speed things up for repeated invocations. Stated
+        in set notation: { q' | q ->*e q' }, from a given start state q find all
         states q' which are reachable using only epsilon transitions, handling
         cycles appropriately.
 
-        Runtime: O(n) - linear in the number of epsilon transitions.
+        Args:
+          q (str): the state to find the e-closure of.
+          E (dict[str, set[str]]): the set of e-transitions.
+          cache (dict[str, set[str]]): previously computed e-closures.
 
-        Input Types:
-          q:     String
-          E:     Dict[String, Set[String]]
-          cache: Dict[String, Set[String]]
-
-        Output Type: Set[String]
+        Return:
+          set[str]: the e-closure of state q.
         """
         if q in cache:
             return cache[q]
@@ -578,30 +634,29 @@ class RegularGrammar(object):
 
     @staticmethod
     def _dfa(Q, V, T, E, S, F, G):
-        """
+        """convert the input NFA (possibly with epsilon transitions) to a DFA.
+
         Convert the epsilon NFA to a DFA using subset construction and
         e-closure conversion. Only states wich are reachable from the start
         state are considered. This results in a minimized DFA with reguard to
         reachable states, but not with reguard to nondistinguishable states.
 
-        Runtime: O(2^n) - exponential in the number of states.
+        Args:
+          Q (set[str]): set of NFA states
+          V (set[str]): set of NFA alphabet characters
+          T (set[tuple[str, str, str]]): set of state transitions
+          E (dict[str, set[str]]): set of epsilon transitions
+          S (str): start state
+          F (set[str]): set of final states
+          G (dict[str, str]): mapping of expressions types to final states
 
-        Input Types:
-          Q: Set[String]
-          V: Set[String]
-          T: Set[Tuple[String, String, String]]
-          E: Dict[String, Set[String]]
-          S: String
-          F: Set[String]
-          G: Dict[String, String]
-
-        Output Types:
-          Set[Frozenset[String]]
-          x Set[String]
-          x Set[Tuple[Frozenset[String], String, Frozenset[String]]]
-          x Frozenset[String]
-          x Set[Frozenset[String]]
-          x Dict[String, Set[Frozenset[String]]]
+        Return:
+          set[frozenset[str]]: set of DFA states
+          set[str]: set of characters in the DFA alphabet
+          set[tuple[frozenset[str], str, frozenset[str]]]: the DFA transitions
+          frozenset[str]: the DFA start state
+          set[frozenset[str]]: set of DFA final states
+          dict[str, set[frozenset[str]]]: mapping of types to final states
         """
         cache, Gp = dict(), dict()
         Sp = frozenset(RegularGrammar._e_closure(S, E, cache))
@@ -631,34 +686,33 @@ class RegularGrammar(object):
 
     @staticmethod
     def _total(Q, V, T, S, F, G):
-        """
+        """extend the DFA's transition function, making it total.
+
         Make the DFA's delta function total, if not already, by adding a
         sink/error state. All unspecified state transitions are then specified
         by adding a transition to the new sink/error state. A new entry is also
         made into G to track this new sink/error type which is accessible as
         '_sink'.
 
-        Runtime: O(n) - linear in the number of states and transitions.
+        Args:
+          Q (set[frozenset[str]]): set of DFA states
+          V (set[str]): the DFA alphabet
+          T (set[tuple[frozenset[str], str, frozenset[str]]]): DFA transitions
+          S (frozenset[str]): the DFA start state
+          F (set[frozenset[str]]): the set of DFA final states
+          G (dict[str, set[frozenset[str]]]): DFA pattern name to final state(s)
 
-        Input Types:
-          Q: Set[Frozenset[String]]
-          V: Set[String]
-          T: Set[Tuple[Frozenset[String], String, Frozenset[String]]]
-          S: Frozenset[String]
-          F: Set[Frozenset[String]]
-          G: Dict[String, Set[Frozenset[String]]]
-
-        Output Types:
-          Set[Frozenset[String]]
-          x Set[String]
-          x Tuple[
-                  Dict[Frozenset[String], Int],
-                  Dict[String, Int],
-                  List[List[Frozenset[String]]]
-                 ]
-          x Frozenset[String]
-          x Set[Frozenset[String]]
-          x Dict[String, Set[Frozenset[String]]]
+        Return:
+          set[frozenset[str]]: possibly extended set of DFA states
+          set[str]: the given input alphabet
+          tuple[
+                dict[frozenset[str], int],
+                dict[str, int],
+                list[list[frozenset[str]]]
+               ]: a possibly extended transition function converted to a table
+          frozenset[str]: the input start state
+          set[frozenset[str]]: the input final state(s)
+          dict[str, set[frozenset[str]]]: the type to pattern mapping
         """
         q_err = frozenset([RegularGrammar._state()])
         if len(T) != len(Q) * len(V):
@@ -675,36 +729,37 @@ class RegularGrammar(object):
 
     @staticmethod
     def _hopcroft(Q, V, T, S, F, G):
-        """
-        Minimize the DFA with reguard to indistinguishable states using
+        """reduce the DFA state complexity by merging nondistinguishable states.
+
+        Minimize the DFA with reguard to nondistinguishable states using
         hopcrafts algorithm, which merges states together based on partition
         refinement.
 
-        Runtime: O(ns log n) - linear log (n=number states; s=alphabet size).
+        Args:
+          Q (set[frozenset[str]]): the set of DFA states
+          V (set[str]): the set of DFA input characters
+          T (tuple[
+                   dict[frozenset[str], int],
+                   dict[str, int],
+                   list[list[frozenset[str]]]
+                  ]): the DFA transition function as a table
+          S (frozenset[str]): the DFA start state
+          F (set[frozenset[str]]): the set of DFA final states
+          G (dict[str, set[frozenset[str]]]): map of type to DFA final state(s)
 
-        Input Types:
-          Q: Set[Frozenset[String]]
-          V: Set[String]
-          T: Tuple[
-                   Dict[Frozenset[String], Int],
-                   Dict[String, Int],
-                   List[List[Frozenset[String]]]
-                  ]
-          S: Frozenset[String]
-          F: Set[Frozenset[String]]
-          G: Dict[String, Set[Frozenset[String]]]
-
-        Output Types:
-          Set[Set[Frozenset[Frozenset[String]]]]
-          x Set[String]
-          x Tuple[
-                  Dict[Set[Frozenset[Frozenset[String]]], Int],
-                  Dict[String, Int],
-                  List[List[Set[Frozenset[Frozenset[String]]]]]
-                 ]
-          x Set[Frozenset[Frozenset[String]]]
-          x Set[Set[Frozenset[Frozenset[String]]]]
-          x Dict[String, Set[Set[Frozenset[Frozenset[String]]]]
+        Return:
+          set[set[frozenset[frozenset[str]]]]: set of possible merged states
+          set[str]: the given set of input chacters
+          tuple[
+                dict[set[frozenset[frozenset[str]]], int],
+                dict[str, int],
+                list[list[set[frozenset[frozenset[str]]]]]
+               ]: possibly updated and reduced table with merged states
+          set[frozenset[frozenset[str]]]: a possibly updated start state.
+          set[set[frozenset[frozenset[str]]]]: a possibly updated set of final
+              states.
+          dict[str, set[set[frozenset[frozenset[str]]]]: a possibly updated map
+              of token to final state(s).
         """
         (states, symbols, T) = T
         Q, F = frozenset(Q), frozenset(F)
@@ -774,31 +829,32 @@ class RegularGrammar(object):
 
     @staticmethod
     def _alpha(Q, V, T, S, F, G):
-        """
+        """rename/convert states for better legibility.
+
         Perform an alpha rename on all DFA states to simplify the
         representation which the end user will consume.
 
-        Runtime: O(n) - linear in the number of states and transitions.
+        Args:
+          Q (set[set[frozenset[frozenset[str]]]]): the set of states
+          V (set[str]): the input alphabet chacters
+          T (tuple[
+                   dict[set[frozenset[frozenset[str]]], int],
+                   dict[str,  int],
+                   list[list[set[frozenset[frozenset[str]]]]]
+                  ]): the delta function as a table
+          S (set[frozenset[frozenset[str]]]): the start state
+          F (set[set[frozenset[frozenset[str]]]]): the set of final states
+          G (dict[str, set[set[frozenset[frozenset[str]]]]]): the type to state
+              mapping.
 
-        Input Types:
-          Q: Set[Set[Frozenset[Frozenset[String]]]]
-          V: Set[String]
-          T: Tuple[
-                   Dict[Set[Frozenset[Frozenset[String]]], Int],
-                   Dict[String,  Int],
-                   List[List[Set[Frozenset[Frozenset[String]]]]]
-                  ]
-          S: Set[Frozenset[Frozenset[String]]]
-          F: Set[Set[Frozenset[Frozenset[String]]]]
-          G: Dict[String, Set[Set[Frozenset[Frozenset[String]]]]]
-
-        Output Types:
-          Set[String]
-          x Set[String]
-          x Tuple[Dict[String, Int], Dict[String, Int], List[List[String]]]
-          x String
-          x Set[String]
-          x Dict[String, Set[String]]
+        Return:
+          set[str]: the renamed start states
+          set[str]: the input alphabet
+          tuple[dict[str, int], dict[str, int], list[list[str]]]: the updated
+              transition function
+          str: the updated start state
+          set[str]: the updated finish state(s)
+          dict[str, set[str]]: the updated token to final state mapping.
         """
         rename = {q: RegularGrammar._state() for q in Q}
         Qp = set(rename.values())
