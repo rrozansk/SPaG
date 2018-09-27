@@ -129,26 +129,24 @@ try:
             stdout.write('Elapsed time (parser): {0}\n'.format(END-START))
             stdout.flush()
 
-
-    OPTIONS = {
-        'filename': ARGS['output'],
-        'encoding': ARGS['encoding'],
-        'scanner': True if ARGS['scanner'] else False,
-        'parser': True if ARGS['parser'] else False
-    }
     for GENERATOR in ARGS['generate']:
-        GENERATOR = GENERATOR(SCANNER, PARSER)
+        GENERATOR = GENERATOR()
+        GENERATOR.encoding = ARGS['encoding']
+        GENERATOR.filename = ARGS['output']
+        GENERATOR.parser = ARGS['parser']
+        GENERATOR.scanner = ARGS['scanner']
+        TARGET = GENERATOR.__name__
         if ARGS['verbose']:
-            stdout.write('Generating {0} code...'.format(type(GENERATOR)))
+            stdout.write('Generating {0} code...'.format(TARGET))
             stdout.flush()
         START = time()
-        FILES = GENERATOR.output(OPTIONS)
+        FILES = GENERATOR.generate()
         END = time()
         if ARGS['verbose']:
             stdout.write('done\n')
             stdout.flush()
         if ARGS['time']:
-            stdout.write('Elapsed time (generator: {0}): {1}\n'.format(type(GENERATOR),
+            stdout.write('Elapsed time (generator: {0}): {1}\n'.format(TARGET,
                                                                        END-START))
             stdout.flush()
 

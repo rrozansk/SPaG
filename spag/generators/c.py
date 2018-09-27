@@ -404,7 +404,7 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
         """.format(name, self._encode_bnf(name), self._generate_section_header("parser"))
         return parser_header, parser_source
 
-    def _translate(self, options):
+    def _translate(self):
         """Override the superclass method to generate source code.
 
         Attempt to generate the c source(.c) and header(.h) files for the
@@ -414,7 +414,7 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
         source = 'https://github.com/rrozansk/Scanner-Parser-Generator'
         warning = 'WARNING!! AUTO GENERATED FILE, DO NOT EDIT!'
         libs = ['stdio']
-        filename = options['filename']
+        filename = self.filename
 
         header = self._generate_file_header(filename+".h",
                                             author,
@@ -439,7 +439,7 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
 
 
         if self.parser is not None:
-            parse_func = self._sanatize(self.parser.name())
+            parse_func = self._sanatize(self.parser.name)
             ast_header, ast_source = self._generate_ast_api(parse_func)
             parser_header, parser_source = self._generate_parser_api(parse_func)
 

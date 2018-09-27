@@ -41,18 +41,12 @@ class TestGenerator(object):
         """
         Make sure the 'C' generator properly overrides the output method.
         """
-        scanner = RegularGrammar('test', {'foo': 'bar'})
-        parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         module = __import__('spag.generators.c', fromlist=['C'])
-        generator = getattr(module, 'C')(scanner, parser)
+        generator = getattr(module, 'C')()
         assert generator, 'constructor failed'
-        result = generator.output({
-            'filename': 'out',
-            'scanner': True,
-            'parser': True,
-            'encoding': 'direct'
-        })
-        assert result, 'no result returned'
+        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
+        assert generator.generate(), 'no result returned'
 
     @staticmethod
     @pytest.mark.xfail(
@@ -63,18 +57,12 @@ class TestGenerator(object):
         """
         Make sure the 'Go' generator properly overrides the output method.
         """
-        scanner = RegularGrammar('test', {'foo': 'bar'})
-        parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         module = __import__('spag.generators.go', fromlist=['Go'])
-        generator = getattr(module, 'Go')(scanner, parser)
+        generator = getattr(module, 'Go')()
         assert generator, 'constructor failed'
-        result = generator.output({
-            'filename': 'out',
-            'scanner': True,
-            'parser': True,
-            'encoding': 'direct'
-        })
-        assert result, 'no result returned'
+        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
+        assert generator.generate(), 'no result returned'
 
     @staticmethod
     @pytest.mark.xfail(
@@ -85,15 +73,9 @@ class TestGenerator(object):
         """
         Make sure the 'Python' generator properly overrides the output method.
         """
-        scanner = RegularGrammar('test', {'foo': 'bar'})
-        parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         module = __import__('spag.generators.python', fromlist=['Python'])
-        generator = getattr(module, 'Python')(scanner, parser)
+        generator = getattr(module, 'Python')()
         assert generator, 'constructor failed'
-        result = generator.output({
-            'filename': 'out',
-            'scanner': True,
-            'parser': True,
-            'encoding': 'direct'
-        })
-        assert result, 'no result returned'
+        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
+        assert generator.generate(), 'no result returned'
