@@ -134,7 +134,8 @@ class ContextFreeGrammar(object):
     def name(self):
         """Query for the name of the grammar.
 
-        Copy the grammar's name to protect against user mutations.
+        A readonly property which copies the grammar's name to protect against
+        user mutations.
 
         Return:
           str: The given input name of the grammar.
@@ -145,8 +146,8 @@ class ContextFreeGrammar(object):
     def start(self):
         """Query for the start production's nonterminal of the grammar.
 
-        Copy the grammar's start production nonterminal to protect against user
-        mutations.
+        A readonly property which copies the grammar's start production
+        nonterminal to protect against user mutations.
 
         Return:
           str: The given start production nonterminal.
@@ -157,7 +158,8 @@ class ContextFreeGrammar(object):
     def terminals(self):
         """Query for the terminal set of the grammar.
 
-        Copy the grammar's terminal set to protect against user mutations.
+        A readonly property which copies the grammar's terminal set to protect
+        against user mutations.
 
         Return:
           set[str]: The set of terminal symbols contained in the grammar.
@@ -168,7 +170,8 @@ class ContextFreeGrammar(object):
     def nonterminals(self):
         """Query for the nonterminal set of the grammar.
 
-        Copy the grammar's nonterminal set to protect against user mutations.
+        A readonly property which copies the grammar's nonterminal set to
+        protect against user mutations.
 
         Return:
           set[str]: The set of nonterminal production symbols in the grammar.
@@ -179,8 +182,8 @@ class ContextFreeGrammar(object):
     def first(self):
         """Query for the first set(s) of the grammar's [non]terminal(s).
 
-        Copy the first set(s) of the grammar's [non]terminal(s) to protect
-        against user mutations.
+        A readonly property which copies the first set(s) of the grammar's
+        [non]terminal(s) to protect against user mutations.
 
         Return:
           dict[str, set[str, int]]: The first set of every [non]terminal.
@@ -191,8 +194,8 @@ class ContextFreeGrammar(object):
     def follow(self):
         """Query for the follow set(s) of the grammar's nonterminal(s).
 
-        Copy the follow set(s) grammar's nonterminals to protect against user
-        mutations.
+        A readonly property which copies the follow set(s) grammar's
+        nonterminals to protect against user mutations.
 
         Return:
           dict[str, set[str, int]]: The follow set of every nonterminal.
@@ -203,8 +206,8 @@ class ContextFreeGrammar(object):
     def rules(self):
         """Query for the production rules of the grammar.
 
-        Copy the grammar's flattened production rules to protect against user
-        mutations.
+        A readonly property which copies the grammar's flattened production
+        rules to protect against user mutations.
 
         Return:
           list[tuple[str, list[str]]]: A flattened list of production rules.
@@ -215,7 +218,8 @@ class ContextFreeGrammar(object):
     def table(self):
         """Query for the parse table of the given input grammar.
 
-        Copy the grammar's parse table to protect against user mutations.
+        A readonly property which copies the grammar's parse table to protect
+        against user mutations.
 
         Return:
           list[list[set[int]]]: row-major parse table with list rule

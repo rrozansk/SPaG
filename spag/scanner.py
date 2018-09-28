@@ -36,7 +36,8 @@ class RegularGrammar(object):
     _operators = {v:k for k, v in _literals.items()}
 
     # Set of acceptable input characters (printable ascii) including:
-    # uppercase, lowercase, digits, punctuation, whitespace
+    # uppercase, lowercase, digits, punctuation, whitespace. needed for
+    # character class/range negation
     _characters = set(printable)
 
     # Operator precedence for the shunting yard algorithm.
@@ -180,7 +181,8 @@ class RegularGrammar(object):
     def name(self):
         """Query for the name of the scanner.
 
-        Copy the scanners's name to protect against user mutations.
+        A readonly property which copies the scanners's name to protect against
+        user mutations.
 
         Return:
           str: The given input name of the scanner.
@@ -191,8 +193,8 @@ class RegularGrammar(object):
     def expressions(self):
         """Query for the patterns recognized by the scanner.
 
-        Copy the scanners's token name/expression pairs to protect against user
-        mutations.
+        A readonly property which copies the scanners's token name/expression
+        pairs to protect against user mutations.
 
         Return:
           list[tuple[str, str]]: the token name/expression pairs
@@ -203,7 +205,8 @@ class RegularGrammar(object):
     def states(self):
         """Query for states in the grammars equivalent minimal DFA.
 
-        Copy the scanner's states to protect against user mutation.
+        A readonly property which copies the scanner's states to protect against
+        user mutation.
 
         Return:
           set[str]: all possible states in the resulting DFA.
@@ -214,7 +217,8 @@ class RegularGrammar(object):
     def alphabet(self):
         """Query for alphabet of characters recognized by the grammars DFA.
 
-        Copy the scannner's alphabet to protect against user mutation.
+        A readonly property which copies the scannner's alphabet to protect
+        against user mutation.
 
         Return:
           set[str]: all possible input characters to the resulting DFA.
@@ -225,7 +229,8 @@ class RegularGrammar(object):
     def transitions(self):
         """Query for the state transitions defining the grammars DFA.
 
-        Copy the scannner's transitions to protect against user mutation.
+        A readonly property which copies the scannner's transitions to protect
+        against user mutation.
 
         Return:
           tuple[dict[str, int], dict[str, int], list[list[str]]]: the DFA
@@ -237,7 +242,8 @@ class RegularGrammar(object):
     def start(self):
         """Query for the start state of the grammars DFA.
 
-        Copy the scanner's start state to protect against user manipulation.
+        A readonly property which copies the scanner's start state to protect
+        against user manipulation.
 
         Return:
           str: the start state of the grammars DFA.
@@ -248,8 +254,8 @@ class RegularGrammar(object):
     def accepting(self):
         """Query for all accepting states of the grammars DFA.
 
-        Copy the scanner's accepting states to protect against user
-        manipulation.
+        A readonly property which copies the scanner's accepting states to
+        protect against user manipulation.
 
         Return:
           set[str]: the resulting DFA's accepting states.
@@ -260,7 +266,8 @@ class RegularGrammar(object):
     def types(self):
         """Query for the dictionary labeling all types to ther final state(s).
 
-        Copy the scanner's types to protect against user manipulation.
+        A readonly property which copies the scanner's types to protect against
+        user manipulation.
 
         Return:
           dict[str, set[str]]: the resulting DFA's token types.
@@ -399,7 +406,8 @@ class RegularGrammar(object):
                output[-1] != RegularGrammar._operators['('] and \
                output[-1] != RegularGrammar._operators['|'] and \
                output[-1] != RegularGrammar._operators['.'] and \
-               (elem == RegularGrammar._operators['('] or elem in RegularGrammar._characters):
+               (elem == RegularGrammar._operators['('] or
+                elem not in RegularGrammar._literals):
                 output.append(RegularGrammar._operators['.'])
             output.append(elem)
         return output
@@ -441,7 +449,7 @@ class RegularGrammar(object):
                       and RegularGrammar._precedence[token][1]:  # left-associative?
                     queue.append(stack.pop())
                 stack.append(token)
-            else:  # token in RegularGrammar._characters:
+            else:  # it's a character
                 queue.append(token)
 
         while stack:
@@ -553,7 +561,7 @@ class RegularGrammar(object):
                 e_update(S, p)
                 e_update(S, F)
                 e_update(q, F)
-            else:  # token in RegularGrammar._characters:
+            else:  # it's a character
                 S, F = RegularGrammar._state(), RegularGrammar._state()
                 V.add(token)
                 T.add((S, token, F))

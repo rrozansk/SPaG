@@ -33,29 +33,29 @@ class Generator(object):
 
     @property
     def scanner(self):
-        """Get the scanner to be used for generation.
+        """Get or set the scanner to be used for generation, if any.
 
-        Query for the scanner to be used for code generation, if any.
+        Query for or attempt to set the scanner to be used for code generation.
+        This allows the child language Generators to be reused rather than
+        recreated if attempting to generate source for multiple scanners.
+
+        Args:
+          scanner (RegularGrammar): The scanner to be used for generation. If
+              generation of the scanner is no longer desired it may also be set
+              to None.
 
         Return:
-          None: If the scanner is not set.
+          None: The default if the scanner was not previously set.
           RegularGrammar: If scanner was set.
+
+        Raises:
+          TypeError: If `scanner` is not None or a RegularGrammar when
+              attempting to set.
         """
         return self._scanner
 
     @scanner.setter
     def scanner(self, scanner):
-        """Set the scanner to be used for generation.
-
-        [Re]Set the scanner to be used for code generation, if any. This allows
-        The child language Generators to be reused rather than recreated.
-
-        Args:
-          scanner (RegularGrammar): The scanner to be used for generation.
-
-        Raises:
-          TypeError: If `scanner` is not None or a RegularGrammar.
-        """
         if not isinstance(scanner, (RegularGrammar, type(None))):
             raise TypeError('scanner not a RegularGrammar or None')
 
@@ -63,29 +63,29 @@ class Generator(object):
 
     @property
     def parser(self):
-        """Get the parser to be used for generation.
+        """Get of set the parser to be used for generation, if any.
 
-        Query for the parser to be used for code generation, if any.
+        Query for or attempt to set the parser to be used for code generation.
+        This allows the child language Generators to be reused rather than
+        recreated if attempting to generate source for multiple parsers.
+
+        Args:
+          parser (ContextFreeGrammar): The parser to be used for generation. If
+              generation of the parser is no longer desired it may also be set
+              to None.
 
         Return:
-          None: If the parser is not set.
-          ContextFreeGrammar: If the parser was set.
+          None: The default if the parser was not previously set.
+          ContextFreeGrammar: If parser was set.
+
+        Raises:
+          TypeError: If `parser` is not None or a ContextFreeGrammar when
+              attempting to set.
         """
         return self._parser
 
     @parser.setter
     def parser(self, parser):
-        """Set the parser to be used for generation.
-
-        [Re]Set the parser to be used for code generation, if any. This allows
-        The child language Generators to be reused rather than recreated.
-
-        Args:
-          parser (ContextFreeGrammar): The parser to be used for generation.
-
-        Raises:
-          TypeError: If `parser` is not None or a ContextFreeGrammar.
-        """
         if not isinstance(parser, (ContextFreeGrammar, type(None))):
             raise TypeError('parser not a ContextFreeGrammar or None')
 
@@ -93,28 +93,25 @@ class Generator(object):
 
     @property
     def filename(self):
-        """Get the base filename to be used for generation.
+        """Get or set the base filename to be used for generation.
 
-        Query for the base filename to be used for code generation.
+        Query for or attempt to set the base filename to be used for code
+        generation of the scanner and/or parser.
+
+        Args:
+          filename (str): The base filename to be used for generation.
 
         Return:
-          str: 'out' if not set, otherwise the last set filename.
+          str: 'out' if not set (default), otherwise the last set filename.
+
+        Raises:
+          TypeError if filename is not of type string when being set.
+          ValueError if an empty filename is given when being set.
         """
         return self._filename
 
     @filename.setter
     def filename(self, filename):
-        """Set the base filename to be used for generation.
-
-        [Re]Set the base fileanme to be used for code generation.
-
-        Args:
-          filename (str): The base filename to be used for generation.
-
-        Raises:
-          TypeError if filename is not of type string
-          ValueError if an empty filename is given
-        """
         if not isinstance(filename, str):
             raise TypeError('filename must be of type string')
 
@@ -125,32 +122,29 @@ class Generator(object):
 
     @property
     def encoding(self):
-        """Get the encoding to be used for generation.
+        """Get or set the encoding to be used for generation.
 
-        Query for the table encoding to be used when generating code.
-
-        Return:
-          str: the encoding to be used.
-        """
-        return self._encoding
-
-    @encoding.setter
-    def encoding(self, encoding):
-        """Set the table encoding to be used for generation.
-
-        [Re]Set the table encoding to be used for code generation. possible
-        options include:
+        Query for or attempt to set the table encoding to be used when
+        generating source for the scanner and/or parser. Possible options
+        include:
           'direct': encode the table into the source.
           'table': use a small driver and utilize the table for lookup.
 
         Args:
           encoding (str): the encoding to use when generating code.
 
+        Return:
+          str: 'direct' if not set (default), otherwise the last set encoding.
+
         Raises:
           TypeError if encoding is not if type string
           ValueError if encoding is empty
           ValueError if given encoding is not recognized
         """
+        return self._encoding
+
+    @encoding.setter
+    def encoding(self, encoding):
         if not isinstance(encoding, str):
             raise TypeError('encoding must be of type string')
 
