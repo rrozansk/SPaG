@@ -1,9 +1,3 @@
-# pylint: disable=anomalous-backslash-in-string
-# pylint: disable=too-many-boolean-expressions
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-locals
-# pylint: disable=too-many-statements
-# pylint: disable=unused-argument
 """Programmatic creation of scanners through RegularGrammar objects.
 
 The RegularGrammar object represents a group of formal regular expressions
@@ -85,7 +79,7 @@ class RegularGrammar(object):
                * if a literal '-' if required in a character class or range it
                  must be specified last so as to not be interpreted as a range.
                * for literal right brackets inside character ranges or classes
-                 an escape is needed (e.g. [\]]).
+                 it must be escaped.
                * concatenation can be either implicit or explicit in the
                  given input expression(s).
                * operator literals (i.e. '|.?*+()[]') can be specified through
@@ -400,10 +394,12 @@ class RegularGrammar(object):
           list[str, int]: an internal representation of a regular expression
               with concatenation explicit throughout.
         """
-        output = []
-        for elem in expr:
-            if output and \
-               output[-1] != RegularGrammar._operators['('] and \
+        if not expr:
+            return expr
+
+        output = [expr[0]]
+        for elem in expr[1:]:
+            if output[-1] != RegularGrammar._operators['('] and \
                output[-1] != RegularGrammar._operators['|'] and \
                output[-1] != RegularGrammar._operators['.'] and \
                (elem == RegularGrammar._operators['('] or

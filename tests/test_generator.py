@@ -1,6 +1,3 @@
-# pylint: disable=abstract-method
-# pylint: disable=too-many-public-methods
-# pylint: disable=invalid-name
 """
 Testing for Generator objects located in src/generator.py
 """
@@ -260,8 +257,10 @@ class TestGenerator(object):
         Ensure a NotImplementedError is raised if a child Generator does not
         override the private _translate(self, filename) method.
         """
+        # pylint: disable=abstract-method
         class _GenerateNothing(Generator):
             pass
+        # pylint: enable=abstract-method
 
         generator = _GenerateNothing()
         generator.scanner = RegularGrammar('test', {'foo': 'bar'})

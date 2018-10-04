@@ -1,5 +1,4 @@
 #! /usr/bin/python
-# pylint: disable=too-few-public-methods
 """A Python CLI script for scanner/parser generation using SPaG.
 
 This script deals with all the file I/O including the definition of the input
@@ -80,8 +79,10 @@ CLI.add_argument('-g', '--generate', type=str, nargs='+', default=[],
 CLI.add_argument('-o', '--output', action='store', type=str, default='out',
                  help='base filename to use for generated output')
 CLI.add_argument('-p', '--parser', type=open, action=CollectSpecification,
+                 default=None,
                  help='file containing parser name and LL(1) BNF grammar')
 CLI.add_argument('-s', '--scanner', type=open, action=CollectSpecification,
+                 default=None,
                  help='file containing scanner name and type/token pairs')
 CLI.add_argument('-t', '--time', action='store_true',
                  help='display the wall time taken for each component')
@@ -108,7 +109,7 @@ try:
             stdout.write('done\n')
             stdout.flush()
         if ARGS['time']:
-            stdout.write('Elapsed time (scanner): {0}\n'.format(END-START))
+            stdout.write('Elapsed time (scanner): {0}s\n'.format(END-START))
             stdout.flush()
 
     PARSER = None
@@ -117,7 +118,8 @@ try:
             stdout.write('Compiling parser specification...')
             stdout.flush()
         START = time()
-        PRODUCTIONS = {ID:[(ID, rule) for rule in rhs.split('|')] for ID, rhs in ARGS['parser']['rules']},
+        PRODUCTIONS = {ID:[rule.split() for rule in rhs.split('|')]
+                       for ID, rhs in ARGS['parser']['rules']}
         PARSER = ContextFreeGrammar(ARGS['parser']['name'],
                                     PRODUCTIONS,
                                     ARGS['parser']['rules'][0][0])
@@ -126,16 +128,16 @@ try:
             stdout.write('done\n')
             stdout.flush()
         if ARGS['time']:
-            stdout.write('Elapsed time (parser): {0}\n'.format(END-START))
+            stdout.write('Elapsed time (parser): {0}s\n'.format(END-START))
             stdout.flush()
 
     for GENERATOR in ARGS['generate']:
+        TARGET = GENERATOR.__name__
         GENERATOR = GENERATOR()
         GENERATOR.encoding = ARGS['encoding']
         GENERATOR.filename = ARGS['output']
-        GENERATOR.parser = ARGS['parser']
-        GENERATOR.scanner = ARGS['scanner']
-        TARGET = GENERATOR.__name__
+        GENERATOR.parser = PARSER
+        GENERATOR.scanner = SCANNER
         if ARGS['verbose']:
             stdout.write('Generating {0} code...'.format(TARGET))
             stdout.flush()
@@ -146,8 +148,8 @@ try:
             stdout.write('done\n')
             stdout.flush()
         if ARGS['time']:
-            stdout.write('Elapsed time (generator: {0}): {1}\n'.format(TARGET,
-                                                                       END-START))
+            stdout.write('Elapsed time (generator: {0}): {1}s\n'.format(TARGET,
+                                                                        END-START))
             stdout.flush()
 
         for NAME, CONTENT in FILES.items():

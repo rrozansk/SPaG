@@ -1,9 +1,3 @@
-# pylint: disable=anomalous-backslash-in-string
-# pylint: disable=bad-whitespace
-# pylint: disable=line-too-long
-# pylint: disable=too-many-lines
-# pylint: disable=too-many-locals
-# pylint: disable=too-many-public-methods
 """
 Testing for RegularGrammar objects located in spag/scanner.py
 """
@@ -279,7 +273,7 @@ class TestScanner(object):
         TestScanner._run(**{
             'name': 'Invalid Escape Sequence',
             'expressions': {
-                'invalid': '\j'
+                'invalid': r'\j'
             },
             'DFA': {}
         })
@@ -504,10 +498,12 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'Err']),
                 'V': set('a'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S', 'A',   'Err'],
                     ['a', 'A', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['A']),
                 'G': {
@@ -580,11 +576,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'AB', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',  'AB',  'Err'],
                     ['a', 'AB', 'Err', 'Err'],
                     ['b', 'AB', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['AB']),
                 'G': {
@@ -608,11 +606,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'A',   'B',   'Err'],
                     ['a', 'A',   'Err', 'Err', 'Err'],
                     ['b', 'Err', 'B',   'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['B']),
                 'G': {
@@ -636,11 +636,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'A',   'B',   'Err'],
                     ['a', 'A',   'Err', 'Err', 'Err'],
                     ['b', 'Err', 'B',   'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['B']),
                 'G': {
@@ -663,6 +665,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'C', 'D', 'E', 'Err']),
                 'V': set('abcde'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'A',   'B',   'C',   'D',   'E',   'Err'],
                     ['a', 'A',   'Err', 'Err', 'Err', 'Err', 'Err', 'Err'],
@@ -671,6 +674,7 @@ class TestScanner(object):
                     ['d', 'Err', 'Err', 'Err', 'D',   'Err', 'Err', 'Err'],
                     ['e', 'Err', 'Err', 'Err', 'Err', 'E',   'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['E']),
                 'G': {
@@ -693,10 +697,12 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'Err']),
                 'V': set('a'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S', 'A',   'Err'],
                     ['a', 'A', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['S', 'A']),
                 'G': {
@@ -745,12 +751,14 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('abc'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'F',   'Err'],
                     ['a', 'F',   'Err', 'Err'],
                     ['b', 'F',   'Err', 'Err'],
                     ['c', 'F',   'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
@@ -773,12 +781,14 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('abc'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'F',   'Err'],
                     ['a', 'F',   'Err', 'Err'],
                     ['b', 'F',   'Err', 'Err'],
                     ['c', 'F',   'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
@@ -801,6 +811,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('^_`a'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'F',   'Err'],
                     ['^', 'F',   'Err', 'Err'],
@@ -808,6 +819,7 @@ class TestScanner(object):
                     ['`', 'F',   'Err', 'Err'],
                     ['a', 'F',   'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
@@ -830,6 +842,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S']),
                 'V': set(' \t\n\r\f\v'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ',  'S'],
                     [' ',  'S'],
@@ -839,6 +852,7 @@ class TestScanner(object):
                     ['\f', 'S'],
                     ['\v', 'S']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['S']),
                 'G': {
@@ -855,7 +869,7 @@ class TestScanner(object):
         TestScanner._run(**{
             'name': 'Character Class with Literal Right Bracket',
             'expressions': {
-                'class': '[\]]*'
+                'class': r'[\]]*'
             },
             'DFA': {
                 'Q': set(['S']),
@@ -885,12 +899,14 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('abc'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'F',   'Err'],
                     ['a', 'F',   'Err', 'Err'],
                     ['b', 'F',   'Err', 'Err'],
                     ['c', 'F',   'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
@@ -913,10 +929,12 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('a'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'F',   'Err'],
                     ['a', 'F',   'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
@@ -934,11 +952,14 @@ class TestScanner(object):
         TestScanner._run(**{
             'name': 'Negated Character Class',
             'expressions': {
-                'class': '[^^!"#$%&\'()*+,./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\\]_`abcdefghijklmnopqrstuvwxyz{|}~-]*'
+                # pylint: disable=anomalous-backslash-in-string
+                'class': '[^^!"#$%&\'()*+,./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\\\[\]_`abcdefghijklmnopqrstuvwxyz{|}~-]*',
+                # pylint: enable=anomalous-backslash-in-string
             },
             'DFA': {
                 'Q': set(['S']),
                 'V': set(' \t\n\r\f\v'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ',  'S'],
                     [' ',  'S'],
@@ -948,6 +969,7 @@ class TestScanner(object):
                     ['\f', 'S'],
                     ['\v', 'S']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['S']),
                 'G': {
@@ -1022,20 +1044,21 @@ class TestScanner(object):
         TestScanner._run(**{
             'name': 'Operator Alpha Literals',
             'expressions': {
-                'concat': '\.',
-                'alt': '\|',
-                'star': '\*',
-                'question': '\?',
-                'plus': '\+',
+                'concat': r'\.',
+                'alt': r'\|',
+                'star': r'\*',
+                'question': r'\?',
+                'plus': r'\+',
                 'slash': '\\\\',
-                'lparen': '\(',
-                'rparen': '\)',
-                'lbracket': '\[',
-                'rbracket': '\]',
+                'lparen': r'\(',
+                'rparen': r'\)',
+                'lbracket': r'\[',
+                'rbracket': r'\]',
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
                 'V': set('.|*?+\\()[]'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ',  'S', 'F',   'Err'],
                     ['.',  'F', 'Err', 'Err'],
@@ -1049,6 +1072,7 @@ class TestScanner(object):
                     ['[',  'F', 'Err', 'Err'],
                     [']',  'F', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
@@ -1134,11 +1158,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['A', 'B', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'A',   'B',   'Err'],
                     ['a', 'B',   'Err', 'Err'],
                     ['b', 'Err', 'B',   'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'A',
                 'F': set(['B']),
                 'G': {
@@ -1163,11 +1189,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S', 'A',   'B',   'Err'],
                     ['a', 'A', 'Err', 'Err', 'Err'],
                     ['b', 'B', 'Err', 'B',   'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['S', 'A', 'B']),
                 'G': {
@@ -1218,11 +1246,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'A',   'B',   'Err'],
                     ['a', 'A',   'Err', 'Err', 'Err'],
                     ['b', 'Err', 'B',   'B',   'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['B']),
                 'G': {
@@ -1247,11 +1277,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S', 'A',   'B',   'Err'],
                     ['a', 'A', 'Err', 'Err', 'Err'],
                     ['b', 'B', 'Err', 'B',   'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['A', 'B']),
                 'G': {
@@ -1276,11 +1308,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'A',   'B',   'Err'],
                     ['a', 'A',   'Err', 'Err', 'Err'],
                     ['b', 'Err', 'B',   'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['A', 'B']),
                 'G': {
@@ -1305,11 +1339,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'AB', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',  'AB',  'Err'],
                     ['a', 'AB', 'Err', 'Err'],
                     ['b', 'AB', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['S', 'AB']),
                 'G': {
@@ -1333,12 +1369,14 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'BC', 'Err']),
                 'V': set('abc'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'A',   'BC',  'Err'],
                     ['a', 'A',   'Err', 'Err', 'Err'],
                     ['b', 'Err', 'BC',  'Err', 'Err'],
                     ['c', 'BC',  'Err', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['BC']),
                 'G': {
@@ -1364,11 +1402,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['A', 'B', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'A', 'B',   'Err'],
                     ['a', 'A', 'Err', 'Err'],
                     ['b', 'B', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'A',
                 'F': set(['B']),
                 'G': {
@@ -1397,11 +1437,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'A', 'B',   'Err'],
                     ['a', 'A',   'A', 'Err', 'Err'],
                     ['b', 'Err', 'B', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['B']),
                 'G': {
@@ -1430,11 +1472,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S', 'A',   'B',   'Err'],
                     ['a', 'A', 'Err', 'Err', 'Err'],
                     ['b', 'B', 'B',   'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['B']),
                 'G': {
@@ -1463,11 +1507,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'AB', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',  'AB',  'Err'],
                     ['a', 'AB', 'Err', 'Err'],
                     ['b', 'AB', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['AB']),
                 'G': {
@@ -1493,6 +1539,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['AC', 'B', 'DE', 'Err']),
                 'V': set('abcd'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'AC',  'B',   'DE',  'Err'],
                     ['a', 'AC',  'Err', 'Err', 'Err'],
@@ -1500,6 +1547,7 @@ class TestScanner(object):
                     ['c', 'B',   'Err', 'B',   'Err'],
                     ['d', 'Err', 'DE',  'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'AC',
                 'F': set(['AC', 'DE']),
                 'G': {
@@ -1522,11 +1570,13 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['A', 'B', 'Err']),
                 'V': set('ab'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'A',  'B',   'Err'],
                     ['a', 'B',  'Err', 'Err'],
                     ['b', 'B',  'B',   'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'A',
                 'F': set(['A', 'B']),
                 'G': {
@@ -1549,6 +1599,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'A', 'A*', 'B', 'C', 'D', 'F', 'Err']),
                 'V': set('abcde'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'A',   'A*',  'B',   'C',   'D',   'F',   'Err'],
                     ['a', 'A',   'A*',  'A*',  'Err', 'Err', 'Err', 'Err', 'Err'],
@@ -1557,6 +1608,7 @@ class TestScanner(object):
                     ['d', 'Err', 'Err', 'Err', 'Err', 'D',   'Err', 'Err', 'Err'],
                     ['e', 'Err', 'Err', 'Err', 'Err', 'Err', 'F',   'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['F', 'B']),
                 'G': {
@@ -1579,6 +1631,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'F', 'FO', 'FOO', 'B', 'BA', 'BAR', 'Err']),
                 'V': set('fobar'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'F',   'FO',  'FOO', 'B',   'BA',  'BAR', 'Err'],
                     ['f', 'F',   'Err', 'Err', 'Err', 'Err', 'Err', 'Err', 'Err'],
@@ -1587,6 +1640,7 @@ class TestScanner(object):
                     ['a', 'Err', 'Err', 'Err', 'Err', 'BA',  'Err', 'Err', 'Err'],
                     ['r', 'Err', 'Err', 'Err', 'Err', 'Err', 'BAR', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['BAR']),
                 'G': {
@@ -1609,6 +1663,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S']),
                 'V': set(' \t\n\r\f\v'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ',  'S'],
                     [' ',  'S'],
@@ -1618,6 +1673,7 @@ class TestScanner(object):
                     ['\f', 'S'],
                     ['\v', 'S']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['S']),
                 'G': {
@@ -1639,6 +1695,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'T', 'R', 'F', 'A', 'L', 'US', 'E', 'Err']),
                 'V': set('truefals'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',   'T',   'R',   'F',   'A',   'L',   'US',  'E',   'Err'],
                     ['t', 'T',   'Err', 'Err', 'Err', 'Err', 'Err', 'Err', 'Err', 'Err'],
@@ -1650,6 +1707,7 @@ class TestScanner(object):
                     ['l', 'Err', 'Err', 'Err', 'Err', 'L',   'Err', 'Err', 'Err', 'Err'],
                     ['s', 'Err', 'Err', 'Err', 'Err', 'Err', 'US',  'Err', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['E']),
                 'G': {
@@ -1672,6 +1730,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', '_1', '_2', 'F', 'Err']),
                 'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ',  'S',   '_1', '_2',  'F',   'Err'],
                     ['#',  'Err', '_2', 'Err', 'Err', 'Err'],
@@ -1775,6 +1834,7 @@ class TestScanner(object):
                     ['}',  'Err', '_2', 'Err', 'Err', 'Err'],
                     ['~',  'Err', '_2', 'Err', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
@@ -1797,6 +1857,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', '_', 'F', 'Err']),
                 'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ',  'S',   '_', 'F',   'Err'],
                     ['#',  'Err', '_', 'Err', 'Err'],
@@ -1900,6 +1961,7 @@ class TestScanner(object):
                     ['}',  'Err', '_', 'Err', 'Err'],
                     ['~',  'Err', '_', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
@@ -1922,6 +1984,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['Char', 'DigitOrChar', 'Err']),
                 'V': set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ',  'Char',        'DigitOrChar', 'Err'],
                     ['a',  'DigitOrChar', 'DigitOrChar', 'Err'],
@@ -1988,6 +2051,7 @@ class TestScanner(object):
                     ['9',  'Err',         'DigitOrChar', 'Err'],
                     ['_',  'DigitOrChar', 'DigitOrChar', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'Char',
                 'F': set(['DigitOrChar']),
                 'G': {
@@ -2010,6 +2074,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', 'Zero', 'Sign', 'Int', 'Err']),
                 'V': set('+-0123456789'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',    'Zero', 'Sign', 'Int', 'Err'],
                     ['+', 'Sign', 'Err',  'Err',  'Err', 'Err'],
@@ -2025,6 +2090,7 @@ class TestScanner(object):
                     ['8', 'Int',  'Err',  'Int',  'Int', 'Err'],
                     ['9', 'Int',  'Err',  'Int',  'Int', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['Zero', 'Int']),
                 'G': {
@@ -2042,11 +2108,12 @@ class TestScanner(object):
         TestScanner._run(**{
             'name': 'Float',
             'expressions': {
-                'float': '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
+                'float': r'[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
             },
             'DFA': {
                 'Q': set(['S', 'WholePart', 'ExpPart', 'FractionPart', 'eSignum', 'Sigfrac', 'Sigexp', 'Signum', 'Err']),
                 'V': set('+-.0123456789eE'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ', 'S',         'WholePart', 'ExpPart', 'FractionPart', 'eSignum', 'Sigfrac',      'Sigexp',  'Signum',    'Err'],
                     ['+', 'Signum',    'Err',       'Err',     'Err',          'Err',     'Err',          'eSignum', 'Err',       'Err'],
@@ -2065,6 +2132,7 @@ class TestScanner(object):
                     ['E', 'Err',       'Sigexp',    'Err',     'Sigexp',       'Err',     'Err',          'Err',     'Err',       'Err'],
                     ['e', 'Err',       'Sigexp',    'Err',     'Sigexp',       'Err',     'Err',          'Err',     'Err',       'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['WholePart', 'ExpPart', 'FractionPart']),
                 'G': {
@@ -2087,6 +2155,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['S', '_', 'F', 'Err']),
                 'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ',  'S',   '_', 'F',   'Err'],
                     ['#',  '_',   '_', 'Err', 'Err'],
@@ -2190,6 +2259,7 @@ class TestScanner(object):
                     ['}',  'Err', '_', 'Err', 'Err'],
                     ['~',  'Err', '_', 'Err', 'Err']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
@@ -2212,6 +2282,7 @@ class TestScanner(object):
             'DFA': {
                 'Q': set(['BEGIN', 'SINK', 'FSLASH', 'SIGEND', 'END', 'ERR']),
                 'V': set('0123456789 \t\v\f\r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
+                # pylint: disable=bad-whitespace
                 'T': [
                     [' ',  'BEGIN',  'SINK',   'FSLASH', 'SIGEND', 'END',    'ERR'],
                     ['/',  'FSLASH', 'SINK',   'ERR',    'END',    'SINK',   'ERR'],
@@ -2315,6 +2386,7 @@ class TestScanner(object):
                     ['}',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR'],
                     ['~',  'ERR',    'SINK',   'ERR',    'SINK',   'SINK',   'ERR']
                 ],
+                # pylint: enable=bad-whitespace
                 'S': 'BEGIN',
                 'F': set(['END']),
                 'G': {

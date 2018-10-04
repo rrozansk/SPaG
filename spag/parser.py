@@ -1,4 +1,3 @@
-# pylint: disable=too-many-branches
 """Programmatic creation of parsers through ContextFreeGrammar objects.
 
 The ContextFreeGrammar object represents a BNF (Backus-[Naur/Normal] Form)

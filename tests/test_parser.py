@@ -1,5 +1,3 @@
-# pylint: disable=too-many-lines
-# pylint: disable=too-many-public-methods
 """
 Testing for ContextFreeGrammar objects located in spag/parser.py
 """
