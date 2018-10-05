@@ -13,3 +13,4 @@ pytest-html==1.19.0
 pytest-metadata==1.7.0
 setuptools==40.4.3
 virtualenv==16.0.0
+wheel==0.32.1
