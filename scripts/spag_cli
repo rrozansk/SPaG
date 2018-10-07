@@ -3,7 +3,7 @@
 
 This script deals with all the file I/O including the definition of the input
 file specification. It also properly handles the dynamic importing required
-for the generators of interest.
+for the generator(s) of interest.
 """
 from argparse import ArgumentParser, Action
 from configparser import RawConfigParser
@@ -26,24 +26,29 @@ class DynamicGeneratorImport(Action):
             generators.append(generator)
         setattr(namespace, self.dest, generators)
 
-class CollectSpecification(Action):
-    """Collect the specification for a scanner or parser from file."""
+class CollectSpecifications(Action):
+    """Collect the specification for a scanner or parser from an INI file."""
 
     def __call__(self, parser, namespace, values, option_string=None):
-        specification = RawConfigParser()
-        specification.readfp(values)
+        specifications = []
+        for file_specification in values:
+            specification = RawConfigParser()
+            specification.readfp(file_specification)
 
-        if len(specification.sections()) != 1:
-            raise ValueError('Invalid specification format - name')
+            if len(specification.sections()) != 1:
+                raise ValueError('Invalid specification format - name')
 
-        language = specification.sections()[0]
-        rules = [(_id, str(rule)) for _id, rule in specification.items(language)]
+            language = specification.sections()[0]
+            rules = [(_id, str(rule))
+                     for _id, rule in specification.items(language)]
 
-        setattr(namespace, self.dest, {'name': language, 'rules': rules})
+            specifications.append({'name': language, 'rules': rules})
+
+        setattr(namespace, self.dest, specifications)
 
 CLI = ArgumentParser(
     prog='SPaG-CLI',
-    usage='$ spag_cli.py --help',
+    usage='$ spag_cli --help',
     description='''
     A simple CLI (Command Line Interface) script which reads some input file
     specification(s) to generate lexers and/or parsers for a given set of
@@ -62,72 +67,87 @@ CLI.add_argument('-e', '--encoding', type=str, default='direct',
                  help='encoding to use for the generated output')
 CLI.add_argument('-f', '--force', action='store_true',
                  help='overwrite output file(s) if already present')
-CLI.add_argument('-g', '--generate', type=str, nargs='+', default=[],
-                 choices=languages, required=True,
-                 action=DynamicGeneratorImport,
+CLI.add_argument('-g', '--generate', type=str, nargs='*', default=[],
+                 choices=languages, action=DynamicGeneratorImport,
                  help='target language(s) for code generation')
 CLI.add_argument('-o', '--output', action='store', type=str, default='out',
+                 metavar='base-filename',
                  help='base filename to use for generated output')
-CLI.add_argument('-p', '--parser', type=open, action=CollectSpecification,
-                 default=None,
-                 help='file containing parser name and LL(1) BNF grammar')
-CLI.add_argument('-s', '--scanner', type=open, action=CollectSpecification,
-                 default=None,
-                 help='file containing scanner name and type/token pairs')
+CLI.add_argument('-p', '--parser', type=open, action=CollectSpecifications,
+                 default=[], nargs='*', metavar='specification',
+                 help='file(s) containing parser name and LL(1) BNF grammar')
+CLI.add_argument('-s', '--scanner', type=open, action=CollectSpecifications,
+                 default=[], nargs='*', metavar='specification',
+                 help='file(s) containing scanner name and type/token pairs')
 CLI.add_argument('-t', '--time', action='store_true',
                  help='display the wall time taken for each component')
 CLI.add_argument('-v', '--verbose', action='store_true',
                  help='output more information when running')
 CLI.add_argument('-V', '--version', action='version',
-                 version='Lexer/Parser Generator v1.0.0a0',
+                 version='SPaG-CLI v1.0.0a0',
                  help='show version information and exit')
 
 try:
     ARGS = vars(CLI.parse_args())
     START, END = None, None
 
-    SCANNER = None
-    if ARGS['scanner'] is not None:
+    SCANNERS = []
+    for scanner in ARGS['scanner']:
         if ARGS['verbose']:
-            stdout.write('Compiling scanner specification...')
+            stdout.write('Compiling {0} scanner specification...'.format(scanner['name']))
             stdout.flush()
         START = time()
-        SCANNER = RegularGrammar(ARGS['scanner']['name'],
-                                 dict(ARGS['scanner']['rules']))
+        SCANNERS.append(RegularGrammar(scanner['name'], dict(scanner['rules'])))
         END = time()
         if ARGS['verbose']:
             stdout.write('done\n')
             stdout.flush()
         if ARGS['time']:
-            stdout.write('Elapsed time (scanner): {0}s\n'.format(END-START))
+            stdout.write('Elapsed time ({0} scanner): {1}s\n'.format(scanner['name'],
+                                                                     END-START))
             stdout.flush()
 
-    PARSER = None
-    if ARGS['parser'] is not None:
+    PARSERS = []
+    for parser in ARGS['parser']:
         if ARGS['verbose']:
-            stdout.write('Compiling parser specification...')
+            stdout.write('Compiling {0} parser specification...'.format(parser['name']))
             stdout.flush()
         START = time()
         PRODUCTIONS = {ID:[rule.split() for rule in rhs.split('|')]
-                       for ID, rhs in ARGS['parser']['rules']}
-        PARSER = ContextFreeGrammar(ARGS['parser']['name'],
-                                    PRODUCTIONS,
-                                    ARGS['parser']['rules'][0][0])
+                       for ID, rhs in parser['rules']}
+        PARSERS.append(ContextFreeGrammar(parser['name'],
+                                          PRODUCTIONS,
+                                          parser['rules'][0][0]))
         END = time()
         if ARGS['verbose']:
             stdout.write('done\n')
             stdout.flush()
         if ARGS['time']:
-            stdout.write('Elapsed time (parser): {0}s\n'.format(END-START))
+            stdout.write('Elapsed time ({0} parser): {1}s\n'.format(parser['name'],
+                                                                    END-START))
             stdout.flush()
 
-    for GENERATOR in ARGS['generate']:
-        TARGET = GENERATOR.__name__
-        GENERATOR = GENERATOR()
+    GENERATORS = []
+    for generator in ARGS['generate']:
+        TARGET = generator.__name__
+        GENERATOR = generator()
         GENERATOR.encoding = ARGS['encoding']
         GENERATOR.filename = ARGS['output']
+        GENERATORS.append((TARGET, GENERATOR))
+
+    # Cross product: GENERATORS x SCANNERS x PARSERS
+    OUTPUT = ((generator, scanner, parser)
+              for generator in GENERATORS
+              for scanner in (SCANNERS or [None])
+              for parser in (PARSERS or [None]))
+
+    for (TARGET, GENERATOR), SCANNER, PARSER in OUTPUT:
         GENERATOR.parser = PARSER
         GENERATOR.scanner = SCANNER
+        if SCANNER:
+            TARGET = TARGET + '_' + SCANNER.name
+        if PARSER:
+            TARGET = TARGET + '_' + PARSER.name
         if ARGS['verbose']:
             stdout.write('Generating {0} code...'.format(TARGET))
             stdout.flush()
@@ -138,8 +158,8 @@ try:
             stdout.write('done\n')
             stdout.flush()
         if ARGS['time']:
-            stdout.write('Elapsed time (generator: {0}): {1}s\n'.format(TARGET,
-                                                                        END-START))
+            stdout.write('Elapsed time (generator: {0}) {1}s\n'.format(TARGET,
+                                                                       END-START))
             stdout.flush()
 
         for NAME, CONTENT in FILES.items():
