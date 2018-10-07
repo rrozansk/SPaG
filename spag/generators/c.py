@@ -411,7 +411,11 @@ int {0}_peek({0}_scanner_t *{0}_scanner) {{
         source = 'https://github.com/rrozansk/Scanner-Parser-Generator'
         warning = 'WARNING!! AUTO GENERATED FILE, DO NOT EDIT!'
         libs = ['stdio']
-        filename = self.filename
+        filename = self._sanatize(self.filename)
+        if self.scanner:
+            filename += self._sanatize('_'+self.scanner.name)
+        if self.parser:
+            filename += self._sanatize('_'+self.parser.name)
 
         header = self._generate_file_header(filename+".h",
                                             author,
