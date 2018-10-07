@@ -1,9 +1,9 @@
-INI
+[INI]
 
-<INI>         <SECTION> <INI> |
-<SECTION>     <HEADER> <SETTINGS>
-<HEADER>      lbracket string rbracket
-<SETTINGS>    <KEY> <SEP> <VALUE> <SETTINGS> |
-<KEY>         string
-<SEP>         : | =
-<VALUE>       string | number | bool
+<INI> = <SECTION> <INI> |
+<SECTION> = <HEADER> <SETTINGS>
+<HEADER> = lbracket string rbracket
+<SETTINGS> = <KEY> <SEP> <VALUE> <SETTINGS> |
+<KEY> = string
+<SEP> = : | =
+<VALUE> = string | number | bool

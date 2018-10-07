@@ -1,17 +1,17 @@
-ini
+[ini]
 
-int       0|([-+]?[1-9][0-9]*)
-float     [-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?
-bool      (true)|(false)
-space     (\s|\t|\n|\r|\f|\v)*
-char      '[^]'
-id        [_a-zA-Z][_a-zA-Z0-9]*
-string    "[^"]*"
-lcomment  (#|;)[^\n]*\n
-bcomment  /[*][^]*[*]/
-lbracket  \[
-rbracket  \]
-lcurly    {
-rcurly    }
-comma     ,
-dividor   :|=
+int = 0|([-+]?[1-9][0-9]*)
+float = [-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?
+bool = (true)|(false)
+space = (\s|\t|\n|\r|\f|\v)*
+char = '[^]'
+id = [_a-zA-Z][_a-zA-Z0-9]*
+string = "[^"]*"
+lcomment = (#|;)[^\n]*\n
+bcomment = /[*][^]*[*]/
+lbracket = \[
+rbracket = \]
+lcurly = {
+rcurly = }
+comma = ,
+dividor = :|=

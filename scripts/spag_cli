@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python
 """A Python CLI script for scanner/parser generation using SPaG.
 
 This script deals with all the file I/O including the definition of the input
@@ -6,6 +6,7 @@ file specification. It also properly handles the dynamic importing required
 for the generators of interest.
 """
 from argparse import ArgumentParser, Action
+from configparser import RawConfigParser
 from os.path import isfile
 from sys import stdout
 from time import time
@@ -29,27 +30,16 @@ class CollectSpecification(Action):
     """Collect the specification for a scanner or parser from file."""
 
     def __call__(self, parser, namespace, values, option_string=None):
-        name, rules = None, []
-        for line in values:
-            items = line.split(None, 1)
-            if not items:
-                continue
+        specification = RawConfigParser()
+        specification.readfp(values)
 
-            if name is None:
-                if len(items) != 1:
-                    raise ValueError('Invalid file format - name')
-                name = items[0]
-                continue
+        if len(specification.sections()) != 1:
+            raise ValueError('Invalid specification format - name')
 
-            if len(items) != 2:
-                raise ValueError('Invalid file format - rule')
+        language = specification.sections()[0]
+        rules = [(_id, str(rule)) for _id, rule in specification.items(language)]
 
-            rules.append((items[0], items[1].rstrip()))
-
-        if name is None:
-            raise ValueError('Specification must be non empty.')
-
-        setattr(namespace, self.dest, {'name': name, 'rules': rules})
+        setattr(namespace, self.dest, {'name': language, 'rules': rules})
 
 CLI = ArgumentParser(
     prog='SPaG-CLI',

@@ -1,12 +1,12 @@
-JSON
+[JSON]
 
-<VALUE>       string | number | bool | null | <OBJECT> | <ARRAY>
-<OBJECT>      lc <OBJECT'>
-<OBJECT'>     rc | <MEMBERS> rc
-<MEMBERS>     <PAIR> <MEMBERS'>
-<PAIR>        string sep <VALUE>
-<MEMBERS'>    comma <MEMBERS> |
-<ARRAY>       lb <ARRAY'>
-<ARRAY'>      rb | <ELEMENTS> rb
-<ELEMENTS>    <VALUE> <ELEMENTS'>
-<ELEMENTS'>   comma <ELEMENTS> |
+<VALUE> = string | number | bool | null | <OBJECT> | <ARRAY>
+<OBJECT> = lc <OBJECT'>
+<OBJECT'> = rc | <MEMBERS> rc
+<MEMBERS> = <PAIR> <MEMBERS'>
+<PAIR> = string sep <VALUE>
+<MEMBERS'> = comma <MEMBERS> |
+<ARRAY> = lb <ARRAY'>
+<ARRAY'> = rb | <ELEMENTS> rb
+<ELEMENTS> = <VALUE> <ELEMENTS'>
+<ELEMENTS'> = comma <ELEMENTS> |
