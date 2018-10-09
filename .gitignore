@@ -41,7 +41,8 @@ testing_venv/
 
 ################################################################################
 #                                                                              #
-# SPaG generated configuration                                                 #
+# Default SPaG generated configuration and base output filename(s)             #
 #                                                                              #
 ################################################################################
 .spagrc
+**/*out*
