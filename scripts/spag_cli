@@ -17,44 +17,169 @@ from spag.scanner import RegularGrammar
 class DynamicGeneratorImport(Action):
     """Dynamically import the generator(s) required for source output."""
 
+    @staticmethod
+    def gather(generator):
+        """Dynamically import the generator specified."""
+        cls = generator.capitalize()
+        module = __import__('spag.generators.'+generator, fromlist=[cls])
+        return getattr(module, cls)
+
     def __call__(self, parser, namespace, values, option_string=None):
         generators = []
         for language in values:
-            cls = language.capitalize()
-            module = __import__('spag.generators.'+language, fromlist=[cls])
-            generator = getattr(module, cls)
-            generators.append(generator)
+            generators.append(DynamicGeneratorImport.gather(language))
         setattr(namespace, self.dest, generators)
 
 class CollectSpecifications(Action):
     """Collect the specification for a scanner or parser from an INI file."""
 
+    @staticmethod
+    def collect(specification):
+        """Collect the specification from an INI file."""
+        _specification = RawConfigParser()
+        _specification.readfp(specification)
+
+        if len(_specification.sections()) != 1:
+            raise ValueError('Invalid specification format - name')
+
+        name = _specification.sections()[0]
+        rules = [(_id, str(rule))
+                 for _id, rule in _specification.items(name)]
+
+        return {'name': name, 'rules': rules}
+
     def __call__(self, parser, namespace, values, option_string=None):
         specifications = []
-        for file_specification in values:
-            specification = RawConfigParser()
-            specification.readfp(file_specification)
-
-            if len(specification.sections()) != 1:
-                raise ValueError('Invalid specification format - name')
-
-            language = specification.sections()[0]
-            rules = [(_id, str(rule))
-                     for _id, rule in specification.items(language)]
-
-            specifications.append({'name': language, 'rules': rules})
-
+        for specification in values:
+            specifications.append(CollectSpecifications.collect(specification))
         setattr(namespace, self.dest, specifications)
+
+class CollectConfiguration(Action):
+    """Collect the configuration (i.e. command line args) for the generator."""
+
+    @staticmethod
+    def bool(string):
+        """Convert a string representation of a boolean to a python boolean."""
+        if string == 'True':
+            return True
+        if string == 'False':
+            return False
+        raise ValueError('invalid time value')
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        configuration = RawConfigParser()
+        configuration.readfp(values)
+
+        if not configuration.has_section('SPaG'):
+            raise ValueError('missing runtime configuration section \'SPaG\'')
+
+        for setting, value in configuration.items('SPaG'):
+            if setting == 'encoding':
+                value = str(value)
+                if value not in ('table', 'direct'):
+                    raise ValueError('invalid encoding value')
+            elif setting == 'generate':
+                value = [str(lang).strip() for lang in value.split(',')]
+                if len(value) == 1 and not value[0]:  # Empty setting check
+                    value = []
+                generators = []
+                for language in value:
+                    if language not in languages:
+                        raise ValueError('unrecognized language for generation')
+                    generators.append(DynamicGeneratorImport.gather(language))
+                value = generators
+            elif setting in ('parsers', 'scanners'):
+                value = [str(spec).strip() for spec in value.split(',')]
+                if len(value) == 1 and not value[0]:  # Empty setting check
+                    value = []
+                specifications = []
+                for specification in value:
+                    if configuration.has_section(specification):
+                        name = specification
+                        rules = [(_id, str(rule))
+                                 for _id, rule in specification.items(name)]
+                    elif isfile(specification):
+                        result = CollectSpecifications.collect(open(specification))
+                        name = result['name']
+                        rules = result['rules']
+                    else:
+                        raise ValueError('unknown generation specification')
+                    specifications.append({'name': name, 'rules': rules})
+                value = specifications
+            elif setting in ('force', 'time', 'verbose'):
+                value = CollectConfiguration.bool(str(value))
+            elif setting in ('configuration', 'output'):
+                value = str(value)
+            else:
+                raise ValueError('unrecognized option: {0}'.format(setting))
+
+            setattr(namespace, setting, value)
+
+class GenerateConfiguration(Action):
+    """Generate the configuration file for the generator."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        with open(values, 'w') as rcfile:
+            rcfile.write('''[SPaG]
+
+# Path to the runtime configuration file.
+# NOTE: Ignored and only present to mirror the command line option.
+configuration={0}
+
+# Choose the scanner/parser source encoding method. options include: 'table'
+# or 'direct'.
+encoding=direct
+
+# Overwrite pre-exisintg files if they exist. Possible values include 'True' or
+# 'False'.
+force=True
+
+# List any language(s) targeted for generation.
+generate=c,
+         go,
+         python
+
+# Base filename to derive the generated output filename(s).
+output=out
+
+# Path to the parser specification(s), if any. Also accepts other configuration
+# file section names to allow driving the entire generation process from one
+# configuration file.
+parsers=examples/INI/parser.txt,
+        examples/JSON/parser.txt,
+        examples/Lisp/parser.txt
+
+# Path to the scanner specification(s), if any. Also accepts other
+# configuration file section names to allow driving the entire generation
+# process from one configuration file.
+scanners=examples/INI/scanner.txt,
+         examples/JSON/scanner.txt,
+         examples/Lisp/scanner.txt
+
+# Time the various components and report it. Possible values include 'True' or
+# 'False'.
+time=True
+
+# Output extra messages when run. Possible values include 'True' or 'False'.
+verbose=True
+'''.format(values))
+        exit(0)
 
 CLI = ArgumentParser(
     prog='SPaG-CLI',
     usage='$ spag_cli --help',
     description='''
-    A simple CLI (Command Line Interface) script which reads some input file
+    A simple CLI (Command Line Interface) script which reads input file
     specification(s) to generate lexers and/or parsers for a given set of
-    output languages with the use of SPaG.
+    output languages with the use of the SPaG framework.
     ''',
     epilog='''
+    As noted above it is possible to supply any number of scanners, parsers, and
+    generators. This allows easy generation of any number of specifications for
+    as many output languages desired. Simply stated this CLI script drives the
+    genration of the cross product of LANGUAGES x SCANNERS x PARSERS. Also note
+    it is possible to override configuration file defaults with command line
+    flags as long as the flags are passed after the configuration file option.
     For more information on SPaG, it capabilities, limitation, and more, as well
     as numerous input file examples for scanners and parsers see the README.md
     and examples/ directory located in the github repository here:
@@ -62,21 +187,27 @@ CLI = ArgumentParser(
     '''
 )
 
+CLI.add_argument('-c', '--configuration', type=open, metavar='rcfile',
+                 action=CollectConfiguration,
+                 help='collect arguments from rcfile instead of command line')
 CLI.add_argument('-e', '--encoding', type=str, default='direct',
                  choices=('table', 'direct'),
-                 help='encoding to use for the generated output')
+                 help='source program encoding to use for the generated output')
 CLI.add_argument('-f', '--force', action='store_true',
-                 help='overwrite output file(s) if already present')
+                 help='overwrite pre-exisitng output file(s)')
 CLI.add_argument('-g', '--generate', type=str, nargs='*', default=[],
                  choices=languages, action=DynamicGeneratorImport,
                  help='target language(s) for code generation')
+CLI.add_argument('--generate-rcfile', action=GenerateConfiguration, nargs='?',
+                 default='.spagrc', const='.spagrc', metavar='rcfile',
+                 help='generate an rcfile and exit; .spagrc if not specified.')
 CLI.add_argument('-o', '--output', action='store', type=str, default='out',
                  metavar='base-filename',
-                 help='base filename to use for generated output')
-CLI.add_argument('-p', '--parser', type=open, action=CollectSpecifications,
+                 help='base-filename to derive generated output filename(s)')
+CLI.add_argument('-p', '--parsers', type=open, action=CollectSpecifications,
                  default=[], nargs='*', metavar='specification',
                  help='file(s) containing parser name and LL(1) BNF grammar')
-CLI.add_argument('-s', '--scanner', type=open, action=CollectSpecifications,
+CLI.add_argument('-s', '--scanners', type=open, action=CollectSpecifications,
                  default=[], nargs='*', metavar='specification',
                  help='file(s) containing scanner name and type/token pairs')
 CLI.add_argument('-t', '--time', action='store_true',
@@ -92,7 +223,7 @@ try:
     START, END = None, None
 
     SCANNERS = []
-    for scanner in ARGS['scanner']:
+    for scanner in ARGS['scanners']:
         if ARGS['verbose']:
             stdout.write('Compiling {0} scanner specification...'.format(scanner['name']))
             stdout.flush()
@@ -108,7 +239,7 @@ try:
             stdout.flush()
 
     PARSERS = []
-    for parser in ARGS['parser']:
+    for parser in ARGS['parsers']:
         if ARGS['verbose']:
             stdout.write('Compiling {0} parser specification...'.format(parser['name']))
             stdout.flush()
