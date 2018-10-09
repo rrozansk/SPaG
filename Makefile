@@ -54,7 +54,10 @@ env: requirements.txt
 ################################################################################
 .PHONY: lint
 lint: .pylintrc
-	@find scripts spag tests -type f -name '*.py' -exec pylint --rcfile=.pylintrc '{}' +
+	@find . -type d \( -name 'testing_venv' -o -name 'SPaG.egg-info' \
+	-o -name 'build' -o -name 'dist' -o -name 'examples' \) \
+	-prune -o -type f \( -name '*.py' -o -name 'spag_cli' \) \
+	-exec pylint --rcfile=.pylintrc '{}' +
 
 ################################################################################
 #                                                                              #
