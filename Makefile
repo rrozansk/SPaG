@@ -85,7 +85,7 @@ install: setup.py
 ################################################################################
 .PHONY: distro
 distro: setup.py
-	python setup.py sdist bdist bdist_wheel
+	python setup.py sdist bdist_wheel
 
 ################################################################################
 #                                                                              #
@@ -136,7 +136,7 @@ test_upload: distro
 ################################################################################
 .PHONY: upload
 upload: distro
-	twine upload --repository-url https://pypi.org/legacy/ dist/*
+	twine upload dist/*
 
 ################################################################################
 #                                                                              #
@@ -154,4 +154,4 @@ test_download:
 ################################################################################
 .PHONY: download
 download:
-	pip install --index-url https://pypi.org/simple/ SPaG
+	pip install SPaG
