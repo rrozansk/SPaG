@@ -48,7 +48,7 @@ class TestGenerator(object):
         Ensure overwriting the scanner property works as expected when given
         proper input as a RegularGrammar.
         """
-        scanner = RegularGrammar('test', {'foo': 'bar'})
+        scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator = Generator()
         generator.scanner = scanner
         assert generator.scanner is scanner, 'Invalid scanner set/retrieved'
@@ -243,7 +243,7 @@ class TestGenerator(object):
         is attempted with the base Generator.
         """
         generator = Generator()
-        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         generator.generate()
 
@@ -263,7 +263,7 @@ class TestGenerator(object):
         # pylint: enable=abstract-method
 
         generator = _GenerateNothing()
-        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         generator.generate()
 
@@ -281,7 +281,7 @@ class TestGenerator(object):
                 return list()
 
         generator = _InvalidFiles()
-        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         generator.generate()
 
@@ -299,7 +299,7 @@ class TestGenerator(object):
                 return dict()
 
         generator = _EmptyFiles()
-        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         generator.generate()
 
@@ -318,7 +318,7 @@ class TestGenerator(object):
                 return {None: 'invalid'}
 
         generator = _InvalidFilename()
-        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         generator.generate()
 
@@ -337,7 +337,7 @@ class TestGenerator(object):
                 return {'': 'invalid'}
 
         generator = _EmptyFilename()
-        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         generator.generate()
 
@@ -356,7 +356,7 @@ class TestGenerator(object):
                 return {self.filename+'.txt': None}
 
         generator = _InvalidContent()
-        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         generator.generate()
 
@@ -375,7 +375,7 @@ class TestGenerator(object):
                 return {self.filename+'.txt': ''}
 
         generator = _EmptyContent()
-        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         generator.generate()
 
@@ -390,6 +390,6 @@ class TestGenerator(object):
                 return {self.filename+'.txt': 'hukarz'}
 
         generator = _OutputRequirements()
-        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         generator.generate()

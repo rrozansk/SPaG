@@ -44,7 +44,7 @@ class TestGenerator(object):
         module = __import__('spag.generators.c', fromlist=['C'])
         generator = getattr(module, 'C')()
         assert generator, 'constructor failed'
-        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         assert generator.generate(), 'no result returned'
 
@@ -60,7 +60,7 @@ class TestGenerator(object):
         module = __import__('spag.generators.go', fromlist=['Go'])
         generator = getattr(module, 'Go')()
         assert generator, 'constructor failed'
-        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         assert generator.generate(), 'no result returned'
 
@@ -76,6 +76,6 @@ class TestGenerator(object):
         module = __import__('spag.generators.python', fromlist=['Python'])
         generator = getattr(module, 'Python')()
         assert generator, 'constructor failed'
-        generator.scanner = RegularGrammar('test', {'foo': 'bar'})
+        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
         assert generator.generate(), 'no result returned'

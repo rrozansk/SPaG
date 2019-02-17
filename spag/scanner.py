@@ -6,9 +6,31 @@ Finite Automata) recognizing the given input pattern(s). This is done through a
 series of transformations on the input taking it from an expression to an
 epsilon NFA and finally to a minimal DFA.
 """
-from uuid import uuid4
-from string import printable
 from copy import deepcopy
+from enum import Enum, unique
+from string import printable
+from uuid import uuid4
+
+
+@unique
+class _RegularGrammarOperators(Enum):
+    """The _RegularGrammarOperators aggregates all regular grammar operators.
+
+    _RegularGrammarOperators represents a unique collection of possible
+    operators defined over regular expressions.
+    """
+
+    KLEENE_STAR = 0          # *
+    KLEENE_PLUS = 1          # +
+    CONCATENATION = 2        # . (NOTE: optional)
+    ALTERNATIVE = 3          # |
+    MAYBE = 4                # ?
+    LEFT_PARENTHESIS = 5     # (
+    RIGHT_PARENTHESIS = 6    # )
+    LEFT_BRACKET = 7         # [
+    RIGHT_BRACKET = 8        # ]
+    CHARACTER_RANGE = 9      # -
+    CHARACTER_NEGATION = 10  # ^ (NOTE: only allowed as first elem in '[]')
 
 
 class RegularGrammar(object):
@@ -20,70 +42,38 @@ class RegularGrammar(object):
     a total delta (transition) function. Once created the object cannot be
     mutated, and it will remain static for the rest of it's lifetime. All
     information to properly understand and consume the DFA table can be queried
-    through the exposed API functions.
+    through the exposed read only properties.
     """
-
-    # Map internal representation of operators -> literals
-    _literals = dict(enumerate('*|.+?()[]'))
-
-    # Map operator literals -> internal representation
-    _operators = {v:k for k, v in _literals.items()}
-
-    # Set of acceptable input characters (printable ascii) including:
-    # uppercase, lowercase, digits, punctuation, whitespace. needed for
-    # character class/range negation
-    _characters = set(printable)
-
-    # Operator precedence for the shunting yard algorithm.
-    # (higher binds tighter)
-    _precedence = {
-        _operators['(']: (3, None),
-        _operators[')']: (3, None),
-        _operators['+']: (2, False),  # right-associative
-        _operators['*']: (2, False),  # right-associative
-        _operators['?']: (2, False),  # right-associative
-        _operators['.']: (1, True),   # left-associative
-        _operators['|']: (0, True),   # left-associative
-    }
 
     def __init__(self, name, expressions):
         """Construct a scanner DFA given the input regular expressions.
 
         Attempt to initialize a RegularGrammar object with the specified name,
-        recognizing the given named expression(s). Regular expressions must be
-        specified following these guidelines:
+        recognizing the given named expression(s). Supported core operators
+        (and extensions) include:
 
-           * only printable ascii characters (uppercase, lowercase, digits,
-             punctuation, whitespace) are supported.
-           * supported core operators (and extensions) include:
-               * '|'    (union -> choice -> either or)
-               * '.'    (concatenation -> combine)
-               * '?'    (question -> choice -> 1 or none)
-               * '*'    (kleene star -> repitition >= 0)
-               * '+'    (kleene plus -> repitition >= 1)
-               * ()     (grouping -> disambiguation -> any expression)
-               * [ab]   (character class -> choice -> any specified character)
-               * [a-c]  (character range -> choice -> any char between the two)
-               * [^ab]  (character negation -> choice -> all but the specified)
-           * other things to keep in mind (potential gotcha's):
-               * character classes and ranges can be combined in the same set
-                 of brackets, possibly multiple times (e.g. [abc-pqrs-z]).
-               * character ranges can be specified as forward or backwards
-                 (e.g. [a-c] or [c-a]).
-               * '^' is required to come first after the bracket for
-                 negation to properly work. In fact, '^' directly following a
-                 bracket is always interpreted as negation.
-               * '^' may be used with character classes or ranges.
-               * if '^' is alone in the brackets (e.g. [^]) it is translated
-                 as any possible input character (i.e. a 'wildcard').
-               * if a literal '-' if required in a character class or range it
-                 must be specified last so as to not be interpreted as a range.
-               * for literal right brackets inside character ranges or classes
-                 it must be escaped.
-               * concatenation can be either implicit or explicit in the
-                 given input expression(s).
-               * operator literals (i.e. '|.?*+()[]') can be specified through
-                 escape sequences using a backslash (i.e. '\').
+            * '*'    (kleene star -> repitition >= 0)
+            * '+'    (kleene plus -> repitition >= 1)
+            * '.'    (concatenation -> combine)
+            * '|'    (union -> choice -> either or)
+            * '?'    (question -> choice -> 1 or none)
+            * ()     (grouping -> disambiguation -> any expression)
+            * [ab]   (character class -> choice -> any specified character)
+            * [a-c]  (character range -> choice -> any char between the two)
+            * [^ab]  (character negation -> choice -> all but the specified)
+
+        Other things to keep in mind (potential gotcha's):
+
+           * character ranges are determined by python's ord() function.
+           * character negation is only over ascii character set.
+           * character classes/ranges may be combined, possibly multiple times,
+             in the same set of brackets (e.g. [abc-pqrs-z]).
+           * character ranges can be specified as forward or backwards, the
+             results is the same (e.g. [a-c] or [c-a]).
+           * if '^' is alone in the brackets (e.g. [^]) it is translated as any
+             possible input character (i.e. a 'wildcard').
+           * concatenation can be either implicit or explicit in the given input
+             expression(s).
 
         The input is then taken through a series of transformations taking it
         from a regular expression to an epsilon NFA and finally to a minimal
@@ -96,7 +86,9 @@ class RegularGrammar(object):
 
         Args:
           name (str): the name of the scanner.
-          expressions (dict[str, str]): token name/type and there pattern(s).
+          expressions (dict[str, list[str, _RegularGrammarOperators]]): token
+              name/type and there pattern(s). str should be of length one
+              (a character).
 
         Raises:
           TypeError: if name is not a string
@@ -105,11 +97,10 @@ class RegularGrammar(object):
           ValueError: if expressions is empty
           TypeError: if token identifier/type is not a string
           ValueError: if token identifier/type is empty
-          TypeError: if token pattern is not a string
+          TypeError: if token pattern is not a list
           ValueError: if token pattern is empty
-          ValueError: if an invalid escape sequence is encountered.
-          ValueError: if an unrecognized escape sequence is encountered.
-          ValueError: if an empty escape sequence is encountered.
+          TypeError: if token elem is not a string or _RegularGrammarOperators.
+          ValueError: if token string list item is not length 1.
           ValueError: if character range has no starting bracket.
           ValueError: if character range has no ending bracket.
           ValueError: if left parenthesis are unbalanaced.
@@ -145,15 +136,21 @@ class RegularGrammar(object):
             if not identifier:
                 raise ValueError('token name/type must be non empty')
 
-            if not isinstance(pattern, str):
-                raise TypeError('token pattern must be a string')
+            if not isinstance(pattern, list):
+                raise TypeError('token pattern must be a list')
 
             if not pattern:
                 raise ValueError('token pattern must be non empty')
 
-            self._expressions[identifier] = pattern
+            for character in pattern:
+                if not isinstance(character, (str, _RegularGrammarOperators)):
+                    raise TypeError('pattern charater must be a str or operator')
 
-            pattern = RegularGrammar._scan(pattern)
+                if isinstance(character, str) and len(character) != 1:
+                    raise ValueError('pattern character str must be non empty')
+
+            self._expressions[identifier] = pattern[:]
+
             pattern = RegularGrammar._expand_char_class_range(pattern)
             pattern = RegularGrammar._expand_concat(pattern)
             pattern = RegularGrammar._shunt(pattern)
@@ -170,6 +167,138 @@ class RegularGrammar(object):
         self._start = S
         self._finals = F
         self._types = G
+
+    @staticmethod
+    def kleene_star():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the kleene star ('*')
+        operator which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarObject: The given enum representation of the operator.
+        """
+        return _RegularGrammarOperators.KLEENE_STAR
+
+    @staticmethod
+    def kleene_plus():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the kleene plus ('+')
+        operator which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarObject: The given enum representation of the operator.
+        """
+        return _RegularGrammarOperators.KLEENE_PLUS
+
+    @staticmethod
+    def concatenation():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the concatenation ('.')
+        operator which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarObject: The given enum representation of the operator.
+        """
+        return _RegularGrammarOperators.CONCATENATION
+
+    @staticmethod
+    def alternative():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the alternative ('|')
+        operator which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarObject: The given enum representation of the operator.
+        """
+        return _RegularGrammarOperators.ALTERNATIVE
+
+    @staticmethod
+    def maybe():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the maybe ('?') operator
+        which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarObject: The given enum representation of the operator.
+        """
+        return _RegularGrammarOperators.MAYBE
+
+    @staticmethod
+    def left_parenthesis():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the group beginning ('(')
+        operator which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarObject: The given enum representation of the operator.
+        """
+        return _RegularGrammarOperators.LEFT_PARENTHESIS
+
+    @staticmethod
+    def right_parenthesis():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the group ending (')')
+        operator which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarObject: The given enum representation of the operator.
+        """
+        return _RegularGrammarOperators.RIGHT_PARENTHESIS
+
+    @staticmethod
+    def left_bracket():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the character class/range
+        beginning ('[') operator which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarObject: The given enum representation of the operator.
+        """
+        return _RegularGrammarOperators.LEFT_BRACKET
+
+    @staticmethod
+    def right_bracket():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the character class/range
+        ending (']') operator which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarObject: The given enum representation of the operator.
+        """
+        return _RegularGrammarOperators.RIGHT_BRACKET
+
+    @staticmethod
+    def character_range():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the character range ('-')
+        operator which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarObject: The given enum representation of the operator.
+        """
+        return _RegularGrammarOperators.CHARACTER_RANGE
+
+    @staticmethod
+    def character_negation():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the character class/range
+        negation ('^') operator which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarObject: The given enum representation of the operator.
+        """
+        return _RegularGrammarOperators.CHARACTER_NEGATION
 
     @property
     def name(self):
@@ -191,7 +320,7 @@ class RegularGrammar(object):
         pairs to protect against user mutations.
 
         Return:
-          list[tuple[str, str]]: the token name/expression pairs
+          dict[str, list[str, int]]: the token name/expression pairs
         """
         return deepcopy(self._expressions)
 
@@ -269,60 +398,6 @@ class RegularGrammar(object):
         return deepcopy(self._types)
 
     @staticmethod
-    def _scan(expr):
-        """transform the external representation to an internal one.
-
-        Convert an external representation of a token (regular expression) to
-        an internal one. Ensures all characters and escape sequences are valid.
-
-        Args:
-          expr (str): an external representation of a regular expression.
-
-        Return:
-          list[str, int]: an internal representation of a regular expression.
-
-        Raises:
-          ValueError: if an invalid escape sequence is encountered.
-          ValueError: if an unrecognized escape sequence is encountered.
-          ValueError: if an empty escape sequence is encountered.
-        """
-        output = []
-        escape = False
-        for char in expr:
-            if escape:
-                escape = False
-                if char in RegularGrammar._operators:
-                    output.append(char)
-                elif char == '\\':
-                    output.append('\\')
-                elif char == 's':
-                    output.append(' ')
-                elif char == 't':
-                    output.append('\t')
-                elif char == 'n':
-                    output.append('\n')
-                elif char == 'r':
-                    output.append('\r')
-                elif char == 'f':
-                    output.append('\f')
-                elif char == 'v':
-                    output.append('\v')
-                else:
-                    raise ValueError('Error: invalid escape seq: \\' + char)
-            else:
-                if char == '\\':
-                    escape = True
-                elif char in RegularGrammar._operators:
-                    output.append(RegularGrammar._operators[char])
-                elif char in RegularGrammar._characters:
-                    output.append(char)
-                else:
-                    raise ValueError('Error: unrecognized character: ' + char)
-        if escape:
-            raise ValueError('Error: empty escape sequence')
-        return output
-
-    @staticmethod
     def _expand_char_class_range(expr):
         """expand any character classes/ranges present in the expression.
 
@@ -340,42 +415,67 @@ class RegularGrammar(object):
         Raises:
           ValueError: if character range has no starting bracket.
           ValueError: if character range has no ending bracket.
+          ValueError: if a recursive class/range is specified.
+          ValueError: if a class/range is empty.
+          ValueError: if character negation is outside a pair of brackets.
+          ValueError: if character negation is not first in a pair of brackets.
+          ValueError: if character negation is immediately followed by the same.
+          ValueError: if character range is outside a pair of brackets.
+          ValueError: if character range has no starting character specified.
+          ValueError: if character range has no ending character specified.
+          ValueError: if character range is immediately followed by the same.
+          ValueError: if an operator other than range or negation appears in the range/class.
         """
         output, literals = [], []
-        expansion, negation, prange = False, False, False
+        expand, negation, prange = False, False, False
         for char in expr:
-            if char == RegularGrammar._operators['['] and not expansion:
-                expansion = True
-            elif char == RegularGrammar._operators[']']:
-                if not expansion:
+            if char is RegularGrammar.left_bracket():
+                if expand:
+                    raise ValueError('Error: Recursive class/range not allowed')
+                expand = True
+            elif char is RegularGrammar.right_bracket():
+                if not expand:
                     raise ValueError('Error: Invalid character class/range; no start')
-                expansion = False
                 if prange:
-                    prange = False
-                    literals.append('-')
+                    raise ValueError('Error: Character range no specified end character')
+                expand = False
                 if negation:
                     negation = False
-                    literals = list(RegularGrammar._characters - set(literals))
-                if literals:
-                    literals = list(set(literals))
-                    output.append(RegularGrammar._operators['('])
-                    while literals:
-                        output.append(literals.pop())
-                        output.append(RegularGrammar._operators['|'])
-                    output[-1] = RegularGrammar._operators[')']
-            elif not expansion:
-                output.append(char)
-            elif char == '^' and not literals and not negation:
+                    literals = set(printable) - set(literals)
+                if not literals:
+                    raise ValueError('Error: Empty character range/class not allowed')
+                output.append(RegularGrammar.left_parenthesis())
+                for literal in literals:
+                    output.append(literal)
+                    output.append(RegularGrammar.alternative())
+                output[-1] = RegularGrammar.right_parenthesis()
+                literals = []
+            elif char is RegularGrammar.character_negation():
+                if not expand:
+                    raise ValueError('Error: Character negation only allow in character class/range')
+                if negation:
+                    raise ValueError('Error: Character double negation not allowed')
                 negation = True
-            elif char == '-' and literals and not prange:
+            elif char is RegularGrammar.character_range():
+                if not expand:
+                    raise ValueError('Error: Character range only allow in character range')
+                if not literals:
+                    raise ValueError('Error: Character range no specified starting character')
+                if prange:
+                    raise ValueError('Error: Character double range not allowed')
                 prange = True
-            elif prange:
-                prange = False
-                _char = literals.pop()
-                literals.extend(map(chr, range(ord(min(_char, char)), ord(max(_char, char))+1)))
+            elif expand:
+                if isinstance(char, int):
+                    raise ValueError('Error: Operator not allowed in character range/class')
+                elif prange:
+                    prange = False
+                    _char = literals.pop()
+                    literals.extend(map(chr, range(ord(min(_char, char)), ord(max(_char, char))+1)))
+                else:
+                    literals.append(char)
             else:
-                literals.append(RegularGrammar._literals.get(char, char))
-        if expansion:
+                output.append(char)
+        if expand:
             raise ValueError('Error: character class/range end not specified')
         return output
 
@@ -399,12 +499,11 @@ class RegularGrammar(object):
 
         output = [expr[0]]
         for elem in expr[1:]:
-            if output[-1] != RegularGrammar._operators['('] and \
-               output[-1] != RegularGrammar._operators['|'] and \
-               output[-1] != RegularGrammar._operators['.'] and \
-               (elem == RegularGrammar._operators['('] or
-                elem not in RegularGrammar._literals):
-                output.append(RegularGrammar._operators['.'])
+            if output[-1] is not RegularGrammar.left_parenthesis() and \
+                output[-1] is not RegularGrammar.alternative() and \
+                output[-1] is not RegularGrammar.concatenation() and \
+                (elem is RegularGrammar.left_parenthesis() or isinstance(elem, str)):
+                output.append(RegularGrammar.concatenation())
             output.append(elem)
         return output
 
@@ -427,22 +526,32 @@ class RegularGrammar(object):
           ValueError: if left parenthesis are unbalanaced.
           ValueError: if right parenthesis are unbalanaced.
         """
+        _precedence = {  # Operator precedence (higher binds tighter)
+            RegularGrammar.left_parenthesis(): (3, None),   # n/a
+            RegularGrammar.right_parenthesis(): (3, None),  # n/a
+            RegularGrammar.kleene_plus(): (2, False),       # right-associative
+            RegularGrammar.kleene_star(): (2, False),       # right-associative
+            RegularGrammar.maybe(): (2, False),             # right-associative
+            RegularGrammar.concatenation(): (1, True),      # left-associative
+            RegularGrammar.alternative(): (0, True),        # left-associative
+        }
+
         stack, queue = [], []  # operators, output expression
 
         for token in expr:
-            if token == RegularGrammar._operators['(']:
-                stack.append(RegularGrammar._operators['('])
-            elif token == RegularGrammar._operators[')']:
-                while stack and stack[-1] != RegularGrammar._operators['(']:
+            if token is RegularGrammar.left_parenthesis():
+                stack.append(token)
+            elif token is RegularGrammar.right_parenthesis():
+                while stack and stack[-1] is not RegularGrammar.left_parenthesis():
                     queue.append(stack.pop())
                 if not stack:
                     raise ValueError('Error: unbalanced right parenthesis')
                 stack.pop()
-            elif token in RegularGrammar._precedence:
-                while stack and stack[-1] != RegularGrammar._operators['('] and\
-                      RegularGrammar._precedence[token][0] <= \
-                      RegularGrammar._precedence[stack[-1]][0]\
-                      and RegularGrammar._precedence[token][1]:  # left-associative?
+            elif token in _precedence:
+                while stack and \
+                      stack[-1] is not RegularGrammar.left_parenthesis() and\
+                      _precedence[token][0] <= _precedence[stack[-1]][0] and\
+                      _precedence[token][1]:  # left-associative?
                     queue.append(stack.pop())
                 stack.append(token)
             else:  # it's a character
@@ -450,7 +559,7 @@ class RegularGrammar(object):
 
         while stack:
             token = stack.pop()
-            if token == RegularGrammar._operators['(']:
+            if token is RegularGrammar.left_parenthesis():
                 raise ValueError('Error: unbalanced left parenthesis')
             queue.append(token)
 
@@ -516,13 +625,13 @@ class RegularGrammar(object):
 
         stk = []  # NFA machine stk
         for token in expr:
-            if token == RegularGrammar._operators['.']:
+            if token is RegularGrammar.concatenation():
                 if len(stk) < 2:
                     raise ValueError('Error: not enough args to op .')
                 p, F = stk.pop()
                 S, q = stk.pop()
                 e_update(q, p)
-            elif token == RegularGrammar._operators['|']:
+            elif token is RegularGrammar.alternative():
                 if len(stk) < 2:
                     raise ValueError('Error: not enough args to op |')
                 p, q = stk.pop()
@@ -532,7 +641,7 @@ class RegularGrammar(object):
                 e_update(S, r)
                 e_update(q, F)
                 e_update(t, F)
-            elif token == RegularGrammar._operators['*']:
+            elif token is RegularGrammar.kleene_star():
                 if len(stk) < 1:
                     raise ValueError('Error: not enough args to op *')
                 p, q = stk.pop()
@@ -541,7 +650,7 @@ class RegularGrammar(object):
                 e_update(q, p)
                 e_update(q, F)
                 e_update(S, F)
-            elif token == RegularGrammar._operators['+']:
+            elif token is RegularGrammar.kleene_plus():
                 if len(stk) < 1:
                     raise ValueError('Error: not enough args to op +')
                 p, q = stk.pop()
@@ -549,7 +658,7 @@ class RegularGrammar(object):
                 e_update(S, p)
                 e_update(q, p)
                 e_update(q, F)
-            elif token == RegularGrammar._operators['?']:
+            elif token is RegularGrammar.maybe():
                 if len(stk) < 1:
                     raise ValueError('Error: not enough args to op ?')
                 p, q = stk.pop()
