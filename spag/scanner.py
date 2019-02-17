@@ -176,7 +176,7 @@ class RegularGrammar(object):
         operator which RegularGrammar can understand.
 
         Return:
-          _RegularGrammarObject: The given enum representation of the operator.
+          _RegularGrammarOperators: The enum representation of the operator.
         """
         return _RegularGrammarOperators.KLEENE_STAR
 
@@ -188,7 +188,7 @@ class RegularGrammar(object):
         operator which RegularGrammar can understand.
 
         Return:
-          _RegularGrammarObject: The given enum representation of the operator.
+          _RegularGrammarOperators: The enum representation of the operator.
         """
         return _RegularGrammarOperators.KLEENE_PLUS
 
@@ -200,7 +200,7 @@ class RegularGrammar(object):
         operator which RegularGrammar can understand.
 
         Return:
-          _RegularGrammarObject: The given enum representation of the operator.
+          _RegularGrammarOperators: The enum representation of the operator.
         """
         return _RegularGrammarOperators.CONCATENATION
 
@@ -212,7 +212,7 @@ class RegularGrammar(object):
         operator which RegularGrammar can understand.
 
         Return:
-          _RegularGrammarObject: The given enum representation of the operator.
+          _RegularGrammarOperators: The enum representation of the operator.
         """
         return _RegularGrammarOperators.ALTERNATIVE
 
@@ -224,7 +224,7 @@ class RegularGrammar(object):
         which RegularGrammar can understand.
 
         Return:
-          _RegularGrammarObject: The given enum representation of the operator.
+          _RegularGrammarOperators: The enum representation of the operator.
         """
         return _RegularGrammarOperators.MAYBE
 
@@ -236,7 +236,7 @@ class RegularGrammar(object):
         operator which RegularGrammar can understand.
 
         Return:
-          _RegularGrammarObject: The given enum representation of the operator.
+          _RegularGrammarOperators: The enum representation of the operator.
         """
         return _RegularGrammarOperators.LEFT_PARENTHESIS
 
@@ -248,7 +248,7 @@ class RegularGrammar(object):
         operator which RegularGrammar can understand.
 
         Return:
-          _RegularGrammarObject: The given enum representation of the operator.
+          _RegularGrammarOperators: The enum representation of the operator.
         """
         return _RegularGrammarOperators.RIGHT_PARENTHESIS
 
@@ -260,7 +260,7 @@ class RegularGrammar(object):
         beginning ('[') operator which RegularGrammar can understand.
 
         Return:
-          _RegularGrammarObject: The given enum representation of the operator.
+          _RegularGrammarOperators: The enum representation of the operator.
         """
         return _RegularGrammarOperators.LEFT_BRACKET
 
@@ -272,7 +272,7 @@ class RegularGrammar(object):
         ending (']') operator which RegularGrammar can understand.
 
         Return:
-          _RegularGrammarObject: The given enum representation of the operator.
+          _RegularGrammarOperators: The enum representation of the operator.
         """
         return _RegularGrammarOperators.RIGHT_BRACKET
 
@@ -284,7 +284,7 @@ class RegularGrammar(object):
         operator which RegularGrammar can understand.
 
         Return:
-          _RegularGrammarObject: The given enum representation of the operator.
+          _RegularGrammarOperators: The enum representation of the operator.
         """
         return _RegularGrammarOperators.CHARACTER_RANGE
 
@@ -296,7 +296,7 @@ class RegularGrammar(object):
         negation ('^') operator which RegularGrammar can understand.
 
         Return:
-          _RegularGrammarObject: The given enum representation of the operator.
+          _RegularGrammarOperators: The enum representation of the operator.
         """
         return _RegularGrammarOperators.CHARACTER_NEGATION
 

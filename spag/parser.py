@@ -6,6 +6,19 @@ by utilizing the grammars first and follow sets, which are computed internally,
 and applying that information to properly construct the resulting parse table.
 """
 from copy import deepcopy
+from enum import Enum, unique
+
+
+@unique
+class _ContextFreeGrammarOperators(Enum):
+    """The _ContextFreeGrammarOperators aggregates all context free operators.
+
+    _ContextFreeGrammarOperators represents a unique collection of possible
+    operators defined over context free grammar expressions.
+    """
+
+    END_OF_INPUT = 0  # $
+    EPSILON = 1       # e
 
 
 class ContextFreeGrammar(object):
@@ -17,14 +30,7 @@ class ContextFreeGrammar(object):
     cannot be mutated, and it will remain static for the rest of it's lifetime.
     All information to properly understand and consume the parse table can be
     queried through the exposed API functions.
-
-    Attributes:
-      END_OF_INPUT (int): The marker to use for End Of Input (i.e. '$').
-      EPSILON      (int): The marker to use for Epsilon.
     """
-
-    END_OF_INPUT = 0
-    EPSILON = 1
 
     def __init__(self, name, productions, start):
         """Construct a parse table for the given BNF grammar.
@@ -113,10 +119,10 @@ class ContextFreeGrammar(object):
                     raise TypeError('production rule must be a list')
 
                 for symbol in rule:
-                    if not isinstance(symbol, str):
-                        raise TypeError('production rule symbol must be a string')
+                    if not isinstance(symbol, (str, _ContextFreeGrammarOperators)):
+                        raise TypeError('production rule symbol must be a string or operator')
 
-                    if not symbol:
+                    if isinstance(symbol, str) and not symbol:
                         raise ValueError('production rule symbol must be non empty')
 
                 self._rules.append((nonterminal, rule))
@@ -128,6 +134,30 @@ class ContextFreeGrammar(object):
         self._parse_table, self._rows, self._cols = \
           self._table(self._terminals, self._nonterminals,
                       self._first_set, self._follow_set, self._rules)
+
+    @staticmethod
+    def epsilon():
+        """Get the representation used for the epsilon identifier.
+
+        Static readonly enum property representing the epsilon production
+        operator which ContextFreeGrammar can understand.
+
+        Return:
+          _ContextFreeGrammarOperators: The given enum representation of the operator.
+        """
+        return _ContextFreeGrammarOperators.EPSILON
+
+    @staticmethod
+    def end_of_input():
+        """Get the representation used for the given end of input operator.
+
+        Static readonly enum property representing the end of input
+        operator which ContextFreeGrammar can understand.
+
+        Return:
+          _ContextFreeGrammarOperators: The given enum representation of the operator.
+        """
+        return _ContextFreeGrammarOperators.END_OF_INPUT
 
     @property
     def name(self):
@@ -266,11 +296,11 @@ class ContextFreeGrammar(object):
         Return:
           set[str, int]: possible symbols first encountered for `production`.
         """
-        _first = set([ContextFreeGrammar.EPSILON])
+        _first = set([ContextFreeGrammar.epsilon()])
         for symbol in production:
             _first.update(first[symbol])
-            if ContextFreeGrammar.EPSILON not in first[symbol]:
-                _first.discard(ContextFreeGrammar.EPSILON)
+            if ContextFreeGrammar.epsilon() not in first[symbol]:
+                _first.discard(ContextFreeGrammar.epsilon())
                 break
         return _first
 
@@ -334,7 +364,7 @@ class ContextFreeGrammar(object):
         follow = {nonterminal: set() for nonterminal in nonterminals}
 
         # put $ (end of input marker) in follow(<Start>)
-        follow[start] = set([ContextFreeGrammar.END_OF_INPUT])
+        follow[start] = set([ContextFreeGrammar.end_of_input()])
 
         # loop until nothing new happens updating the follow sets
         while True:
@@ -344,8 +374,8 @@ class ContextFreeGrammar(object):
                 for (idx, elem) in enumerate(production):
                     if elem in nonterminals:
                         new = ContextFreeGrammar._first_production(production[idx+1:], first)
-                        if ContextFreeGrammar.EPSILON in new:
-                            new.discard(ContextFreeGrammar.EPSILON)
+                        if ContextFreeGrammar.epsilon() in new:
+                            new.discard(ContextFreeGrammar.epsilon())
                             new.update(follow[nonterminal])
 
                         new = new - follow[elem]
@@ -379,14 +409,14 @@ class ContextFreeGrammar(object):
           dict[str, int]: Mapping for column (terminal) symbol to table index.
         """
         rows = {n:i for i, n in enumerate(nonterminals)}
-        cols = {t:i for i, t in enumerate(terminals | set([ContextFreeGrammar.END_OF_INPUT]))}
+        cols = {t:i for i, t in enumerate(terminals | set([ContextFreeGrammar.end_of_input()]))}
 
         table = [[set() for _ in cols] for _ in rows]
 
         for (rule, (nonterminal, production)) in enumerate(productions):
             predict = ContextFreeGrammar._first_production(production, first)
-            if ContextFreeGrammar.EPSILON in predict:
-                predict.discard(ContextFreeGrammar.EPSILON)
+            if ContextFreeGrammar.epsilon() in predict:
+                predict.discard(ContextFreeGrammar.epsilon())
                 predict.update(follow[nonterminal])
             for terminal in predict:
                 table[rows[nonterminal]][cols[terminal]].add(rule)
