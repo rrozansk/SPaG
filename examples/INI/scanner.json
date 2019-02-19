@@ -1,0 +1,20 @@
+{
+    "language": "ini",
+    "rules": {
+        "bcomment": "/[*][^]*[*]/",
+        "bool": "(true)|(false)",
+        "char": "'[^]'",
+        "comma": ",",
+        "dividor": ":|=",
+        "float": "[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?",
+        "id": "[_a-zA-Z][_a-zA-Z0-9]*",
+        "int": "0|([-+]?[1-9][0-9]*)",
+        "lbracket": "\\[",
+        "lcomment": "(#|;)[^\n]*\n",
+        "lcurly": "{",
+        "rbracket": "\\]",
+        "rcurly": "}",
+        "space": "( |\t|\n|\r|\f|\\v)*",
+        "string": "\"[^\"]*\""
+    }
+}

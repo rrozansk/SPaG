@@ -1,0 +1,45 @@
+{
+    "language": "Lisp",
+    "rules": {
+        "atom": [
+            [
+                "symbol"
+            ],
+            [
+                "character"
+            ],
+            [
+                "string"
+            ],
+            [
+                "boolean"
+            ],
+            [
+                "int"
+            ],
+            [
+                "float"
+            ],
+            [
+                "nil"
+            ]
+        ],
+        "expression": [
+            [
+                "atom"
+            ],
+            [
+                "pair"
+            ]
+        ],
+        "pair": [
+            [
+                "left",
+                "expression",
+                "dot",
+                "expression",
+                "right"
+            ]
+        ]
+    }
+}

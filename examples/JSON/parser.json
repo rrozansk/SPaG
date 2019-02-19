@@ -1,0 +1,88 @@
+{
+    "language": "JSON",
+    "rules": {
+        "ARRAY": [
+            [
+                "lb",
+                "ARRAY'"
+            ]
+        ],
+        "ARRAY'": [
+            [
+                "rb"
+            ],
+            [
+                "ELEMENTS",
+                "rb"
+            ]
+        ],
+        "ELEMENTS": [
+            [
+                "VALUE",
+                "ELEMENTS'"
+            ]
+        ],
+        "ELEMENTS'": [
+            [
+                "comma",
+                "ELEMENTS"
+            ],
+            []
+        ],
+        "MEMBERS": [
+            [
+                "PAIR",
+                "MEMBERS'"
+            ]
+        ],
+        "MEMBERS'": [
+            [
+                "comma",
+                "MEMBERS"
+            ],
+            []
+        ],
+        "OBJECT": [
+            [
+                "lc",
+                "OBJECT'"
+            ]
+        ],
+        "OBJECT'": [
+            [
+                "rc"
+            ],
+            [
+                "MEMBERS",
+                "rc"
+            ]
+        ],
+        "PAIR": [
+            [
+                "string",
+                "sep",
+                "VALUE"
+            ]
+        ],
+        "VALUE": [
+            [
+                "string"
+            ],
+            [
+                "number"
+            ],
+            [
+                "bool"
+            ],
+            [
+                "null"
+            ],
+            [
+                "OBJECT"
+            ],
+            [
+                "ARRAY"
+            ]
+        ]
+    }
+}

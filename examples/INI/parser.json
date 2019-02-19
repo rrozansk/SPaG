@@ -1,0 +1,58 @@
+{
+    "language": "INI",
+    "rules": {
+        "HEADER": [
+            [
+                "lbracket",
+                "string",
+                "rbracket"
+            ]
+        ],
+        "INI": [
+            [
+                "SECTION",
+                "INI"
+            ],
+            []
+        ],
+        "KEY": [
+            [
+                "string"
+            ]
+        ],
+        "SECTION": [
+            [
+                "HEADER",
+                "SETTINGS"
+            ]
+        ],
+        "SEP": [
+            [
+                ":"
+            ],
+            [
+                "="
+            ]
+        ],
+        "SETTINGS": [
+            [
+                "KEY",
+                "SEP",
+                "VALUE",
+                "SETTINGS"
+            ],
+            []
+        ],
+        "VALUE": [
+            [
+                "string"
+            ],
+            [
+                "number"
+            ],
+            [
+                "bool"
+            ]
+        ]
+    }
+}
