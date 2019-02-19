@@ -131,37 +131,28 @@ This results in the smallest possible total DFA which recognizes the given
 input. The input itself (regular expressions) must be specified following these
 guidelines:
 
-  * only printable ascii characters (uppercase, lowercase, digits, punctuation,
-    whitespace) are supported.
   * supported core operators (and extensions) include:
-      * '|'    (union -> choice -> either or)
-      * '.'    (concatenation -> combine)
-      * '?'    (question -> choice -> 1 or none)
       * '*'    (kleene star -> repitition >= 0)
       * '+'    (kleene plus -> repitition >= 1)
+      * '.'    (concatenation -> combine)
+      * '|'    (union -> choice -> either or)
+      * '?'    (question -> choice -> 1 or none)
       * ()     (grouping -> disambiguation -> any expression)
       * [ab]   (character class -> choice -> any specified character)
       * [a-c]  (character range -> choice -> any char between the two)
       * [^ab]  (character negation -> choice -> all but the specified)
+
   * other things to keep in mind (potential gotcha's):
-      * character classes and ranges can be combined in the same set of brackets,
-        possibly multiple times (e.g. [abc-pqrs-z]).
-      * character ranges can be specified as forward or backwards
-        (e.g. [a-c] or [c-a]).
-      * '^' is required to come first after the bracket for negation to properly
-        work. In fact, '^' directly following a bracket is always interpreted as
-        negation.
-      * '^' may be used with character classes or ranges.
+      * character ranges are determined by python's ord() function.
+      * character negation is only over ascii character set.
+      * character classes/ranges may be combined, possibly multiple times,
+        in the same set of brackets (e.g. [abc-pqrs-z]).
+      * character ranges can be specified as forward or backwards, the
+        results is the same (e.g. [a-c] or [c-a]).
       * if '^' is alone in the brackets (e.g. [^]) it is translated as any
         possible input character (i.e. a 'wildcard').
-      * if a literal '-' if required in a character class or range it must be
-        specified last so as to not be interpreted as a range.
-      * for literal right brackets inside character ranges or classes it must be
-        escaped.
       * concatenation can be either implicit or explicit in the given input
         expression(s).
-      * operator literals (i.e. '|.?*+()[]') can be specified through escape
-        sequences using a backslash (i.e. '\').
 
 ## Parser
 
@@ -247,11 +238,11 @@ configuration file generation.
 $ spag_cli --help
 
 # Generate any number of scanners (or parsers) for any set of languages at once!
-$ spag_cli -s examples/INI/scanner.txt examples/JSON/scanner.txt -g c go
-$ spag_cli -p examples/INI/parser.txt examples/JSON/parser.txt -g c go
+$ spag_cli -s examples/INI/scanner.json examples/JSON/scanner.json -g c go
+$ spag_cli -p examples/INI/parser.json examples/JSON/parser.json -g c go
 
 # Generate a scanner/parser combo (possibly for a languages front-end reader).
-$ spag_cli -s examples/INI/scanner.txt -p examples/INI/parser.txt -g c
+$ spag_cli -s examples/INI/scanner.json -p examples/INI/parser.json -g c
 
 # Generate a default configuration file for easier runtime configuration.
 $ spag_cli --generate-rcfile .spagrc
