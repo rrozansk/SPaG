@@ -465,7 +465,7 @@ class RegularGrammar(object):
                     raise ValueError('Error: Character double range not allowed')
                 prange = True
             elif expand:
-                if isinstance(char, int):
+                if isinstance(char, _RegularGrammarOperators):
                     raise ValueError('Error: Operator not allowed in character range/class')
                 elif prange:
                     prange = False
@@ -494,9 +494,6 @@ class RegularGrammar(object):
           list[str, int]: an internal representation of a regular expression
               with concatenation explicit throughout.
         """
-        if not expr:
-            return expr
-
         output = [expr[0]]
         for elem in expr[1:]:
             if output[-1] is not RegularGrammar.left_parenthesis() and \

@@ -461,6 +461,146 @@ class TestScanner(object):
         })
 
     @staticmethod
+    @pytest.mark.xfail(
+        reason='Recursive character class/range not specified.',
+        raises=ValueError,
+    )
+    def test_recursive_char_range_class():
+        """
+        Ensure recursive character ranges/classes produce the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Recursive Character Range/Class',
+            'expressions': {
+                'class/range': [RegularGrammar.left_bracket(), 'a', RegularGrammar.left_bracket(), 'b',
+                                RegularGrammar.right_bracket(), RegularGrammar.right_bracket()]
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Class range outside of brackets.',
+        raises=ValueError,
+    )
+    def test_external_char_range():
+        """
+        Ensure character ranges outside brackets produce the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'External Character Range/Class',
+            'expressions': {
+                'range': ['a', RegularGrammar.character_range(), 'b']
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='No character range end.',
+        raises=ValueError,
+    )
+    def test_char_range_no_end():
+        """
+        Ensure character ranges with no ending produce the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Character Range No End',
+            'expressions': {
+                'range': [RegularGrammar.left_bracket(), 'a', RegularGrammar.character_range(), RegularGrammar.right_bracket()]
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='No character range start.',
+        raises=ValueError,
+    )
+    def test_char_range_no_start():
+        """
+        Ensure character ranges with no beginning produce the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Character Range No Start',
+            'expressions': {
+                'range': [RegularGrammar.left_bracket(), RegularGrammar.character_range(), 'b', RegularGrammar.right_bracket()]
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Double class range not defined.',
+        raises=ValueError,
+    )
+    def test_double_char_range():
+        """
+        Ensure double character ranges produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Double Character Range',
+            'expressions': {
+                'range': [RegularGrammar.left_bracket(), 'a', RegularGrammar.character_range(),
+                          RegularGrammar.character_range(), 'b', RegularGrammar.right_bracket()]
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Character negation outside brackets.',
+        raises=ValueError,
+    )
+    def test_external_char_negation():
+        """
+        Ensure character negation outside brackets produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'External Character Negation',
+            'expressions': {
+                'negation': [RegularGrammar.character_negation()]
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Character double negation not defined.',
+        raises=ValueError,
+    )
+    def test_double_char_negation():
+        """
+        Ensure double character negation produces the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Double Character Negation',
+            'expressions': {
+                'negation': [RegularGrammar.left_bracket(), RegularGrammar.character_negation(),
+                             RegularGrammar.character_negation(), 'a', RegularGrammar.right_bracket()]
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Operator expansion not defined.',
+        raises=ValueError,
+    )
+    def test_char_range_operator():
+        """
+        Ensure character range with operators produce the proper exception.
+        """
+        TestScanner._run(**{
+            'name': 'Character Range Operator',
+            'expressions': {
+                'negation': [RegularGrammar.left_bracket(), 'a', RegularGrammar.character_range(),
+                             RegularGrammar.kleene_star(), RegularGrammar.right_bracket()]
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
     def test_single_alpha():
         """
         Ensure a one character expression produces the expected output.
