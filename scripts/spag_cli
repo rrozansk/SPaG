@@ -7,6 +7,7 @@ for the generator(s) of interest.
 """
 from argparse import ArgumentParser, Action
 from configparser import RawConfigParser
+from json import loads
 from os.path import isfile
 from sys import stdout
 from time import time
@@ -30,28 +31,81 @@ class DynamicGeneratorImport(Action):
             generators.append(DynamicGeneratorImport.gather(language))
         setattr(namespace, self.dest, generators)
 
-class CollectSpecifications(Action):
-    """Collect the specification for a scanner or parser from an INI file."""
+class CollectScannerSpecifications(Action):
+    """Collect the specification for a scanner from a JSON file."""
 
     @staticmethod
-    def collect(specification):
-        """Collect the specification from an INI file."""
-        _specification = RawConfigParser()
-        _specification.readfp(specification)
+    def _scan(regular_expression):
+        """Internalize the external representation of a regular expression."""
+        output = {}
+        mapping = {
+            '\\*': RegularGrammar.kleene_star(),
+            '\\+': RegularGrammar.kleene_plus(),
+            '\\.': RegularGrammar.concatenation(),
+            '\\|': RegularGrammar.alternative(),
+            '\\?': RegularGrammar.maybe(),
+            '\\(': RegularGrammar.left_parenthesis(),
+            '\\)': RegularGrammar.right_parenthesis(),
+            '\\[': RegularGrammar.left_bracket(),
+            '\\]': RegularGrammar.right_bracket(),
+            '\\-': RegularGrammar.character_range(),
+            '\\^': RegularGrammar.character_negation()
+        }
+        for key, expression in regular_expression.items():
+            for idx, char in enumerate(expression):
+                expression[idx] = mapping.get(char, str(char))
+            output[str(key)] = expression
+        return output
 
-        if len(_specification.sections()) != 1:
-            raise ValueError('Invalid specification format - name')
+    @staticmethod
+    def collect(specification_file):
+        """Collect the specification from an JSON file."""
+        specification = loads(specification_file.read())
 
-        name = _specification.sections()[0]
-        rules = [(_id, str(rule))
-                 for _id, rule in _specification.items(name)]
+        if 'language' not in specification:
+            raise ValueError('Scanner input specification requires \'language\' key')
 
-        return {'name': name, 'rules': rules}
+        if 'rules' not in specification:
+            raise ValueError('Scanner input specification requires \'rules\' key')
+
+        return {
+            'name': str(specification['language']),
+            'expressions': CollectScannerSpecifications._scan(specification['rules'])
+        }
 
     def __call__(self, parser, namespace, values, option_string=None):
         specifications = []
         for specification in values:
-            specifications.append(CollectSpecifications.collect(specification))
+            specifications.append(CollectScannerSpecifications.collect(specification))
+        setattr(namespace, self.dest, specifications)
+
+class CollectParserSpecifications(Action):
+    """Collect the specification for a parser from a JSON file."""
+
+    @staticmethod
+    def collect(specification_file):
+        """Collect the specification from an JSON file."""
+        specification = loads(specification_file.read())
+
+        if 'language' not in specification:
+            raise ValueError('Parser input specification requires \'language\' key')
+
+        if 'rules' not in specification:
+            raise ValueError('Parser input specification requires \'rules\' key')
+
+        if 'start' not in specification:
+            raise ValueError('Parser input specification requires \'start\' key')
+
+        return {
+            'name': str(specification['language']),
+            'productions': {str(k): [[str(e) for e in ls] for ls in v] for k, v in specification['rules'].items()},
+            'start': str(specification['start'])
+        }
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        specifications = []
+        for specification in values:
+            specifications.append(CollectParserSpecifications.collect(specification))
         setattr(namespace, self.dest, specifications)
 
 class CollectConfiguration(Action):
@@ -94,17 +148,13 @@ class CollectConfiguration(Action):
                     value = []
                 specifications = []
                 for specification in value:
-                    if configuration.has_section(specification):
-                        name = specification
-                        rules = [(_id, str(rule))
-                                 for _id, rule in specification.items(name)]
-                    elif isfile(specification):
-                        result = CollectSpecifications.collect(open(specification))
-                        name = result['name']
-                        rules = result['rules']
-                    else:
-                        raise ValueError('unknown generation specification')
-                    specifications.append({'name': name, 'rules': rules})
+                    if not isfile(specification):
+                        raise ValueError('input specification must be a file location')
+                    with open(specification) as input_specification:
+                        if setting == 'parsers':
+                            specifications.append(CollectParserSpecifications.collect(input_specification))
+                        elif setting == 'scanners':
+                            specifications.append(CollectScannerSpecifications.collect(input_specification))
                 value = specifications
             elif setting in ('force', 'time', 'verbose'):
                 value = CollectConfiguration.bool(str(value))
@@ -142,19 +192,15 @@ generate=c,
 # Base filename to derive the generated output filename(s).
 output=out
 
-# Path to the parser specification(s), if any. Also accepts other configuration
-# file section names to allow driving the entire generation process from one
-# configuration file.
-parsers=examples/INI/parser.txt,
-        examples/JSON/parser.txt,
-        examples/Lisp/parser.txt
+# Path to the parser specification(s), if any.
+parsers=examples/INI/parser.json,
+        examples/JSON/parser.json,
+        examples/Lisp/parser.json
 
-# Path to the scanner specification(s), if any. Also accepts other
-# configuration file section names to allow driving the entire generation
-# process from one configuration file.
-scanners=examples/INI/scanner.txt,
-         examples/JSON/scanner.txt,
-         examples/Lisp/scanner.txt
+# Path to the scanner specification(s), if any.
+scanners=examples/INI/scanner.json,
+         examples/JSON/scanner.json,
+         examples/Lisp/scanner.json
 
 # Time the various components and report it. Possible values include 'True' or
 # 'False'.
@@ -204,10 +250,10 @@ CLI.add_argument('--generate-rcfile', action=GenerateConfiguration, nargs='?',
 CLI.add_argument('-o', '--output', action='store', type=str, default='out',
                  metavar='base-filename',
                  help='base-filename to derive generated output filename(s)')
-CLI.add_argument('-p', '--parsers', type=open, action=CollectSpecifications,
+CLI.add_argument('-p', '--parsers', type=open, action=CollectParserSpecifications,
                  default=[], nargs='*', metavar='specification',
                  help='file(s) containing parser name and LL(1) BNF grammar')
-CLI.add_argument('-s', '--scanners', type=open, action=CollectSpecifications,
+CLI.add_argument('-s', '--scanners', type=open, action=CollectScannerSpecifications,
                  default=[], nargs='*', metavar='specification',
                  help='file(s) containing scanner name and type/token pairs')
 CLI.add_argument('-t', '--time', action='store_true',
@@ -228,7 +274,7 @@ try:
             stdout.write('Compiling {0} scanner specification...'.format(scanner['name']))
             stdout.flush()
         START = time()
-        SCANNERS.append(RegularGrammar(scanner['name'], dict(scanner['rules'])))
+        SCANNERS.append(RegularGrammar(**scanner))
         END = time()
         if ARGS['verbose']:
             stdout.write('done\n')
@@ -244,11 +290,7 @@ try:
             stdout.write('Compiling {0} parser specification...'.format(parser['name']))
             stdout.flush()
         START = time()
-        PRODUCTIONS = {ID:[rule.split() for rule in rhs.split('|')]
-                       for ID, rhs in parser['rules']}
-        PARSERS.append(ContextFreeGrammar(parser['name'],
-                                          PRODUCTIONS,
-                                          parser['rules'][0][0]))
+        PARSERS.append(ContextFreeGrammar(**parser))
         END = time()
         if ARGS['verbose']:
             stdout.write('done\n')
