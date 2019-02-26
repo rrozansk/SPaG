@@ -32,45 +32,34 @@ class DynamicGeneratorImport(Action):
         setattr(namespace, self.dest, generators)
 
 class CollectScannerSpecifications(Action):
-    """Collect the specification for a scanner from a JSON file."""
+    """Collect the JSON scanner specification(s) from file(s)."""
 
-    @staticmethod
-    def _scan(regular_expression):
-        """Internalize the external representation of a regular expression."""
-        output = {}
-        mapping = {
-            '\\*': RegularGrammar.kleene_star(),
-            '\\+': RegularGrammar.kleene_plus(),
-            '\\.': RegularGrammar.concatenation(),
-            '\\|': RegularGrammar.alternative(),
-            '\\?': RegularGrammar.maybe(),
-            '\\(': RegularGrammar.left_parenthesis(),
-            '\\)': RegularGrammar.right_parenthesis(),
-            '\\[': RegularGrammar.left_bracket(),
-            '\\]': RegularGrammar.right_bracket(),
-            '\\-': RegularGrammar.character_range(),
-            '\\^': RegularGrammar.character_negation()
-        }
-        for key, expression in regular_expression.items():
-            for idx, char in enumerate(expression):
-                expression[idx] = mapping.get(char, str(char))
-            output[str(key)] = expression
-        return output
+    _mapping = {
+        '\\*': RegularGrammar.kleene_star(),
+        '\\+': RegularGrammar.kleene_plus(),
+        '\\.': RegularGrammar.concatenation(),
+        '\\|': RegularGrammar.alternative(),
+        '\\?': RegularGrammar.maybe(),
+        '\\(': RegularGrammar.left_parenthesis(),
+        '\\)': RegularGrammar.right_parenthesis(),
+        '\\[': RegularGrammar.left_bracket(),
+        '\\]': RegularGrammar.right_bracket(),
+        '\\-': RegularGrammar.character_range(),
+        '\\^': RegularGrammar.character_negation()
+    }
 
     @staticmethod
     def collect(specification_file):
-        """Collect the specification from an JSON file."""
+        """Collect the JSON specification from file."""
         specification = loads(specification_file.read())
 
-        if 'language' not in specification:
-            raise ValueError('Scanner input specification requires \'language\' key')
-
-        if 'rules' not in specification:
-            raise ValueError('Scanner input specification requires \'rules\' key')
+        for rule in specification.get('rules', {}).values():
+            for idx, char in enumerate(rule):
+                rule[idx] = CollectScannerSpecifications._mapping.get(char, char)
 
         return {
-            'name': str(specification['language']),
-            'expressions': CollectScannerSpecifications._scan(specification['rules'])
+            'name': specification.get('language', None),
+            'expressions': specification.get('rules', None)
         }
 
     def __call__(self, parser, namespace, values, option_string=None):
@@ -80,26 +69,17 @@ class CollectScannerSpecifications(Action):
         setattr(namespace, self.dest, specifications)
 
 class CollectParserSpecifications(Action):
-    """Collect the specification for a parser from a JSON file."""
+    """Collect the JSON parser specification(s) from file(s)."""
 
     @staticmethod
     def collect(specification_file):
-        """Collect the specification from an JSON file."""
+        """Collect the JSON specification from file."""
         specification = loads(specification_file.read())
 
-        if 'language' not in specification:
-            raise ValueError('Parser input specification requires \'language\' key')
-
-        if 'rules' not in specification:
-            raise ValueError('Parser input specification requires \'rules\' key')
-
-        if 'start' not in specification:
-            raise ValueError('Parser input specification requires \'start\' key')
-
         return {
-            'name': str(specification['language']),
-            'productions': {str(k): [[str(e) for e in ls] for ls in v] for k, v in specification['rules'].items()},
-            'start': str(specification['start'])
+            'name': specification.get('lanugage', None),
+            'expressions': specification.get('rules', None),
+            'start': specification.get('start', None)
         }
 
     def __call__(self, parser, namespace, values, option_string=None):
@@ -118,7 +98,7 @@ class CollectConfiguration(Action):
             return True
         if string == 'False':
             return False
-        raise ValueError('invalid time value')
+        raise ValueError('invalid boolean input value')
 
     def __call__(self, parser, namespace, values, option_string=None):
         configuration = RawConfigParser()
@@ -192,12 +172,19 @@ generate=c,
 # Base filename to derive the generated output filename(s).
 output=out
 
-# Path to the parser specification(s), if any.
+# File path(s) to the JSON parser specification(s), if any.
+# The file should contain a dictionary with keys:
+#   - language (str): BNF grammar name.
+#   - rules (dict[str]list[list[str]]): Map [non]terminals to list of rules.
+#   - start (str): nonterminal start rule.
 parsers=examples/INI/parser.json,
         examples/JSON/parser.json,
         examples/Lisp/parser.json
 
-# Path to the scanner specification(s), if any.
+# File path(s) to the JSON scanner specification(s), if any.
+# The file should contain a dictionary with keys:
+#   - language (str): Regular grammar name.
+#   - rules (dict[str]list[str]): Map tokens to sequences.
 scanners=examples/INI/scanner.json,
          examples/JSON/scanner.json,
          examples/Lisp/scanner.json
@@ -235,34 +222,48 @@ CLI = ArgumentParser(
 
 CLI.add_argument('-c', '--configuration', type=open, metavar='rcfile',
                  action=CollectConfiguration,
-                 help='collect arguments from rcfile instead of command line')
+                 help='Collect arguments from rcfile instead of command line.')
 CLI.add_argument('-e', '--encoding', type=str, default='direct',
                  choices=('table', 'direct'),
-                 help='source program encoding to use for the generated output')
+                 help='Source program encoding to use for the generated output.')
 CLI.add_argument('-f', '--force', action='store_true',
-                 help='overwrite pre-exisitng output file(s)')
+                 help='Overwrite pre-exisitng output file(s).')
 CLI.add_argument('-g', '--generate', type=str, nargs='*', default=[],
                  choices=languages, action=DynamicGeneratorImport,
-                 help='target language(s) for code generation')
+                 help='Target language(s) for code generation.')
 CLI.add_argument('--generate-rcfile', action=GenerateConfiguration, nargs='?',
                  default='.spagrc', const='.spagrc', metavar='rcfile',
-                 help='generate an rcfile and exit; .spagrc if not specified.')
+                 help='Generate an rcfile and exit; .spagrc if not specified.')
 CLI.add_argument('-o', '--output', action='store', type=str, default='out',
                  metavar='base-filename',
-                 help='base-filename to derive generated output filename(s)')
+                 help='Base-filename to derive generated output filename(s).')
 CLI.add_argument('-p', '--parsers', type=open, action=CollectParserSpecifications,
-                 default=[], nargs='*', metavar='specification',
-                 help='file(s) containing parser name and LL(1) BNF grammar')
+                 default=[], nargs='*', metavar='filepath',
+                 help='File path(s) to the JSON parser specification(s). '
+                      'The file should contain a JSON dictionary with keys: '
+                      '\'language\' (str), \'rules\' '
+                      '(dict[str]list[list[str]]), and \'start\' (str). The '
+                      'first represents the BNF grammar\'s name. The second '
+                      'represents a mapping of [non]terminals to a a list of '
+                      'rules, with [] representing epsilon. The third '
+                      'represents the nonterminal start rule fo the grammar.')
 CLI.add_argument('-s', '--scanners', type=open, action=CollectScannerSpecifications,
-                 default=[], nargs='*', metavar='specification',
-                 help='file(s) containing scanner name and type/token pairs')
+                 default=[], nargs='*', metavar='filepath',
+                 help='File path(s) to the JSON scanner specification(s). '
+                      'The file should contain a JSON dictionary with keys: '
+                      '\'language\' (str), and \'rules\' (dict[str]list[str]). '
+                      'The first represents the regular grammar\'s name. The '
+                      'second represents a mapping of token names to a '
+                      'sequence representing the expression. The strings in '
+                      'the sequence should be of length one unless excaping an '
+                      'operator (*,+,.,|,?,(,),[,],-,^).')
 CLI.add_argument('-t', '--time', action='store_true',
-                 help='display the wall time taken for each component')
+                 help='Display the wall time taken for each component.')
 CLI.add_argument('-v', '--verbose', action='store_true',
-                 help='output more information when running')
+                 help='Output more information when running.')
 CLI.add_argument('-V', '--version', action='version',
                  version='SPaG-CLI v1.0.0a0',
-                 help='show version information and exit')
+                 help='Show version information and exit.')
 
 try:
     ARGS = vars(CLI.parse_args())
@@ -348,11 +349,11 @@ try:
                     stdout.flush()
                 FILE.write(CONTENT)
 except TypeError as exception:
-    stdout.write('Invalid input type: {0}\n'.format(exception))
+    stdout.write('Invalid input type:\n{0}\n'.format(exception))
 except ValueError as exception:
-    stdout.write('Invalid input value: {0}\n'.format(exception))
+    stdout.write('Invalid input value:\n{0}\n'.format(exception))
 except Exception as exception:
-    stdout.write('Unknown exception encountered: {0}\n'.format(exception))
+    stdout.write('Unknown exception encountered:\n{0}\n'.format(exception))
 finally:
     stdout.flush()
     exit(0)
