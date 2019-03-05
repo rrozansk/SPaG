@@ -29,7 +29,7 @@ setup(
     url='https://github.com/rrozansk/SPaG',
     download_url='https://github.com/rrozansk/SPaG',
     python_requires='>= 2.7.0',
-    install_requires=['enum34>=1.1.6'],
+    install_requires=['enum34;python_version<"3.4"'],
     keywords=' '.join([
         'abstract-syntax-tree',
         'ast',
