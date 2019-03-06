@@ -208,7 +208,8 @@ class Generator(object):
         if not files:
             raise ValueError('generated files must be of non empty')
 
-        for name, content in files.items():
+        for name in files:
+            content = files[name]
             if not isinstance(name, str):
                 raise TypeError('generated file name must be of type string')
 

@@ -129,7 +129,8 @@ class RegularGrammar(object):
         self._expressions = {}
 
         nfa = []
-        for identifier, pattern in expressions.items():
+        for identifier in expressions:
+            pattern = expressions[identifier]
             if not isinstance(identifier, str):
                 raise TypeError('token name/type must be a string')
 
@@ -470,7 +471,7 @@ class RegularGrammar(object):
                 elif prange:
                     prange = False
                     _char = literals.pop()
-                    literals.extend(map(chr, range(ord(min(_char, char)), ord(max(_char, char))+1)))
+                    literals.extend([chr(idx) for idx in range(ord(min(_char, char)), ord(max(_char, char))+1)])
                 else:
                     literals.append(char)
             else:
@@ -711,10 +712,12 @@ class RegularGrammar(object):
             V.update(_nfa[1])
             T.update(_nfa[2])
             E[S].add(_nfa[4])
-            for state, etransitions in _nfa[3].items():
+            for state in _nfa[3]:
+                etransitions = _nfa[3][state]
                 E[state] = E.get(state, set()) | etransitions
             F.add(_nfa[5])
-            for name, state in _nfa[6].items():
+            for name in _nfa[6]:
+                state = _nfa[6][name]
                 G[name] = state
         return Q, V, T, E, S, F, G
 
@@ -790,12 +793,14 @@ class RegularGrammar(object):
                     if t[0] in in_state:
                         out_states = qps[t[1]] = qps.get(t[1], set())
                         out_states.update(RegularGrammar._e_closure(t[2], E, cache))
-                for alpha, out_state in qps.items():
+                for alpha in qps:
+                    out_state = qps[alpha]
                     out_state = frozenset(out_state)
                     explore.add(out_state)
                     Tp.add((in_state, alpha, out_state))
 
-        for name, nfa_final in G.items():
+        for name in G:
+            nfa_final = G[name]
             for dfa_final in Fp:
                 if nfa_final in dfa_final:
                     Gp[name] = Gp.get(name, set()) | set([dfa_final])
@@ -887,8 +892,9 @@ class RegularGrammar(object):
 
         while explore:
             selection = explore.pop()
-            for v_idx in symbols.values():
-                _selection = {q for q, q_idx in states.items() if T[v_idx][q_idx] in selection}
+            for key in symbols:
+                v_idx = symbols[key]
+                _selection = {q for q in states if T[v_idx][states[q]] in selection}
                 _selection = frozenset(_selection)
                 _partitions = set()
                 for partition in partitions:
@@ -907,7 +913,7 @@ class RegularGrammar(object):
                         _partitions.add(partition)
                 partitions = _partitions
 
-        _states = dict(zip(partitions, range(len(partitions))))
+        _states = {item:idx for idx, item in enumerate(partitions)}
         Tp = [[None for _ in partitions] for symbol in V]
         for source in states:
             for symbol in V:
@@ -934,7 +940,8 @@ class RegularGrammar(object):
 
         Gp = dict()
 
-        for name, dfa_finals in G.items():
+        for name in G:
+            dfa_finals = G[name]
             if name == '_sink': # special case (i.e not a final state)
                 Gp[name] = {part for part in partitions if part & G['_sink']}
                 continue
@@ -975,11 +982,11 @@ class RegularGrammar(object):
           dict[str, set[str]]: the updated token to final state mapping.
         """
         rename = {q: RegularGrammar._state() for q in Q}
-        Qp = set(rename.values())
+        Qp = {rename[k] for k in rename}
         (states, symbols, table) = T
-        states = {rename[state]:idx for state, idx in states.items()}
+        states = {rename[state]:states[state] for state in states}
         Tp = (states, symbols, [[rename[col] for col in row] for row in table])
         Sp = rename[S]
         Fp = {rename[f] for f in F}
-        Gp = {g:set([rename[s] for s in states]) for g, states in G.items()}
+        Gp = {g:set([rename[s] for s in G[g]]) for g in G}
         return Qp, V, Tp, Sp, Fp, Gp

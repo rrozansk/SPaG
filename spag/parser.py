@@ -101,7 +101,8 @@ class ContextFreeGrammar(object):
             raise ValueError('start production not present in given productions')
 
         self._rules = []
-        for nonterminal, rhs in productions.items():
+        for nonterminal in productions:
+            rhs = productions[nonterminal]
             if not isinstance(nonterminal, str):
                 raise TypeError('production nonterminal must be a string')
 

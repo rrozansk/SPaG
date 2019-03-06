@@ -17,7 +17,8 @@ class TestParser(object):
         """
         assert len(expected) == len(actual), 'Invalid first set size produced'
 
-        for elem, items in actual.items():
+        for elem in actual:
+            items = actual[elem]
             assert expected.get(elem, None) == items, \
             'Invalid first set produced'
 
@@ -28,7 +29,8 @@ class TestParser(object):
         """
         assert len(expected) == len(actual), 'Invalid follow set size produced'
 
-        for elem, items in actual.items():
+        for elem in actual:
+            items = actual[elem]
             assert expected.get(elem, None) == items, \
             'Invalid follow set produced'
 

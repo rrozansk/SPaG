@@ -22,7 +22,8 @@ class TestScanner(object):
         assert set(expected.keys()) == set(actual.keys()), \
                'Incorrect token name/type set produced'
 
-        for name, expected_pattern in expected.items():
+        for name in expected:
+            expected_pattern = expected[name]
             actual_pattern = expected.get(name)
 
             assert len(expected_pattern) == len(actual_pattern), \
@@ -68,14 +69,15 @@ class TestScanner(object):
         S = actual.start
         Qp = expected['Q']
 
-        map_generator = (dict(zip(Q, perm)) for perm in permutations(Qp, len(Qp)))
+        perms = permutations(Qp, len(Qp))
+        map_generator = ({q:perm[idx] for idx, q in enumerate(Q)} for perm in perms)
         for _map in map_generator:
             if _map[S] != expected['S']:
                 continue
             if not all([_map[f] in expected['F'] for f in F]):
                 continue
-            if not all([{_map[s] for s in types} == \
-               expected['G'].get(name, set()) for name, types in G.items()]):
+            if not all([{_map[s] for s in G[name]} == \
+               expected['G'].get(name, set()) for name in G]):
                 continue
             if not all([all([_map[T[symbol[v]][state[q]]] == \
                Tp[_symbol[v]][_state[_map[q]]] for q in Q]) for v in V]):
