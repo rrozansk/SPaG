@@ -60,7 +60,7 @@ help of Make the only requirements the user needs to worry are those which must
 be installed on the machine itself and include:
   * git (>= v2.1.3)
   * make (>= v4.1)
-  * Python (>= v2.7)
+  * Python (>= v3.5)
   * Pip (>= v9.0.3)
   * setuptools (>= v40.4.3)
   * virtualenv (>= v16.0.0)
@@ -79,7 +79,7 @@ $ git clone https://github.com/rrozansk/SPaG.git
 $ make sanity
 
 # Open the generated report in a web-browser and inspect the results.
-$ chrome test_report.html
+$ chrome test_report*
 
 # If the results look good then install SPaG from the source.
 $ make install
@@ -91,7 +91,7 @@ Since the distributions are thoroughly tested and linted before publishing
 there is no need for that step in this method of installation, unlike the source
 method. The only requirements needed on the host machine for this method to work
 include:
-  * Python (>= v2.7)
+  * Python (>= v3.5)
   * Pip (>= v9.0.3)
 
 ```sh

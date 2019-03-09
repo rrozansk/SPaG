@@ -33,7 +33,7 @@ class _RegularGrammarOperators(Enum):
     CHARACTER_NEGATION = 10  # ^ (NOTE: only allowed as first elem in '[]')
 
 
-class RegularGrammar(object):
+class RegularGrammar:
     """The RegularGrammar object responsible for creating the minimal DFA.
 
     RegularGrammar represents a collection of named formal regular expressions
@@ -468,7 +468,7 @@ class RegularGrammar(object):
             elif expand:
                 if isinstance(char, _RegularGrammarOperators):
                     raise ValueError('Error: Operator not allowed in character range/class')
-                elif prange:
+                if prange:
                     prange = False
                     _char = literals.pop()
                     literals.extend([chr(idx) for idx in range(ord(min(_char, char)), ord(max(_char, char))+1)])
@@ -640,7 +640,7 @@ class RegularGrammar(object):
                 e_update(q, F)
                 e_update(t, F)
             elif token is RegularGrammar.kleene_star():
-                if len(stk) < 1:
+                if not stk:
                     raise ValueError('Error: not enough args to op *')
                 p, q = stk.pop()
                 S, F = RegularGrammar._state(), RegularGrammar._state()
@@ -649,7 +649,7 @@ class RegularGrammar(object):
                 e_update(q, F)
                 e_update(S, F)
             elif token is RegularGrammar.kleene_plus():
-                if len(stk) < 1:
+                if not stk:
                     raise ValueError('Error: not enough args to op +')
                 p, q = stk.pop()
                 S, F = RegularGrammar._state(), RegularGrammar._state()
@@ -657,7 +657,7 @@ class RegularGrammar(object):
                 e_update(q, p)
                 e_update(q, F)
             elif token is RegularGrammar.maybe():
-                if len(stk) < 1:
+                if not stk:
                     raise ValueError('Error: not enough args to op ?')
                 p, q = stk.pop()
                 S, F = RegularGrammar._state(), RegularGrammar._state()
@@ -988,5 +988,5 @@ class RegularGrammar(object):
         Tp = (states, symbols, [[rename[col] for col in row] for row in table])
         Sp = rename[S]
         Fp = {rename[f] for f in F}
-        Gp = {g:set([rename[s] for s in G[g]]) for g in G}
+        Gp = {g:{rename[s] for s in G[g]} for g in G}
         return Qp, V, Tp, Sp, Fp, Gp

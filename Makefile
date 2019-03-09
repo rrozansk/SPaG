@@ -9,8 +9,8 @@
 # Set the default to help if make is called with no target.
 .DEFAULT_GOAL := help
 
-# Set the default python version to run against for the sanity target.
-PYTHON_VERSION := python2.7
+# Set the default python version to run against for the env target.
+PYTHON_VERSION := python3.7
 
 ################################################################################
 #                                                                              #
@@ -29,7 +29,6 @@ help:
 	@printf '$$ make install          Install SPaG from source.\n'
 	@printf '$$ make clean            Remove compiled, temp, and any installed files.\n'
 	@printf '$$ make sanity           Perform the linting and testing targets.\n'
-	@printf '$$ make test2.7          Perform sanity with python2.7.\n'
 	@printf '$$ make test3.5          Perform sanity with python3.5.\n'
 	@printf '$$ make test3.6          Perform sanity with python3.6.\n'
 	@printf '$$ make test3.7          Perform sanity with python3.7.\n'
@@ -47,7 +46,7 @@ help:
 ################################################################################
 .PHONY: env
 env: requirements.txt
-	pip install virtualenv==16.0.0
+	pip install virtualenv
 	virtualenv --python=${PYTHON_VERSION} testing_venv
 	. testing_venv/bin/activate; \
 	pip install -r requirements.txt; \
@@ -79,21 +78,21 @@ test: pytest.ini
 
 ################################################################################
 #                                                                              #
-# Install the project from source.                                             #
-#                                                                              #
-################################################################################
-.PHONY: install
-install: setup.py
-	python setup.py install
-
-################################################################################
-#                                                                              #
 # Create distributions from the current source.                                #
 #                                                                              #
 ################################################################################
 .PHONY: distro
 distro: setup.py
 	python setup.py sdist bdist_wheel
+
+################################################################################
+#                                                                              #
+# Install the project from source.                                             #
+#                                                                              #
+################################################################################
+.PHONY: install
+install: setup.py
+	python setup.py install
 
 ################################################################################
 #                                                                              #
@@ -124,16 +123,6 @@ clean:
 sanity: env
 	-. testing_venv/bin/activate; make lint && make test; deactivate
 	$(MAKE) clean
-
-################################################################################
-#                                                                              #
-# Run sanity with python version 2.7 with the help of other recipes.           #
-#                                                                              #
-################################################################################
-.PHONY: test2.7
-test2.7:
-	-$(MAKE) sanity -e PYTHON_VERSION=python2.7
-	mv test_report.html test_report_py2.7.html
 
 ################################################################################
 #                                                                              #
@@ -172,7 +161,6 @@ test3.7:
 ################################################################################
 .PHONY: all
 all:
-	-$(MAKE) test2.7
 	-$(MAKE) test3.5
 	-$(MAKE) test3.6
 	-$(MAKE) test3.7

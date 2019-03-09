@@ -7,7 +7,7 @@ from spag.scanner import RegularGrammar
 from spag.parser import ContextFreeGrammar
 
 
-class TestGenerator(object):
+class TestGenerator:
     """
     A test suite for testing the Generator subclass object.
     """

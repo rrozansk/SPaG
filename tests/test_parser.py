@@ -5,7 +5,7 @@ import pytest
 from spag.parser import ContextFreeGrammar
 
 
-class TestParser(object):
+class TestParser:
     """
     A test suite for testing the ContextFreeGrammar object.
     """

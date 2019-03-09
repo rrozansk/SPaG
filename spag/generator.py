@@ -12,7 +12,7 @@ from spag.parser import ContextFreeGrammar
 from spag.scanner import RegularGrammar
 
 
-class Generator(object):
+class Generator:
     """The Base Generator which performs [in/out]put validations.
 
     A simple superclass object for performing validation on user input as well

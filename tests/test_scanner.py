@@ -6,7 +6,7 @@ import pytest
 from spag.scanner import RegularGrammar
 
 
-class TestScanner(object):
+class TestScanner:
     """
     A test suite for testing the RegularGrammar object.
     """

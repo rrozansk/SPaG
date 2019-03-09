@@ -21,7 +21,7 @@ class _ContextFreeGrammarOperators(Enum):
     EPSILON = 1       # e
 
 
-class ContextFreeGrammar(object):
+class ContextFreeGrammar:
     """The ContextFreeGrammar object responsible for creating parse tables.
 
     ContextFreeGrammar represents a Backus-[Naur/Normal] Form (BNF) language

@@ -102,7 +102,7 @@ class CollectConfiguration(Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         configuration = RawConfigParser()
-        configuration.readfp(values)
+        configuration.read(values)
 
         if not configuration.has_section('SPaG'):
             raise ValueError('missing runtime configuration section \'SPaG\'')
