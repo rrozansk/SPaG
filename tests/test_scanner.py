@@ -265,7 +265,7 @@ class TestScanner:
         Ensure invalid character produces the proper exception.
         """
         TestScanner._run(**{
-            'name': 'Invalid Unicode Character',
+            'name': 'Invalid Character',
             'expressions': {
                 'invalid': ['fo']
             },
@@ -625,6 +625,179 @@ class TestScanner:
                 'F': set(['A']),
                 'G': {
                     'alpha': set(['A']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_unicode_16bit_literal():
+        """
+        Ensure a one character 16bit unicode literal expression produces the
+        expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Unicode 16 Bit Literal',
+            'expressions': {
+                'literal': [u'\u0394']
+            },
+            'DFA':{
+                'Q': set(['S', 'Unicode', 'Err']),
+                'V': set([u'\u0394']),
+                # pylint: disable=bad-whitespace
+                'T': [
+                    [' ',       'S',       'Unicode', 'Err'],
+                    [u'\u0394', 'Unicode', 'Err',     'Err']
+                ],
+                # pylint: enable=bad-whitespace
+                'S': 'S',
+                'F': set(['Unicode']),
+                'G': {
+                    'literal': set(['Unicode']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_unicode_32bit_literal():
+        """
+        Ensure a one character 32bit unicode literal expression produces the
+        expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Unicode 32 Bit Literal',
+            'expressions': {
+                'literal': [u'\U00000394']
+            },
+            'DFA':{
+                'Q': set(['S', 'Unicode', 'Err']),
+                'V': set([u'\U00000394']),
+                # pylint: disable=bad-whitespace
+                'T': [
+                    [' ',           'S',       'Unicode', 'Err'],
+                    [u'\U00000394', 'Unicode', 'Err',     'Err']
+                ],
+                # pylint: enable=bad-whitespace
+                'S': 'S',
+                'F': set(['Unicode']),
+                'G': {
+                    'literal': set(['Unicode']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_unicode_name_literal():
+        """
+        Ensure a unicode name literal expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Unicode Name Literal',
+            'expressions': {
+                'literal': [u'\N{GREEK CAPITAL LETTER DELTA}']
+            },
+            'DFA':{
+                'Q': set(['S', 'Unicode', 'Err']),
+                'V': set([u'\N{GREEK CAPITAL LETTER DELTA}']),
+                # pylint: disable=bad-whitespace
+                'T': [
+                    [' ',                               'S',       'Unicode', 'Err'],
+                    [u'\N{GREEK CAPITAL LETTER DELTA}', 'Unicode', 'Err',     'Err']
+                ],
+                # pylint: enable=bad-whitespace
+                'S': 'S',
+                'F': set(['Unicode']),
+                'G': {
+                    'literal': set(['Unicode']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_hex_literal():
+        """
+        Ensure a hex character literal expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Hex Literal',
+            'expressions': {
+                'literal': ['\x34']
+            },
+            'DFA': {
+                'Q': set(['S', 'Hex', 'Err']),
+                'V': set(['\x34']),
+                # pylint: disable=bad-whitespace
+                'T': [
+                    [' ',    'S',   'Hex', 'Err'],
+                    ['\x34', 'Hex', 'Err', 'Err']
+                ],
+                # pylint: enable=bad-whitespace
+                'S': 'S',
+                'F': set(['Hex']),
+                'G': {
+                    'literal': set(['Hex']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_unicode_range():
+        """
+        Ensure a unicode character range expression produces the expected
+        output.
+        """
+        TestScanner._run(**{
+            'name': 'Unicode Range',
+            'expressions': {
+                'range': [RegularGrammar.left_bracket(), u'\u2345', RegularGrammar.character_range(), u'\u2346', RegularGrammar.right_bracket()]
+            },
+            'DFA':{
+                'Q': set(['S', 'Unicode', 'Err']),
+                'V': set([u'\u2345', u'\u2346']),
+                # pylint: disable=bad-whitespace
+                'T': [
+                    [' ',       'S',       'Unicode', 'Err'],
+                    [u'\u2345', 'Unicode', 'Err',     'Err'],
+                    [u'\u2346', 'Unicode', 'Err',     'Err']
+                ],
+                # pylint: enable=bad-whitespace
+                'S': 'S',
+                'F': set(['Unicode']),
+                'G': {
+                    'range': set(['Unicode']),
+                    '_sink': set(['Err'])
+                }
+            }
+        })
+
+    @staticmethod
+    def test_hex_range():
+        """
+        Ensure a hex character range expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Hex Range',
+            'expressions': {
+                'range': [RegularGrammar.left_bracket(), '\x34', RegularGrammar.character_range(), '\x35', RegularGrammar.right_bracket()]
+            },
+            'DFA':{
+                'Q': set(['S', 'Hex', 'Err']),
+                'V': set(['\x34', '\x35']),
+                # pylint: disable=bad-whitespace
+                'T': [
+                    [' ',    'S',   'Hex', 'Err'],
+                    ['\x34', 'Hex', 'Err', 'Err'],
+                    ['\x35', 'Hex', 'Err', 'Err']
+                ],
+                # pylint: enable=bad-whitespace
+                'S': 'S',
+                'F': set(['Hex']),
+                'G': {
+                    'range': set(['Hex']),
                     '_sink': set(['Err'])
                 }
             }

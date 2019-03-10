@@ -137,14 +137,15 @@ guidelines:
       * '.'    (concatenation -> combine)
       * '|'    (union -> choice -> either or)
       * '?'    (question -> choice -> 1 or none)
-      * ()     (grouping -> disambiguation -> any expression)
       * [ab]   (character class -> choice -> any specified character)
       * [a-c]  (character range -> choice -> any char between the two)
       * [^ab]  (character negation -> choice -> all but the specified)
+      * ()     (grouping -> disambiguation -> any expression)
 
   * other things to keep in mind (potential gotcha's):
+      * full unicode input is supported
       * character ranges are determined by python's ord() function.
-      * character negation is only over ascii character set.
+      * character negation is only over the printable ascii character set.
       * character classes/ranges may be combined, possibly multiple times,
         in the same set of brackets (e.g. [abc-pqrs-z]).
       * character ranges can be specified as forward or backwards, the

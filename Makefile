@@ -104,7 +104,6 @@ install: setup.py
 clean:
 	\rm -rf testing_venv
 	\rm -rf SPaG.egg-info/ build/ dist/
-	\rm -rf /usr/local/bin/generate.py
 	\find . -type f -name '*~' -delete
 	\find . -type f -name '*.o' -delete
 	\find . -type f -name '*.swp' -delete
@@ -112,6 +111,7 @@ clean:
 	\find . -type f -name '.coverage' -delete
 	\find . -type d -name '__pycache__' -exec rm -rf '{}' +
 	\find . -type d -name '.pytest_cache' -exec rm -rf '{}' +
+	\find /usr/local/bin/ -type f -name 'spag_cli' -delete
 	\find /usr/local/lib/python* -type d -name 'SPaG-*' -exec rm -rf '{}' +
 
 ################################################################################
