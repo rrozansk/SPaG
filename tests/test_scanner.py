@@ -24,7 +24,7 @@ class TestScanner:
 
         for name in expected:
             expected_pattern = expected[name]
-            actual_pattern = expected.get(name)
+            actual_pattern = actual[name]
 
             assert len(expected_pattern) == len(actual_pattern), \
                   'Incorrect expression pattern size produced'
