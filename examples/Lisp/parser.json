@@ -1,6 +1,5 @@
 {
-    "language": "Lisp",
-    "rules": {
+    "expressions": {
         "atom": [
             [
                 "symbol"
@@ -42,5 +41,6 @@
             ]
         ]
     },
+    "name": "Lisp",
     "start": "expression"
 }

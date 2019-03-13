@@ -1,6 +1,5 @@
 {
-    "language": "ini",
-    "rules": {
+    "expressions": {
         "bcomment": [
             "/",
             "*",
@@ -177,5 +176,6 @@
             "\\*",
             "\\"
         ]
-    }
+    },
+    "name": "ini"
 }

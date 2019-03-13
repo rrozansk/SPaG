@@ -1,6 +1,5 @@
 {
-    "language": "INI",
-    "rules": {
+    "expressions": {
         "HEADER": [
             [
                 "lbracket",
@@ -55,5 +54,6 @@
             ]
         ]
     },
+    "name": "INI",
     "start": "INI"
 }

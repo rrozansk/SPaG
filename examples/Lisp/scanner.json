@@ -1,6 +1,5 @@
 {
-    "language": "Lisp",
-    "rules": {
+    "expressions": {
         "boolean": [
             "#",
             "t",
@@ -123,5 +122,6 @@
             "\\]",
             "\\*"
         ]
-    }
+    },
+    "name": "Lisp"
 }

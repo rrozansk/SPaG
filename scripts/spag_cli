@@ -26,9 +26,7 @@ class DynamicGeneratorImport(Action):
         return getattr(module, cls)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        generators = []
-        for language in values:
-            generators.append(DynamicGeneratorImport.gather(language))
+        generators = [DynamicGeneratorImport.gather(language) for language in values]
         setattr(namespace, self.dest, generators)
 
 class CollectScannerSpecifications(Action):
@@ -53,39 +51,21 @@ class CollectScannerSpecifications(Action):
         """Collect the JSON specification from file."""
         specification = loads(specification_file.read())
 
-        for rule in specification.get('rules', {}).values():
-            for idx, char in enumerate(rule):
-                rule[idx] = CollectScannerSpecifications._mapping.get(char, char)
+        for expression in specification.get('expressions', {}).values():
+            for idx, char in enumerate(expression):
+                expression[idx] = CollectScannerSpecifications._mapping.get(char, char)
 
-        return {
-            'name': specification.get('language', None),
-            'expressions': specification.get('rules', None)
-        }
+        return specification
 
     def __call__(self, parser, namespace, values, option_string=None):
-        specifications = []
-        for specification in values:
-            specifications.append(CollectScannerSpecifications.collect(specification))
+        specifications = [CollectScannerSpecifications.collect(specification) for specification in values]
         setattr(namespace, self.dest, specifications)
 
 class CollectParserSpecifications(Action):
     """Collect the JSON parser specification(s) from file(s)."""
 
-    @staticmethod
-    def collect(specification_file):
-        """Collect the JSON specification from file."""
-        specification = loads(specification_file.read())
-
-        return {
-            'name': specification.get('lanugage', None),
-            'expressions': specification.get('rules', None),
-            'start': specification.get('start', None)
-        }
-
     def __call__(self, parser, namespace, values, option_string=None):
-        specifications = []
-        for specification in values:
-            specifications.append(CollectParserSpecifications.collect(specification))
+        specifications = [loads(specification.read()) for specification in values]
         setattr(namespace, self.dest, specifications)
 
 class CollectConfiguration(Action):
@@ -132,7 +112,7 @@ class CollectConfiguration(Action):
                         raise ValueError('input specification must be a file location')
                     with open(specification) as input_specification:
                         if setting == 'parsers':
-                            specifications.append(CollectParserSpecifications.collect(input_specification))
+                            specifications.append(loads(input_specification.read()))
                         elif setting == 'scanners':
                             specifications.append(CollectScannerSpecifications.collect(input_specification))
                 value = specifications
@@ -174,8 +154,8 @@ output=out
 
 # File path(s) to the JSON parser specification(s), if any.
 # The file should contain a dictionary with keys:
-#   - language (str): BNF grammar name.
-#   - rules (dict[str]list[list[str]]): Map [non]terminals to list of rules.
+#   - name (str): BNF grammar name.
+#   - expressions (dict[str]list[list[str]]): Map [non]terminals to list of rules.
 #   - start (str): nonterminal start rule.
 parsers=examples/INI/parser.json,
         examples/JSON/parser.json,
@@ -183,8 +163,8 @@ parsers=examples/INI/parser.json,
 
 # File path(s) to the JSON scanner specification(s), if any.
 # The file should contain a dictionary with keys:
-#   - language (str): Regular grammar name.
-#   - rules (dict[str]list[str]): Map tokens to sequences.
+#   - name (str): Regular grammar name.
+#   - expressions (dict[str]list[str]): Map tokens to sequences.
 scanners=examples/INI/scanner.json,
          examples/JSON/scanner.json,
          examples/Lisp/scanner.json
@@ -241,7 +221,7 @@ CLI.add_argument('-p', '--parsers', type=open, action=CollectParserSpecification
                  default=[], nargs='*', metavar='filepath',
                  help='File path(s) to the JSON parser specification(s). '
                       'The file should contain a JSON dictionary with keys: '
-                      '\'language\' (str), \'rules\' '
+                      '\'name\' (str), \'expressions\' '
                       '(dict[str]list[list[str]]), and \'start\' (str). The '
                       'first represents the BNF grammar\'s name. The second '
                       'represents a mapping of [non]terminals to a a list of '
@@ -251,12 +231,12 @@ CLI.add_argument('-s', '--scanners', type=open, action=CollectScannerSpecificati
                  default=[], nargs='*', metavar='filepath',
                  help='File path(s) to the JSON scanner specification(s). '
                       'The file should contain a JSON dictionary with keys: '
-                      '\'language\' (str), and \'rules\' (dict[str]list[str]). '
-                      'The first represents the regular grammar\'s name. The '
-                      'second represents a mapping of token names to a '
-                      'sequence representing the expression. The strings in '
-                      'the sequence should be of length one unless excaping an '
-                      'operator (*,+,.,|,?,(,),[,],-,^).')
+                      '\'name\' (str), and \'expressions\' '
+                      '(dict[str]list[str]). The first represents the regular '
+                      'grammar\'s name. The second represents a mapping of '
+                      'token names to a sequence representing the expression. '
+                      'The strings in the sequence should be of length one '
+                      'unless excaping an operator (*,+,.,|,?,(,),[,],-,^).')
 CLI.add_argument('-t', '--time', action='store_true',
                  help='Display the wall time taken for each component.')
 CLI.add_argument('-v', '--verbose', action='store_true',

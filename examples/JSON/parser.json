@@ -1,6 +1,5 @@
 {
-    "language": "JSON",
-    "rules": {
+    "expressions": {
         "ARRAY": [
             [
                 "lb",
@@ -85,5 +84,6 @@
             ]
         ]
     },
+    "name": "JSON",
     "start": "VALUE"
 }
