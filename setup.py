@@ -95,7 +95,7 @@ setup(
     ],
     include_package_data=True,
     zip_safe=True,
-    classifiers=(
+    classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
         'Intended Audience :: Developers',
@@ -117,5 +117,5 @@ setup(
         'Topic :: Software Development :: Compilers',
         'Topic :: Text Processing',
         'Topic :: Text Processing :: Linguistic'
-    )
+    ]
 )
