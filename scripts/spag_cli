@@ -9,7 +9,7 @@ from argparse import ArgumentParser, Action
 from configparser import RawConfigParser
 from json import loads
 from os.path import isfile
-from sys import stdout
+from sys import stdout, argv
 from time import time
 from spag.generators import __all__ as languages
 from spag.parser import ContextFreeGrammar
@@ -197,7 +197,9 @@ CLI = ArgumentParser(
     as numerous input file examples for scanners and parsers see the README.md
     and examples/ directory located in the github repository here:
     https://github.com/rrozansk/SPaG
-    '''
+    ''',
+    add_help=False,
+    allow_abbrev=False
 )
 
 CLI.add_argument('-c', '--configuration', type=open, metavar='rcfile',
@@ -211,9 +213,12 @@ CLI.add_argument('-f', '--force', action='store_true',
 CLI.add_argument('-g', '--generate', type=str, nargs='*', default=[],
                  choices=languages, action=DynamicGeneratorImport,
                  help='Target language(s) for code generation.')
-CLI.add_argument('--generate-rcfile', action=GenerateConfiguration, nargs='?',
+CLI.add_argument('-G', '--generate-rcfile', action=GenerateConfiguration, nargs='?',
                  default='.spagrc', const='.spagrc', metavar='rcfile',
                  help='Generate an rcfile and exit; .spagrc if not specified.')
+CLI.add_argument('-h', '--help', action='store_true',
+                 help='Show this help message and exit. The default behavior if '
+                      'no arguments are supplied.')
 CLI.add_argument('-o', '--output', action='store', type=str, default='out',
                  metavar='base-filename',
                  help='Base-filename to derive generated output filename(s).')
@@ -247,6 +252,11 @@ CLI.add_argument('-V', '--version', action='version',
 
 try:
     ARGS = vars(CLI.parse_args())
+
+    if len(argv) < 2 or ARGS['help']:
+        CLI.print_help()
+        exit(0)
+
     START, END = None, None
 
     SCANNERS = []
