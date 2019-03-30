@@ -5,7 +5,7 @@ file specification. It also properly handles the dynamic importing required
 for the generator(s) of interest.
 """
 from argparse import ArgumentParser, Action
-from configparser import RawConfigParser
+from configparser import SafeConfigParser
 from enum import IntEnum, unique
 from json import loads
 from os.path import isfile
@@ -96,8 +96,8 @@ class CollectConfiguration(Action):
         raise ValueError('invalid boolean input value')
 
     def __call__(self, parser, namespace, values, option_string=None):
-        configuration = RawConfigParser()
-        configuration.read(values)
+        configuration = SafeConfigParser()
+        configuration.read_file(values)
 
         if not configuration.has_section('SPaG'):
             raise ValueError('missing runtime configuration section \'SPaG\'')
@@ -145,7 +145,6 @@ class GenerateConfiguration(Action):
     def __call__(self, parser, namespace, values, option_string=None):
         with open(values, 'w') as rcfile:
             rcfile.write('''[SPaG]
-
 # Path to the runtime configuration file.
 # NOTE: Ignored and only present to mirror the command line option.
 configuration={0}
@@ -159,9 +158,7 @@ encoding=direct
 force=True
 
 # List any language(s) targeted for generation.
-generate=c,
-         go,
-         python
+generate=c
 
 # Base filename to derive the generated output filename(s).
 output=out
