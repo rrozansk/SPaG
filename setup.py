@@ -90,9 +90,9 @@ setup(
             '../LICENSE.txt'
         ]
     },
-    scripts=[
-        'scripts/spag_cli'
-    ],
+    entry_points={
+        'console_scripts': ['spag_cli=spag.__main__:main'],
+    },
     include_package_data=True,
     zip_safe=True,
     classifiers=[
