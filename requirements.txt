@@ -7,6 +7,7 @@
 pip
 pylint
 pytest
+pytest-console-scripts
 pytest-cov
 pytest-html
 pytest-metadata
