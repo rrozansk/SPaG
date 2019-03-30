@@ -106,6 +106,8 @@ clean:
 	\find . -type f -name '*~' -delete
 	\find . -type f -name '*.o' -delete
 	\find . -type f -name '*.swp' -delete
+	\find . -type f -name 'out_*' -delete
+	\find . -type f -name '.spagrc' -delete
 	\find . -type f -name '*.py[cod]' -delete
 	\find . -type f -name '.coverage' -delete
 	\find . -type d -name '__pycache__' -exec rm -rf '{}' +
