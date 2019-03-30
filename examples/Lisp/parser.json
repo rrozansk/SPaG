@@ -1,5 +1,6 @@
 {
-    "expressions": {
+    "name": "Lisp",
+    "productions": {
         "atom": [
             [
                 "symbol"
@@ -41,6 +42,5 @@
             ]
         ]
     },
-    "name": "Lisp",
     "start": "expression"
 }

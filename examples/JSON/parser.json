@@ -1,5 +1,6 @@
 {
-    "expressions": {
+    "name": "JSON",
+    "productions": {
         "ARRAY": [
             [
                 "lb",
@@ -84,6 +85,5 @@
             ]
         ]
     },
-    "name": "JSON",
     "start": "VALUE"
 }

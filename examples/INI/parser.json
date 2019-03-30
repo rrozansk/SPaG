@@ -1,5 +1,6 @@
 {
-    "expressions": {
+    "name": "INI",
+    "productions": {
         "HEADER": [
             [
                 "lbracket",
@@ -54,6 +55,5 @@
             ]
         ]
     },
-    "name": "INI",
     "start": "INI"
 }
