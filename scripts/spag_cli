@@ -7,13 +7,29 @@ for the generator(s) of interest.
 """
 from argparse import ArgumentParser, Action
 from configparser import RawConfigParser
+from enum import IntEnum, unique
 from json import loads
 from os.path import isfile
-from sys import stdout, argv
+from sys import argv, stdout
 from time import time
 from spag.generators import __all__ as languages
 from spag.parser import ContextFreeGrammar
 from spag.scanner import RegularGrammar
+
+
+@unique
+class Exit(IntEnum):
+    """The Exit enumeration aggregates all possible exit codes for this script.
+
+    Exit represents a unique collection of possible exit codes used by this
+    script so that the exit status are well defined.
+    """
+
+    SUCCESS = 0         # Everything ran fine.
+    INVALID_ARGS = 1    # Invalid CLI arguments supplied.
+    INVALID_SCANNER = 2 # Invalid scanner specification.
+    INVALID_PARSER = 3  # Invalid parser specification.
+    FAIL_GENERATE = 4   # Program generation failed.
 
 class DynamicGeneratorImport(Action):
     """Dynamically import the generator(s) required for source output."""
@@ -89,11 +105,10 @@ class CollectConfiguration(Action):
 
         for setting, value in configuration.items('SPaG'):
             if setting == 'encoding':
-                value = str(value)
                 if value not in ('table', 'direct'):
                     raise ValueError('invalid encoding value')
             elif setting == 'generate':
-                value = [str(lang).strip() for lang in value.split(',')]
+                value = [lang.strip() for lang in value.split(',')]
                 if len(value) == 1 and not value[0]:  # Empty setting check
                     value = []
                 generators = []
@@ -103,7 +118,7 @@ class CollectConfiguration(Action):
                     generators.append(DynamicGeneratorImport.gather(language))
                 value = generators
             elif setting in ('parsers', 'scanners'):
-                value = [str(spec).strip() for spec in value.split(',')]
+                value = [spec.strip() for spec in value.split(',')]
                 if len(value) == 1 and not value[0]:  # Empty setting check
                     value = []
                 specifications = []
@@ -119,7 +134,7 @@ class CollectConfiguration(Action):
             elif setting in ('force', 'time', 'verbose'):
                 value = CollectConfiguration.bool(str(value))
             elif setting in ('configuration', 'output'):
-                value = str(value)
+                pass
             else:
                 raise ValueError('unrecognized option: {0}'.format(setting))
 
@@ -176,7 +191,7 @@ time=True
 # Output extra messages when run. Possible values include 'True' or 'False'.
 verbose=True
 '''.format(values))
-        exit(0)
+        exit(Exit.SUCCESS)
 
 CLI = ArgumentParser(
     prog='SPaG-CLI',
@@ -196,7 +211,10 @@ CLI = ArgumentParser(
     For more information on SPaG, it capabilities, limitation, and more, as well
     as numerous input file examples for scanners and parsers see the README.md
     and examples/ directory located in the github repository here:
-    https://github.com/rrozansk/SPaG
+    https://github.com/rrozansk/SPaG Also take note that this script adheres to
+    well defined exit status: 0: Everything ran fine. 1: Invalid CLI arguments
+    supplied. 2: Invalid scanner specification. 3: Invalid parser specification.
+    4: Program generation failed.
     ''',
     add_help=False,
     allow_abbrev=False
@@ -252,98 +270,111 @@ CLI.add_argument('-V', '--version', action='version',
 
 try:
     ARGS = vars(CLI.parse_args())
-
-    if len(argv) < 2 or ARGS['help']:
-        CLI.print_help()
-        exit(0)
-
-    START, END = None, None
-
-    SCANNERS = []
-    for scanner in ARGS['scanners']:
-        if ARGS['verbose']:
-            stdout.write('Compiling {0} scanner specification...'.format(scanner['name']))
-            stdout.flush()
-        START = time()
-        SCANNERS.append(RegularGrammar(**scanner))
-        END = time()
-        if ARGS['verbose']:
-            stdout.write('done\n')
-            stdout.flush()
-        if ARGS['time']:
-            stdout.write('Elapsed time ({0} scanner): {1}s\n'.format(scanner['name'],
-                                                                     END-START))
-            stdout.flush()
-
-    PARSERS = []
-    for parser in ARGS['parsers']:
-        if ARGS['verbose']:
-            stdout.write('Compiling {0} parser specification...'.format(parser['name']))
-            stdout.flush()
-        START = time()
-        PARSERS.append(ContextFreeGrammar(**parser))
-        END = time()
-        if ARGS['verbose']:
-            stdout.write('done\n')
-            stdout.flush()
-        if ARGS['time']:
-            stdout.write('Elapsed time ({0} parser): {1}s\n'.format(parser['name'],
-                                                                    END-START))
-            stdout.flush()
-
-    GENERATORS = []
-    for generator in ARGS['generate']:
-        TARGET = generator.__name__
-        GENERATOR = generator()
-        GENERATOR.encoding = ARGS['encoding']
-        GENERATOR.filename = ARGS['output']
-        GENERATORS.append((TARGET, GENERATOR))
-
-    # Cross product: GENERATORS x SCANNERS x PARSERS
-    OUTPUT = ((generator, scanner, parser)
-              for generator in GENERATORS
-              for scanner in (SCANNERS or [None])
-              for parser in (PARSERS or [None]))
-
-    for (TARGET, GENERATOR), SCANNER, PARSER in OUTPUT:
-        GENERATOR.parser = PARSER
-        GENERATOR.scanner = SCANNER
-        if SCANNER:
-            TARGET = TARGET + '_' + SCANNER.name
-        if PARSER:
-            TARGET = TARGET + '_' + PARSER.name
-        if ARGS['verbose']:
-            stdout.write('Generating {0} code...'.format(TARGET))
-            stdout.flush()
-        START = time()
-        FILES = GENERATOR.generate()
-        END = time()
-        if ARGS['verbose']:
-            stdout.write('done\n')
-            stdout.flush()
-        if ARGS['time']:
-            stdout.write('Elapsed time (generator: {0}) {1}s\n'.format(TARGET,
-                                                                       END-START))
-            stdout.flush()
-
-        for NAME, CONTENT in FILES.items():
-            if isfile(NAME) and not ARGS['force']:
-                if ARGS['verbose']:
-                    stdout.write('{0} already exists; not overwriting.\n'.format(NAME))
-                    stdout.flush()
-                continue
-
-            with open(NAME, 'w') as FILE:
-                if ARGS['verbose']:
-                    stdout.write('Outputting {0} to disk...\n'.format(FILE.name))
-                    stdout.flush()
-                FILE.write(CONTENT)
-except TypeError as exception:
-    stdout.write('Invalid input type:\n{0}\n'.format(exception))
-except ValueError as exception:
-    stdout.write('Invalid input value:\n{0}\n'.format(exception))
 except Exception as exception:
-    stdout.write('Unknown exception encountered:\n{0}\n'.format(exception))
-finally:
+    stdout.write('Failed to parse arguments:\n{0}\n'.format(exception))
     stdout.flush()
-    exit(0)
+    exit(Exit.INVALID_ARGS)
+
+if len(argv) < 2 or ARGS['help']:
+    CLI.print_help()
+    exit(Exit.SUCCESS)
+
+START, END = None, None
+
+SCANNERS = []
+for scanner in ARGS['scanners']:
+    if ARGS['verbose']:
+        stdout.write('Compiling {0} scanner specification...'.format(scanner['name']))
+        stdout.flush()
+    START = time()
+    try:
+        SCANNERS.append(RegularGrammar(**scanner))
+    except Exception as exception:
+        stdout.write('Failed to create scanner:\n{0}\n'.format(exception))
+        stdout.flush()
+        exit(Exit.INVALID_SCANNER)
+    END = time()
+    if ARGS['verbose']:
+        stdout.write('done\n')
+        stdout.flush()
+    if ARGS['time']:
+        stdout.write('Elapsed time ({0} scanner): {1}s\n'.format(scanner['name'],
+                                                                 END-START))
+        stdout.flush()
+
+PARSERS = []
+for parser in ARGS['parsers']:
+    if ARGS['verbose']:
+        stdout.write('Compiling {0} parser specification...'.format(parser['name']))
+        stdout.flush()
+    START = time()
+    try:
+        PARSERS.append(ContextFreeGrammar(**parser))
+    except Exception as exception:
+        stdout.write('Failed to create parser:\n{0}\n'.format(exception))
+        stdout.flush()
+        exit(Exit.INVALID_PARSER)
+    END = time()
+    if ARGS['verbose']:
+        stdout.write('done\n')
+        stdout.flush()
+    if ARGS['time']:
+        stdout.write('Elapsed time ({0} parser): {1}s\n'.format(parser['name'],
+                                                                END-START))
+    stdout.flush()
+
+GENERATORS = []
+for generator in ARGS['generate']:
+    TARGET = generator.__name__
+    GENERATOR = generator()
+    GENERATOR.encoding = ARGS['encoding']
+    GENERATOR.filename = ARGS['output']
+    GENERATORS.append((TARGET, GENERATOR))
+
+# Cross product: GENERATORS x SCANNERS x PARSERS
+OUTPUT = ((generator, scanner, parser)
+          for generator in GENERATORS
+          for scanner in (SCANNERS or [None])
+          for parser in (PARSERS or [None]))
+
+for (TARGET, GENERATOR), SCANNER, PARSER in OUTPUT:
+    GENERATOR.parser = PARSER
+    GENERATOR.scanner = SCANNER
+    if SCANNER:
+        TARGET = TARGET + '_' + SCANNER.name
+    if PARSER:
+        TARGET = TARGET + '_' + PARSER.name
+    if ARGS['verbose']:
+        stdout.write('Generating {0} code...'.format(TARGET))
+        stdout.flush()
+    START = time()
+    try:
+        FILES = GENERATOR.generate()
+    except Exception as exception:
+        stdout.write('Failed to generate program:\n{0}\n'.format(exception))
+        stdout.flush()
+        exit(Exit.FAIL_GENERATE)
+    END = time()
+    if ARGS['verbose']:
+        stdout.write('done\n')
+        stdout.flush()
+    if ARGS['time']:
+        stdout.write('Elapsed time (generator: {0}) {1}s\n'.format(TARGET,
+                                                                   END-START))
+        stdout.flush()
+
+    for NAME, CONTENT in FILES.items():
+        if isfile(NAME) and not ARGS['force']:
+            if ARGS['verbose']:
+                stdout.write('{0} already exists; not overwriting.\n'.format(NAME))
+                stdout.flush()
+            continue
+
+        with open(NAME, 'w') as FILE:
+            if ARGS['verbose']:
+                stdout.write('Outputting {0} to disk...\n'.format(FILE.name))
+                stdout.flush()
+            FILE.write(CONTENT)
+
+stdout.flush()
+exit(Exit.SUCCESS)
