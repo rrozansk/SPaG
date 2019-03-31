@@ -61,9 +61,7 @@ env: requirements.txt
 ################################################################################
 .PHONY: lint
 lint: .pylintrc
-	@find . -type d \( -name 'testing_venv' -o -name 'SPaG.egg-info' \
-	-o -name 'build' -o -name 'dist' -o -name 'examples' \) \
-	-prune -o -type f -name '*.py' -exec pylint --rcfile=.pylintrc '{}' +
+	find spag tests setup.py -name '*.py' -exec pylint --rcfile=.pylintrc '{}' +
 
 ################################################################################
 #                                                                              #
@@ -101,8 +99,7 @@ install: setup.py
 ################################################################################
 .PHONY: clean
 clean:
-	\rm -rf testing_venv
-	\rm -rf SPaG.egg-info/ build/ dist/
+	\rm -rf testing_venv/ SPaG.egg-info/ build/ dist/
 	\find . -type f -name '*~' -delete
 	\find . -type f -name '*.o' -delete
 	\find . -type f -name '*.swp' -delete
@@ -112,8 +109,6 @@ clean:
 	\find . -type f -name '.coverage' -delete
 	\find . -type d -name '__pycache__' -exec rm -rf '{}' +
 	\find . -type d -name '.pytest_cache' -exec rm -rf '{}' +
-	\find /usr/local/bin/ -type f -name 'spag_cli' -delete
-	\find /usr/local/lib/python* -type d -name 'SPaG-*' -exec rm -rf '{}' +
 
 ################################################################################
 #                                                                              #
