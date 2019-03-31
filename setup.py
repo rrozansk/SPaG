@@ -85,11 +85,9 @@ setup(
         'spag',
         'spag.generators'
     ],
-    package_data={
-        'spag': [
-            '../LICENSE.txt'
-        ]
-    },
+    data_files=[
+        ('spag', ['LICENSE.txt'])
+    ],
     entry_points={
         'console_scripts': ['spag_cli=spag.__main__:main'],
     },

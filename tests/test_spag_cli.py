@@ -3,6 +3,8 @@ Testing for SPaG CLI script located in spag/__main__.py
 """
 import pytest
 from pkg_resources import resource_string
+# NOTE 1: expand tests to ensure other flags behave as expected.
+# NOTE 2: when spag_cli is run in process i dont get any expected output!?
 
 
 class TestSPaGCLI:
@@ -15,7 +17,7 @@ class TestSPaGCLI:
         """
         Ensure the LISCENCE is in the distribution.
         """
-        pkg_license_output = resource_string('spag', '../LICENSE.txt').decode('ascii')
+        pkg_license_output = resource_string('spag', 'LICENSE.txt').decode('ascii')
         with open('LICENSE.txt') as fd:
             git_license_output = fd.read()
         assert git_license_output == pkg_license_output
@@ -130,7 +132,3 @@ class TestSPaGCLI:
         assert ret.returncode == 4
         assert ret.stderr == ''
         assert ret.stdout == ''
-
-    # NOTE 1: expand tests to ensure other flags behave as expected.
-    # NOTE 2: when spag_cli is run in process i dont get any expected output!?
-    # NOTE 3: need to update how LICENSE is distributed.

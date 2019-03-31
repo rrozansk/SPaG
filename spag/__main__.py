@@ -5,7 +5,7 @@ file specification. It also properly handles the dynamic importing required
 for the generator(s) of interest.
 """
 from argparse import ArgumentParser, Action
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 from enum import IntEnum, unique
 from json import loads
 from os.path import isfile
@@ -96,7 +96,7 @@ class CollectConfiguration(Action):
         raise ValueError('invalid boolean input value')
 
     def __call__(self, parser, namespace, values, option_string=None):
-        configuration = SafeConfigParser()
+        configuration = ConfigParser()
         configuration.read_file(values)
 
         if not configuration.has_section('SPaG'):
