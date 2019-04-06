@@ -37,44 +37,23 @@ class TestGenerator:
             assert generator(), 'constructor failed'
 
     @staticmethod
-    def test_overrides_output_c():
+    @pytest.mark.parametrize("language", [
+        "c",
+        pytest.param("go", marks=pytest.mark.xfail(
+            reason='Calls super (base Generator) output method.',
+            raises=NotImplementedError,
+        )),
+        pytest.param("python", marks=pytest.mark.xfail(
+            reason='Calls super (base Generator) output method.',
+            raises=NotImplementedError,
+        )),
+    ])
+    def test_overrides_output(language):
         """
-        Make sure the 'C' generator properly overrides the output method.
+        Make sure the generators properly override the output method.
         """
-        module = __import__('spag.generators.c', fromlist=['C'])
-        generator = getattr(module, 'C')()
-        assert generator, 'constructor failed'
-        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
-        generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
-        assert generator.generate(), 'no result returned'
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Calls super (base Generator) output method.',
-        raises=NotImplementedError,
-    )
-    def test_overrides_output_go():
-        """
-        Make sure the 'Go' generator properly overrides the output method.
-        """
-        module = __import__('spag.generators.go', fromlist=['Go'])
-        generator = getattr(module, 'Go')()
-        assert generator, 'constructor failed'
-        generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
-        generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
-        assert generator.generate(), 'no result returned'
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Calls super (base Generator) output method.',
-        raises=NotImplementedError,
-    )
-    def test_overrides_output_python():
-        """
-        Make sure the 'Python' generator properly overrides the output method.
-        """
-        module = __import__('spag.generators.python', fromlist=['Python'])
-        generator = getattr(module, 'Python')()
+        module = __import__('spag.generators.'+language.lower(), fromlist=[language.capitalize()])
+        generator = getattr(module, language.capitalize())()
         assert generator, 'constructor failed'
         generator.scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
         generator.parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
