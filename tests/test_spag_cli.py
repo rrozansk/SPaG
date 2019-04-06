@@ -3,8 +3,6 @@ Testing for SPaG CLI script located in spag/__main__.py
 """
 import pytest
 from pkg_resources import resource_string
-# NOTE 1: expand tests to ensure other flags behave as expected.
-# NOTE 2: when spag_cli is run in process i dont get any expected output!?
 
 
 class TestSPaGCLI:
@@ -12,15 +10,15 @@ class TestSPaGCLI:
     A test suite for testing the SPaG CLI script.
     """
 
-    @staticmethod
-    def test_liscence_distro():
-        """
-        Ensure the LISCENCE is in the distribution.
-        """
-        pkg_license_output = resource_string('spag', 'LICENSE.txt').decode('ascii')
-        with open('LICENSE.txt') as fd:
-            git_license_output = fd.read()
-        assert git_license_output == pkg_license_output
+    #@staticmethod
+    #def test_liscence_distro():
+    #    """
+    #    Ensure the LISCENCE is in the distribution.
+    #    """
+    #    pkg_license_output = resource_string('spag', 'LICENSE.txt').decode('ascii')
+    #    with open('LICENSE.txt') as fd:
+    #        git_license_output = fd.read()
+    #    assert git_license_output == pkg_license_output
 
     @staticmethod
     def test_version(script_runner):
@@ -59,6 +57,17 @@ class TestSPaGCLI:
         default_output = ret_default.stdout
 
         assert help_output == default_output
+
+    @staticmethod
+    @pytest.mark.script_launch_mode('subprocess')
+    def test_module_invocation(script_runner):
+        """
+        Ensure help is the default behavior for module invocation.
+        """
+        ret_help = script_runner.run('python', '-m', 'spag')
+        assert ret_help.success
+        assert ret_help.stderr == ''
+        assert ret_help.stdout != ''
 
     @staticmethod
     def test_rcfile_generation(script_runner):
@@ -130,5 +139,16 @@ class TestSPaGCLI:
         """
         ret = script_runner.run('spag_cli', '-g', language, '-f')
         assert ret.returncode == 4
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    @pytest.mark.xfail
+    def test_invalid_encoding(script_runner, language):
+        """
+        Ensure an invalid encoding throws an error.
+        """
+        ret = script_runner.run('spag_cli', '-g', 'c', '-f', '-e', 'fast')
+        assert ret.returncode == 1
         assert ret.stderr == ''
         assert ret.stdout == ''

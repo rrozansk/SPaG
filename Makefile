@@ -71,7 +71,7 @@ lint: .pylintrc
 ################################################################################
 .PHONY: test
 test: pytest.ini
-	@pytest -c pytest.ini
+	@export PYTHON_VERSION=${PYTHON_VERSION}; pytest -c pytest.ini
 
 ################################################################################
 #                                                                              #
@@ -88,8 +88,8 @@ distro: setup.py
 #                                                                              #
 ################################################################################
 .PHONY: install
-install: setup.py
-	python setup.py install
+install: distro
+	pip install dist/*.whl
 
 ################################################################################
 #                                                                              #
