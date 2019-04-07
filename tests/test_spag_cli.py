@@ -2,7 +2,7 @@
 Testing for SPaG CLI script located in spag/__main__.py
 """
 import pytest
-from pkg_resources import resource_string
+#from pkg_resources import resource_string
 
 
 class TestSPaGCLI:
@@ -150,5 +150,210 @@ class TestSPaGCLI:
         """
         ret = script_runner.run('spag_cli', '-g', 'c', '-f', '-e', 'fast')
         assert ret.returncode == 1
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_invalid_boolean(script_runner):
+        """
+        Ensure an invalid boolean value in the configuration throws an error.
+        """
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[SPaG]
+                            encoding=direct
+                            force=No
+                            generate=c
+                            parsers=examples/Lisp/parser.json
+                            scanners=examples/Lisp/scanner.json
+                          ''')
+
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 1
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_false_boolean(script_runner):
+        """
+        Ensure false boolean value parses as expected.
+        """
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[SPaG]
+                            force=False
+                            generate=c
+                            parsers=examples/Lisp/parser.json
+                            scanners=examples/Lisp/scanner.json
+                          ''')
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 0
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_invalid_conf_encoding(script_runner):
+        """
+        Ensure invalid configuration encoding thrown the proper error.
+        """
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[SPaG]
+                            encoding=fast
+                            force=False
+                            generate=c
+                            parsers=examples/Lisp/parser.json
+                            scanners=examples/Lisp/scanner.json
+                          ''')
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 1
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_invalid_conf(script_runner):
+        """
+        Ensure invalid configuration section.
+        """
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[spag]
+                            force=False
+                            generate=c
+                            parsers=examples/Lisp/parser.json
+                            scanners=examples/Lisp/scanner.json
+                          ''')
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 1
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_invalid_scanner_file(script_runner):
+        """
+        Ensure invalid scanner file configuration fails.
+        """
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[SPaG]
+                            force=False
+                            generate=c
+                            scanners=examples/FOO/scanner.json
+                          ''')
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 1
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_invalid_output(script_runner):
+        """
+        Ensure invalid generate file configuration option.
+        """
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[SPaG]
+                            force=False
+                            generate=java
+                            parsers=examples/Lisp/parser.json
+                            scanners=examples/Lisp/scanner.json
+                          ''')
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 1
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_invalid_nothing(script_runner):
+        """
+        Ensure passing no parser or scanners does nothing.
+        """
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[SPaG]
+                            parsers=
+                            scanners=
+                          ''')
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 0
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_invalid_option(script_runner):
+        """
+        Ensure invalid key/value pair in file configuration throws error.
+        """
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[SPaG]
+                            foo=bar
+                            generate=java
+                            parsers=
+                            scanners=
+                          ''')
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 1
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_generate_nothing(script_runner):
+        """
+        Ensure generating no language still works as expected.
+        """
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[SPaG]
+                            generate=
+                            scanners=examples/Lisp/scanner.json
+                          ''')
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 0
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_generate_safe(script_runner):
+        """
+        Ensure generating again does not overwrite files.
+        """
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[SPaG]
+                            force=False
+                            verbose=True
+                            generate=c
+                            parsers=examples/Lisp/parser.json
+                            scanners=examples/Lisp/scanner.json
+                          ''')
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 0
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_invalid_scanner_spec(script_runner):
+        """
+        Ensure invalid scanner specification throws the right error.
+        """
+        with open('out_scanner.json', 'w') as rcfile:
+            rcfile.write("{}")
+
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[SPaG]
+                            generate=c
+                            scanners=out_scanner.json
+                          ''')
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 2
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_invalid_parser_spec(script_runner):
+        """
+        Ensure invalid parser specification throws the right error.
+        """
+        with open('out_parser.json', 'w') as rcfile:
+            rcfile.write("{}")
+
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[SPaG]
+                            generate=c
+                            parsers=out_parser.json
+                          ''')
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 3
         assert ret.stderr == ''
         assert ret.stdout == ''

@@ -1,6 +1,6 @@
 SPaG (Scanner, Parser, and Generator)
 ================================================================================
-[![MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/rrozansk/SPaG/blob/master/LICENSE.txt) ![COV](https://img.shields.io/badge/Coverage-97%25-green.svg) ![VER](https://img.shields.io/badge/Version-1.0.0a0-yellow.svg)
+[![MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/rrozansk/SPaG/blob/master/LICENSE.txt) ![COV](https://img.shields.io/badge/Coverage-99%25-green.svg) ![VER](https://img.shields.io/badge/Version-1.0.0a0-yellow.svg)
 
   - [Introduction](#introduction)
   - [Installation](#installation)
