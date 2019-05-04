@@ -31,6 +31,8 @@ class _RegularGrammarOperators(Enum):
     RIGHT_BRACKET = 8        # ]
     CHARACTER_RANGE = 9      # -
     CHARACTER_NEGATION = 10  # ^
+    LEFT_CURLY = 11          # {
+    RIGHT_CURLY = 12         # }
 
 
 class RegularGrammar:
@@ -61,6 +63,9 @@ class RegularGrammar:
             * [a-c]  (character range -> choice -> any char between the two)
             * [^ab]  (character negation -> choice -> all but the specified)
             * ()     (grouping -> disambiguation -> any expression)
+            * {n}    (interval -> repitition -> exactly n)
+            * {n,0}  (interval -> repitition -> minimum n)
+            * {n,m}  (interval -> repitition -> between n and m)
 
         Other things to keep in mind (potential gotcha's):
 
@@ -145,8 +150,9 @@ class RegularGrammar:
                 raise ValueError('token pattern must be non empty')
 
             for character in pattern:
-                if not isinstance(character, (str, _RegularGrammarOperators)):
-                    raise TypeError('pattern charater must be a str or operator')
+                if not type(character) is type(int()) and \
+                   not isinstance(character, (str, _RegularGrammarOperators)):
+                    raise TypeError('pattern charater must be an int, str or operator')
 
                 if isinstance(character, str) and len(character) != 1:
                     raise ValueError('pattern character str must be non empty')
@@ -154,6 +160,7 @@ class RegularGrammar:
             self._expressions[identifier] = pattern[:]
 
             pattern = RegularGrammar._expand_char_class_range(pattern)
+            pattern = RegularGrammar._expand_intervals(pattern)
             pattern = RegularGrammar._expand_concat(pattern)
             pattern = RegularGrammar._shunt(pattern)
 
@@ -301,6 +308,30 @@ class RegularGrammar:
           _RegularGrammarOperators: The enum representation of the operator.
         """
         return _RegularGrammarOperators.CHARACTER_NEGATION
+
+    @staticmethod
+    def left_curly():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the left curly
+        interval ('{') operator which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarOperators: The enum representation of the operator.
+        """
+        return _RegularGrammarOperators.LEFT_CURLY
+
+    @staticmethod
+    def right_curly():
+        """Get the representation used for the given operator.
+
+        Static readonly enum property representing the right curly
+        interval ('}') operator which RegularGrammar can understand.
+
+        Return:
+          _RegularGrammarOperators: The enum representation of the operator.
+        """
+        return _RegularGrammarOperators.RIGHT_CURLY
 
     @property
     def name(self):
@@ -479,6 +510,78 @@ class RegularGrammar:
                 output.append(char)
         if expand:
             raise ValueError('Error: character class/range end not specified')
+        return output
+
+    @staticmethod
+    def _expand_intervals(expr):
+        """expand any intervals present in the expression.
+
+        Expand the internal representation of the expression so that
+        intervals are eliminated.
+
+        Args:
+          expr (list[str, int]): an internal representation of a regular
+              expression possibly using intervals.
+
+        Return:
+          list[str, int]: an internal representation of a regular expression
+              with interval brackets expanded throughout.
+
+        Raises:
+          ValueError: Recursive interval expressions not valid.
+          ValueError: Undetected start of interval expression.
+          ValueError: Empty interval expression.
+          ValueError: Invalid interval, min must be less than max.
+          ValueError: Negative interval.
+          TypeError: Interval expression characters must be integers.
+          ValueError: Only two numbers required for interval expressions.
+          ValueError: Undetected end of interval expression.
+        """
+        output = []
+        interval, _min, _max = False, None, None
+        for char in expr:
+            if char is RegularGrammar.left_curly():
+                if interval:
+                    raise ValueError('Recursive interval expressions not valid.')
+                interval = True
+            elif char is RegularGrammar.right_curly():
+                if not interval:
+                    raise ValueError('Undetected start of interval expression.')
+                if not _max and not _min:
+                    raise ValueError('Empty interval expression.')
+                if _max and (_min > _max):
+                    raise ValueError('Invalid interval, min must be less than max.')
+                if _min < 0:
+                    raise ValueError('Negative interval.')
+                # NOTE: process interval...how do i know what the previous expression was?
+                raise NotImplementedError('Feature not yet implemented.')
+                #expanded, expression = None, ''
+                #if _max is None:  # {n}
+                #    expanded = expression * _min
+                #if _max is 0:  # {n,0}
+                #    expanded = (expression *_min) + '+'
+                #else:  # {n,m}
+                #    expanded = ['(']
+                #    for items in range(_min, _max):
+                #        expanded = (expression * items) + '|'
+                #    expanded[-1] = [')']
+                #output.extend(expanded)
+                #interval, _min, _max = False, None, None
+            elif interval:
+                if not type(char) is type(int()):
+                    raise TypeError('Interval expression characters must be integers.')
+                if not _min:
+                    _min = char
+                elif not _max:
+                    _max = char
+                else:
+                    raise ValueError('Only two numbers required for interval expressions.')
+            else:
+                if type(char) is type(int()):
+                    raise TypeError('Integers only permitted inside interval expressions.')
+                output.append(char)
+        if interval:
+            raise ValueError('Undetected end of interval expression.')
         return output
 
     @staticmethod

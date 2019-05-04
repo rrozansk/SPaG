@@ -141,6 +141,9 @@ guidelines:
       * [a-c]  (character range -> choice -> any char between the two)
       * [^ab]  (character negation -> choice -> all but the specified)
       * ()     (grouping -> disambiguation -> any expression)
+      * {n}    (interval -> repitition -> exactly n)
+      * {n,0}  (interval -> repitition -> minimum n)
+      * {n,m}  (interval -> repitition -> between n and m)
 
   * other things to keep in mind (potential gotcha's):
       * full unicode input is supported

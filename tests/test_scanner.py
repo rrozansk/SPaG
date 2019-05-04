@@ -603,6 +603,176 @@ class TestScanner:
         })
 
     @staticmethod
+    @pytest.mark.xfail(
+        raises=ValueError,
+        reason='Empty interval.'
+    )
+    def test_empty_interval():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Empty Interval',
+            'expressions': {
+                'empty_curlies': ['a', RegularGrammar.left_curly(), RegularGrammar.right_curly()],
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=ValueError,
+        reason='Negative interval.'
+    )
+    def test_invalid_interval_count():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Negative Count',
+            'expressions': {
+                'invalid_count': ['a', RegularGrammar.left_curly(), -1, RegularGrammar.right_curly()],
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=ValueError,
+        reason='Backwards interval.'
+    )
+    def test_invalid_interval():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Undefined Interval - Backwards Range',
+            'expressions': {
+                'invalid_interval': ['a', RegularGrammar.left_curly(), 2, 1, RegularGrammar.right_curly()],
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=TypeError,
+        reason='Interval is defined over integers.'
+    )
+    def test_undefined_interval_1():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Undefined Interval - Character',
+            'expressions': {
+                'undefined_interval_1': ['a', RegularGrammar.left_curly(), 'a', RegularGrammar.right_curly()],
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=ValueError,
+        reason='Interval is only defined over 1-2 integers.'
+    )
+    def test_undefined_interval_2():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Undefined Interval - Multi Number',
+            'expressions': {
+                'undefined_interval_2': ['a', RegularGrammar.left_curly(), 2, 3, 4, RegularGrammar.right_curly()],
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=TypeError,
+        reason='Intervals must be integers.'
+    )
+    def test_undefined_interval_3():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Undefined Interval - Float',
+            'expressions': {
+                'undefined_interval_3': ['a', RegularGrammar.left_curly(), 4.45, RegularGrammar.right_curly()],
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=ValueError,
+        reason='Intervals cannot be recursive.'
+    )
+    def test_recursive_interval():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Recursive Interval',
+            'expressions': {
+                'recursive_interval': ['a', RegularGrammar.left_curly(), RegularGrammar.left_curly()],
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=ValueError,
+        reason='Interval with no start.'
+    )
+    def test_no_start_interval():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'No Start Interval',
+            'expressions': {
+                'no_start_interval': ['a', RegularGrammar.right_curly()],
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=ValueError,
+        reason='Interval with no end.'
+    )
+    def test_no_end_interval():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'No End Interval',
+            'expressions': {
+                'no_end_interval': ['a', RegularGrammar.left_curly()],
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=TypeError,
+        reason='Integers only allows in interval expressions.'
+    )
+    def test_only_interval_ints_allowed():
+        """
+        Ensure integers are only permitted inside interval expressions.
+        """
+        TestScanner._run(**{
+            'name': 'Non-interval integer',
+            'expressions': {
+                'non_interval_integer': ['a', 'b', 1],
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
     def test_single_alpha():
         """
         Ensure a one character expression produces the expected output.
@@ -1330,6 +1500,161 @@ class TestScanner:
                 'F': set(['S']),
                 'G': {
                     'class': set(['S'])
+                }
+            }
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=NotImplementedError,
+        reason='Feature not yet implemented.'
+    )
+    def test_exact_interval():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Exact Interval',
+            'expressions': {
+                'exact_count': ['a', RegularGrammar.left_curly(), 2, RegularGrammar.right_curly()],
+            },
+            'DFA': {
+                'Q': set(['S', 'A1', 'F', 'Err']),
+                'V': set('a'),
+                # pylint: disable=bad-whitespace
+                'T': [
+                    [' ', 'S',  'A1', 'F',   'Err'],
+                    ['a', 'A1', 'F',  'Err', 'Err']
+                ],
+                # pylint: enable=bad-whitespace
+                'S': 'S',
+                'F': set(['F']),
+                'G': {
+                    'exact_count': set(['F'])
+                }
+            }
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=NotImplementedError,
+        reason='Feature not yet implemented.'
+    )
+    def test_small_interval():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Small Interval',
+            'expressions': {
+                'small_interval': ['a', RegularGrammar.left_curly(), 2, 3, RegularGrammar.right_curly()],
+            },
+            'DFA': {
+                'Q': set(['S', 'A1', 'A2', 'F', 'Err']),
+                'V': set('a'),
+                # pylint: disable=bad-whitespace
+                'T': [
+                    [' ', 'S',  'A1', 'A2', 'F',   'Err'],
+                    ['a', 'A1', 'A2', 'F',  'Err', 'Err']
+                ],
+                # pylint: enable=bad-whitespace
+                'S': 'S',
+                'F': set(['A2', 'F']),
+                'G': {
+                    'small_interval': set(['A2', 'F'])
+                }
+            }
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=NotImplementedError,
+        reason='Feature not yet implemented.'
+    )
+    def test_minimum_interval():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Minimum Interval',
+            'expressions': {
+                'minimum_interval': ['a', RegularGrammar.left_curly(), 2, 0, RegularGrammar.right_curly()],
+            },
+            'DFA': {
+                'Q': set(['S', 'A1', 'F']),
+                'V': set('a'),
+                # pylint: disable=bad-whitespace
+                'T': [
+                    [' ', 'S',  'A1', 'F'],
+                    ['a', 'A1', 'F',  'F']
+                ],
+                # pylint: enable=bad-whitespace
+                'S': 'S',
+                'F': set(['F']),
+                'G': {
+                    'minimum_interval': set(['F'])
+                }
+            }
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=NotImplementedError,
+        reason='Feature not yet implemented.'
+    )
+    def test_maximum_interval():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Maximum Interval',
+            'expressions': {
+                'maximum_interval': ['a', RegularGrammar.left_curly(), 0, 2, RegularGrammar.right_curly()],
+            },
+            'DFA': {
+                'Q': set(['S', 'A1', 'F', 'Err']),
+                'V': set('a'),
+                # pylint: disable=bad-whitespace
+                'T': [
+                    [' ', 'S',  'A1', 'F',   'Err'],
+                    ['a', 'A1', 'F',  'Err', 'Err']
+                ],
+                # pylint: enable=bad-whitespace
+                'S': 'S',
+                'F': set(['S', 'A1', 'F']),
+                'G': {
+                    'maximum_interval': set(['S', 'F', 'A1'])
+                }
+            }
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=NotImplementedError,
+        reason='Feature not yet implemented.'
+    )
+    def test_complex_interval():
+        """
+        Ensure the expression produces the expected output.
+        """
+        TestScanner._run(**{
+            'name': 'Complex Interval',
+            'expressions': {
+                'complex_interval': ['a', RegularGrammar.kleene_star(), RegularGrammar.left_curly(), 2, 0, RegularGrammar.right_curly()],
+            },
+            'DFA': {
+                'Q': set(['S', 'A1', 'F']),
+                'V': set('a'),
+                # pylint: disable=bad-whitespace
+                'T': [
+                    [' ', 'S',  'A1', 'F'],
+                    ['a', 'A1', 'F',  'F']
+                ],
+                # pylint: enable=bad-whitespace
+                'S': 'S',
+                'F': set(['A']),
+                'G': {
+                    'minimum_interval': set(['F'])
                 }
             }
         })

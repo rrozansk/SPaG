@@ -58,7 +58,9 @@ class CollectScannerSpecifications(Action):
         '\\[': RegularGrammar.left_bracket(),
         '\\]': RegularGrammar.right_bracket(),
         '\\-': RegularGrammar.character_range(),
-        '\\^': RegularGrammar.character_negation()
+        '\\^': RegularGrammar.character_negation(),
+        '\\{': RegularGrammar.left_curly(),
+        '\\}': RegularGrammar.right_curly()
     }
 
     @staticmethod

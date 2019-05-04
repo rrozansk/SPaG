@@ -58,6 +58,7 @@ disable=broad-except,
         redefined-outer-name,
         superfluous-parens,
         undefined-all-variable,
+        unidiomatic-typecheck,
         unused-argument
 
 # Enable the message, report, category or checker with the given id(s). You can
@@ -250,7 +251,7 @@ indent-string='    '
 max-line-length=150
 
 # Maximum number of lines in a module
-max-module-lines=3000
+max-module-lines=4000
 
 # List of optional constructs for which whitespace checking is disabled. `dict-
 # separator` is used to allow tabulation in dicts, etc.: {1  : 1,\n222: 2}.
