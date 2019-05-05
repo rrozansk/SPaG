@@ -773,6 +773,41 @@ class TestScanner:
         })
 
     @staticmethod
+    @pytest.mark.xfail(
+        raises=ValueError,
+        reason='The group for the interval is incorrect.'
+    )
+    def test_interval_invalid_group():
+        """
+        Ensure interval expressions on invalid groups produces the expected
+        error.
+        """
+        TestScanner._run(**{
+            'name': 'Invalid Interval Group',
+            'expressions': {
+                'invalid_interval_group': ['b', RegularGrammar.right_parenthesis(), RegularGrammar.left_curly(), 1, RegularGrammar.right_curly()],
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
+    @pytest.mark.xfail(
+        raises=ValueError,
+        reason='Interval expressions are limited to character/groups.'
+    )
+    def test_smart_interval():
+        """
+        Ensure complex interval expression produces the expected result.
+        """
+        TestScanner._run(**{
+            'name': 'Smart Interval',
+            'expressions': {
+                'smart_interval': ['b', RegularGrammar.maybe(), RegularGrammar.left_curly(), 3, RegularGrammar.right_curly()],
+            },
+            'DFA': {}
+        })
+
+    @staticmethod
     def test_single_alpha():
         """
         Ensure a one character expression produces the expected output.
@@ -1505,10 +1540,6 @@ class TestScanner:
         })
 
     @staticmethod
-    @pytest.mark.xfail(
-        raises=NotImplementedError,
-        reason='Feature not yet implemented.'
-    )
     def test_exact_interval():
         """
         Ensure the expression produces the expected output.
@@ -1530,16 +1561,13 @@ class TestScanner:
                 'S': 'S',
                 'F': set(['F']),
                 'G': {
-                    'exact_count': set(['F'])
+                    'exact_count': set(['F']),
+                    '_sink': set(['Err'])
                 }
             }
         })
 
     @staticmethod
-    @pytest.mark.xfail(
-        raises=NotImplementedError,
-        reason='Feature not yet implemented.'
-    )
     def test_small_interval():
         """
         Ensure the expression produces the expected output.
@@ -1561,16 +1589,13 @@ class TestScanner:
                 'S': 'S',
                 'F': set(['A2', 'F']),
                 'G': {
-                    'small_interval': set(['A2', 'F'])
+                    'small_interval': set(['A2', 'F']),
+                    '_sink': set(['Err'])
                 }
             }
         })
 
     @staticmethod
-    @pytest.mark.xfail(
-        raises=NotImplementedError,
-        reason='Feature not yet implemented.'
-    )
     def test_minimum_interval():
         """
         Ensure the expression produces the expected output.
@@ -1598,10 +1623,6 @@ class TestScanner:
         })
 
     @staticmethod
-    @pytest.mark.xfail(
-        raises=NotImplementedError,
-        reason='Feature not yet implemented.'
-    )
     def test_maximum_interval():
         """
         Ensure the expression produces the expected output.
@@ -1623,16 +1644,13 @@ class TestScanner:
                 'S': 'S',
                 'F': set(['S', 'A1', 'F']),
                 'G': {
-                    'maximum_interval': set(['S', 'F', 'A1'])
+                    'maximum_interval': set(['S', 'F', 'A1']),
+                    '_sink': set(['Err'])
                 }
             }
         })
 
     @staticmethod
-    @pytest.mark.xfail(
-        raises=NotImplementedError,
-        reason='Feature not yet implemented.'
-    )
     def test_complex_interval():
         """
         Ensure the expression produces the expected output.
@@ -1640,21 +1658,22 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Complex Interval',
             'expressions': {
-                'complex_interval': ['a', RegularGrammar.kleene_star(), RegularGrammar.left_curly(), 2, 0, RegularGrammar.right_curly()],
+                'complex_interval': [RegularGrammar.left_parenthesis(), 'a', RegularGrammar.kleene_star(), RegularGrammar.right_parenthesis(),
+                                     RegularGrammar.left_curly(), 2, 0, RegularGrammar.right_curly()],
             },
             'DFA': {
-                'Q': set(['S', 'A1', 'F']),
+                'Q': set(['S']),
                 'V': set('a'),
                 # pylint: disable=bad-whitespace
                 'T': [
-                    [' ', 'S',  'A1', 'F'],
-                    ['a', 'A1', 'F',  'F']
+                    [' ', 'S'],
+                    ['a', 'S']
                 ],
                 # pylint: enable=bad-whitespace
                 'S': 'S',
-                'F': set(['A']),
+                'F': set(['S']),
                 'G': {
-                    'minimum_interval': set(['F'])
+                    'complex_interval': set(['S'])
                 }
             }
         })

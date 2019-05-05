@@ -154,7 +154,7 @@ guidelines:
       * character ranges can be specified as forward or backwards, the
         results is the same (e.g. [a-c] or [c-a]).
       * if '^' is alone in the brackets (e.g. [^]) it is translated as any
-        possible input character (i.e. a 'wildcard').
+        possible printable ascii character (i.e. a 'wildcard').
       * concatenation can be either implicit or explicit in the given input
         expression(s).
 

@@ -77,7 +77,7 @@ class RegularGrammar:
            * character ranges can be specified as forward or backwards, the
              results is the same (e.g. [a-c] or [c-a]).
            * if '^' is alone in the brackets (e.g. [^]) it is translated as any
-             possible input character (i.e. a 'wildcard').
+             possible printable ascii character (i.e. a 'wildcard').
            * concatenation can be either implicit or explicit in the given input
              expression(s).
 
@@ -159,8 +159,8 @@ class RegularGrammar:
 
             self._expressions[identifier] = pattern[:]
 
-            pattern = RegularGrammar._expand_char_class_range(pattern)
             pattern = RegularGrammar._expand_intervals(pattern)
+            pattern = RegularGrammar._expand_char_class_range(pattern)
             pattern = RegularGrammar._expand_concat(pattern)
             pattern = RegularGrammar._shunt(pattern)
 
@@ -539,11 +539,13 @@ class RegularGrammar:
         """
         output = []
         interval, _min, _max = False, None, None
+        begin, end = -1, -1
         for char in expr:
             if char is RegularGrammar.left_curly():
                 if interval:
                     raise ValueError('Recursive interval expressions not valid.')
                 interval = True
+                end = len(output)-1
             elif char is RegularGrammar.right_curly():
                 if not interval:
                     raise ValueError('Undetected start of interval expression.')
@@ -553,24 +555,53 @@ class RegularGrammar:
                     raise ValueError('Invalid interval, min must be less than max.')
                 if _min < 0:
                     raise ValueError('Negative interval.')
-                # NOTE: process interval...how do i know what the previous expression was?
-                raise NotImplementedError('Feature not yet implemented.')
-                #expanded, expression = None, ''
-                #if _max is None:  # {n}
-                #    expanded = expression * _min
-                #if _max is 0:  # {n,0}
-                #    expanded = (expression *_min) + '+'
-                #else:  # {n,m}
-                #    expanded = ['(']
-                #    for items in range(_min, _max):
-                #        expanded = (expression * items) + '|'
-                #    expanded[-1] = [')']
-                #output.extend(expanded)
-                #interval, _min, _max = False, None, None
+                expression = None
+                if isinstance(output[end], str):
+                    expression = [output[end]]
+                    begin = end
+                elif output[end] is RegularGrammar.right_parenthesis():
+                    count = 0
+                    for _idx in range(end, -1, -1):
+                        if output[_idx] is RegularGrammar.right_parenthesis():
+                            count -= 1
+                        if output[_idx] is RegularGrammar.left_parenthesis():
+                            count += 1
+                        if not count:
+                            begin = _idx
+                            expression = output[begin:end+1]
+                            break
+                    if not expression:
+                        raise ValueError('Invalid group for interval expression.')
+                else:
+                    raise ValueError('Feature limited to character/group expressions.')
+                expanded = None
+                if _max is None:  # {n}
+                    expanded = expression * _min
+                elif not _max:  # {n,0}
+                    expanded = expression *_min
+                    expanded.append(RegularGrammar.kleene_plus())
+                else:  # {n,m}
+                    maybe = False
+                    if not _min:
+                        maybe = True
+                        _min = 1
+                    expanded = [RegularGrammar.left_parenthesis()]
+                    for repetitions in range(_min, _max+1):
+                        _expanded = [RegularGrammar.left_parenthesis()]
+                        _expanded.extend(expression * repetitions)
+                        _expanded.append(RegularGrammar.right_parenthesis())
+                        _expanded.append(RegularGrammar.alternative())
+                        expanded.extend(_expanded)
+                    expanded[-1] = RegularGrammar.right_parenthesis()
+                    if maybe:
+                        expanded.append(RegularGrammar.maybe())
+                output = output[:begin]  # cut the expression already in the output q
+                output.extend(expanded)
+                interval, _min, _max = False, None, None
             elif interval:
                 if not type(char) is type(int()):
                     raise TypeError('Interval expression characters must be integers.')
-                if not _min:
+                if _min is None:
                     _min = char
                 elif not _max:
                     _max = char
