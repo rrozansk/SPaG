@@ -53,14 +53,14 @@ class CollectScannerSpecifications(Action):
         '\\.': RegularGrammar.concatenation(),
         '\\|': RegularGrammar.alternative(),
         '\\?': RegularGrammar.maybe(),
-        '\\(': RegularGrammar.left_parenthesis(),
-        '\\)': RegularGrammar.right_parenthesis(),
-        '\\[': RegularGrammar.left_bracket(),
-        '\\]': RegularGrammar.right_bracket(),
+        '\\(': RegularGrammar.left_group(),
+        '\\)': RegularGrammar.right_group(),
+        '\\[': RegularGrammar.left_class(),
+        '\\]': RegularGrammar.right_class(),
         '\\-': RegularGrammar.character_range(),
         '\\^': RegularGrammar.character_negation(),
-        '\\{': RegularGrammar.left_curly(),
-        '\\}': RegularGrammar.right_curly()
+        '\\{': RegularGrammar.left_interval(),
+        '\\}': RegularGrammar.right_interval()
     }
 
     @staticmethod

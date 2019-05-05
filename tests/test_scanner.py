@@ -372,7 +372,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Invalid Expression () Arity',
             'expressions': {
-                'invalid': [RegularGrammar.left_parenthesis(), RegularGrammar.right_parenthesis()]
+                'invalid': [RegularGrammar.left_group(), RegularGrammar.right_group()]
             },
             'DFA': {}
         })
@@ -389,7 +389,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Unbalanced Right Paren',
             'expressions': {
-                'invalid': [RegularGrammar.left_parenthesis()]
+                'invalid': [RegularGrammar.left_group()]
             },
             'DFA': {}
         })
@@ -406,7 +406,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Unbalanced Left Paren',
             'expressions': {
-                'invalid': [RegularGrammar.right_parenthesis()]
+                'invalid': [RegularGrammar.right_group()]
             },
             'DFA': {}
         })
@@ -423,7 +423,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Character Range/Class No Start',
             'expressions': {
-                'class/range': [RegularGrammar.right_bracket()]
+                'class/range': [RegularGrammar.right_class()]
             },
             'DFA': {}
         })
@@ -440,7 +440,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Character Range/Class No End',
             'expressions': {
-                'class/range': [RegularGrammar.left_bracket()]
+                'class/range': [RegularGrammar.left_class()]
             },
             'DFA': {}
         })
@@ -457,7 +457,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Empty Character Range/Class',
             'expressions': {
-                'class/range': [RegularGrammar.left_bracket(), RegularGrammar.right_bracket()]
+                'class/range': [RegularGrammar.left_class(), RegularGrammar.right_class()]
             },
             'DFA': {}
         })
@@ -474,8 +474,8 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Recursive Character Range/Class',
             'expressions': {
-                'class/range': [RegularGrammar.left_bracket(), 'a', RegularGrammar.left_bracket(), 'b',
-                                RegularGrammar.right_bracket(), RegularGrammar.right_bracket()]
+                'class/range': [RegularGrammar.left_class(), 'a', RegularGrammar.left_class(), 'b',
+                                RegularGrammar.right_class(), RegularGrammar.right_class()]
             },
             'DFA': {}
         })
@@ -509,7 +509,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Character Range No End',
             'expressions': {
-                'range': [RegularGrammar.left_bracket(), 'a', RegularGrammar.character_range(), RegularGrammar.right_bracket()]
+                'range': [RegularGrammar.left_class(), 'a', RegularGrammar.character_range(), RegularGrammar.right_class()]
             },
             'DFA': {}
         })
@@ -526,7 +526,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Character Range No Start',
             'expressions': {
-                'range': [RegularGrammar.left_bracket(), RegularGrammar.character_range(), 'b', RegularGrammar.right_bracket()]
+                'range': [RegularGrammar.left_class(), RegularGrammar.character_range(), 'b', RegularGrammar.right_class()]
             },
             'DFA': {}
         })
@@ -543,8 +543,8 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Double Character Range',
             'expressions': {
-                'range': [RegularGrammar.left_bracket(), 'a', RegularGrammar.character_range(),
-                          RegularGrammar.character_range(), 'b', RegularGrammar.right_bracket()]
+                'range': [RegularGrammar.left_class(), 'a', RegularGrammar.character_range(),
+                          RegularGrammar.character_range(), 'b', RegularGrammar.right_class()]
             },
             'DFA': {}
         })
@@ -578,8 +578,8 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Double Character Negation',
             'expressions': {
-                'negation': [RegularGrammar.left_bracket(), RegularGrammar.character_negation(),
-                             RegularGrammar.character_negation(), 'a', RegularGrammar.right_bracket()]
+                'negation': [RegularGrammar.left_class(), RegularGrammar.character_negation(),
+                             RegularGrammar.character_negation(), 'a', RegularGrammar.right_class()]
             },
             'DFA': {}
         })
@@ -596,8 +596,8 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Character Range Operator',
             'expressions': {
-                'negation': [RegularGrammar.left_bracket(), 'a', RegularGrammar.character_range(),
-                             RegularGrammar.kleene_star(), RegularGrammar.right_bracket()]
+                'negation': [RegularGrammar.left_class(), 'a', RegularGrammar.character_range(),
+                             RegularGrammar.kleene_star(), RegularGrammar.right_class()]
             },
             'DFA': {}
         })
@@ -614,7 +614,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Empty Interval',
             'expressions': {
-                'empty_curlies': ['a', RegularGrammar.left_curly(), RegularGrammar.right_curly()],
+                'empty_curlies': ['a', RegularGrammar.left_interval(), RegularGrammar.right_interval()],
             },
             'DFA': {}
         })
@@ -631,7 +631,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Negative Count',
             'expressions': {
-                'invalid_count': ['a', RegularGrammar.left_curly(), -1, RegularGrammar.right_curly()],
+                'invalid_count': ['a', RegularGrammar.left_interval(), -1, RegularGrammar.right_interval()],
             },
             'DFA': {}
         })
@@ -648,7 +648,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Undefined Interval - Backwards Range',
             'expressions': {
-                'invalid_interval': ['a', RegularGrammar.left_curly(), 2, 1, RegularGrammar.right_curly()],
+                'invalid_interval': ['a', RegularGrammar.left_interval(), 2, 1, RegularGrammar.right_interval()],
             },
             'DFA': {}
         })
@@ -665,7 +665,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Undefined Interval - Character',
             'expressions': {
-                'undefined_interval_1': ['a', RegularGrammar.left_curly(), 'a', RegularGrammar.right_curly()],
+                'undefined_interval_1': ['a', RegularGrammar.left_interval(), 'a', RegularGrammar.right_interval()],
             },
             'DFA': {}
         })
@@ -682,7 +682,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Undefined Interval - Multi Number',
             'expressions': {
-                'undefined_interval_2': ['a', RegularGrammar.left_curly(), 2, 3, 4, RegularGrammar.right_curly()],
+                'undefined_interval_2': ['a', RegularGrammar.left_interval(), 2, 3, 4, RegularGrammar.right_interval()],
             },
             'DFA': {}
         })
@@ -699,7 +699,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Undefined Interval - Float',
             'expressions': {
-                'undefined_interval_3': ['a', RegularGrammar.left_curly(), 4.45, RegularGrammar.right_curly()],
+                'undefined_interval_3': ['a', RegularGrammar.left_interval(), 4.45, RegularGrammar.right_interval()],
             },
             'DFA': {}
         })
@@ -716,7 +716,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Recursive Interval',
             'expressions': {
-                'recursive_interval': ['a', RegularGrammar.left_curly(), RegularGrammar.left_curly()],
+                'recursive_interval': ['a', RegularGrammar.left_interval(), RegularGrammar.left_interval()],
             },
             'DFA': {}
         })
@@ -733,7 +733,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'No Start Interval',
             'expressions': {
-                'no_start_interval': ['a', RegularGrammar.right_curly()],
+                'no_start_interval': ['a', RegularGrammar.right_interval()],
             },
             'DFA': {}
         })
@@ -750,7 +750,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'No End Interval',
             'expressions': {
-                'no_end_interval': ['a', RegularGrammar.left_curly()],
+                'no_end_interval': ['a', RegularGrammar.left_interval()],
             },
             'DFA': {}
         })
@@ -785,7 +785,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Invalid Interval Group',
             'expressions': {
-                'invalid_interval_group': ['b', RegularGrammar.right_parenthesis(), RegularGrammar.left_curly(), 1, RegularGrammar.right_curly()],
+                'invalid_interval_group': ['b', RegularGrammar.right_group(), RegularGrammar.left_interval(), 1, RegularGrammar.right_interval()],
             },
             'DFA': {}
         })
@@ -802,7 +802,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Smart Interval',
             'expressions': {
-                'smart_interval': ['b', RegularGrammar.maybe(), RegularGrammar.left_curly(), 3, RegularGrammar.right_curly()],
+                'smart_interval': ['b', RegularGrammar.maybe(), RegularGrammar.left_interval(), 3, RegularGrammar.right_interval()],
             },
             'DFA': {}
         })
@@ -958,7 +958,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Unicode Range',
             'expressions': {
-                'range': [RegularGrammar.left_bracket(), u'\u2345', RegularGrammar.character_range(), u'\u2346', RegularGrammar.right_bracket()]
+                'range': [RegularGrammar.left_class(), u'\u2345', RegularGrammar.character_range(), u'\u2346', RegularGrammar.right_class()]
             },
             'DFA':{
                 'Q': set(['S', 'Unicode', 'Err']),
@@ -987,7 +987,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Hex Range',
             'expressions': {
-                'range': [RegularGrammar.left_bracket(), '\x34', RegularGrammar.character_range(), '\x35', RegularGrammar.right_bracket()]
+                'range': [RegularGrammar.left_class(), '\x34', RegularGrammar.character_range(), '\x35', RegularGrammar.right_class()]
             },
             'DFA':{
                 'Q': set(['S', 'Hex', 'Err']),
@@ -1215,8 +1215,8 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Grouping',
             'expressions': {
-                'group': [RegularGrammar.left_parenthesis(), 'a', RegularGrammar.alternative(), 'b',
-                          RegularGrammar.right_parenthesis(), RegularGrammar.kleene_star()]
+                'group': [RegularGrammar.left_group(), 'a', RegularGrammar.alternative(), 'b',
+                          RegularGrammar.right_group(), RegularGrammar.kleene_star()]
             },
             'DFA': {
                 'Q': set(['AB*']),
@@ -1242,7 +1242,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Forward Character Range',
             'expressions': {
-                'range': [RegularGrammar.left_bracket(), 'a', RegularGrammar.character_range(), 'c', RegularGrammar.right_bracket()]
+                'range': [RegularGrammar.left_class(), 'a', RegularGrammar.character_range(), 'c', RegularGrammar.right_class()]
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
@@ -1272,7 +1272,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Backward Character Range',
             'expressions': {
-                'range': [RegularGrammar.left_bracket(), 'c', RegularGrammar.character_range(), 'a', RegularGrammar.right_bracket()]
+                'range': [RegularGrammar.left_class(), 'c', RegularGrammar.character_range(), 'a', RegularGrammar.right_class()]
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
@@ -1302,7 +1302,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Literal Negation Character Range',
             'expressions': {
-                'range': [RegularGrammar.left_bracket(), 'a', RegularGrammar.character_range(), '^', RegularGrammar.right_bracket()]
+                'range': [RegularGrammar.left_class(), 'a', RegularGrammar.character_range(), '^', RegularGrammar.right_class()]
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
@@ -1333,8 +1333,8 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Negated Character Range',
             'expressions': {
-                'range': [RegularGrammar.left_bracket(), RegularGrammar.character_negation(), '!',
-                          RegularGrammar.character_range(), '~', RegularGrammar.right_bracket(), RegularGrammar.kleene_star()]
+                'range': [RegularGrammar.left_class(), RegularGrammar.character_negation(), '!',
+                          RegularGrammar.character_range(), '~', RegularGrammar.right_class(), RegularGrammar.kleene_star()]
             },
             'DFA': {
                 'Q': set(['S']),
@@ -1366,7 +1366,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Character Class with Literal Right Bracket',
             'expressions': {
-                'class': [RegularGrammar.left_bracket(), ']', RegularGrammar.right_bracket(), RegularGrammar.kleene_star()]
+                'class': [RegularGrammar.left_class(), ']', RegularGrammar.right_class(), RegularGrammar.kleene_star()]
             },
             'DFA': {
                 'Q': set(['S']),
@@ -1391,7 +1391,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Character Class',
             'expressions': {
-                'class': [RegularGrammar.left_bracket(), 'a', 'b', 'c', RegularGrammar.right_bracket()]
+                'class': [RegularGrammar.left_class(), 'a', 'b', 'c', RegularGrammar.right_class()]
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
@@ -1421,7 +1421,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Character Class with Copies',
             'expressions': {
-                'class': [RegularGrammar.left_bracket(), 'a', 'a', 'a', RegularGrammar.right_bracket()]
+                'class': [RegularGrammar.left_class(), 'a', 'a', 'a', RegularGrammar.right_class()]
             },
             'DFA': {
                 'Q': set(['S', 'F', 'Err']),
@@ -1449,13 +1449,13 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Negated Character Class',
             'expressions': {
-                'class': [RegularGrammar.left_bracket(), RegularGrammar.character_negation(), '^', '!', '"', '#', '$', '%',
+                'class': [RegularGrammar.left_class(), RegularGrammar.character_negation(), '^', '!', '"', '#', '$', '%',
                           '&', '\'', '(', ')', '*', '+', ',', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8',
                           '9', ':', ';', '<', '=', '>', '?', '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
                           'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '\\', '[', ']',
                           '_', '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
                           'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~', '-',
-                          RegularGrammar.right_bracket(), RegularGrammar.kleene_star()]
+                          RegularGrammar.right_class(), RegularGrammar.kleene_star()]
             },
             'DFA': {
                 'Q': set(['S']),
@@ -1487,8 +1487,8 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Character Class Range Combo',
             'expressions': {
-                'class': [RegularGrammar.left_bracket(), 'a', 'b', 'c', RegularGrammar.character_range(), 'e',
-                          RegularGrammar.right_bracket(), RegularGrammar.kleene_star()]
+                'class': [RegularGrammar.left_class(), 'a', 'b', 'c', RegularGrammar.character_range(), 'e',
+                          RegularGrammar.right_class(), RegularGrammar.kleene_star()]
             },
             'DFA': {
                 'Q': set(['S']),
@@ -1517,8 +1517,8 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Character Range Class Combo',
             'expressions': {
-                'class': [RegularGrammar.left_bracket(), 'a', RegularGrammar.character_range(), 'c', 'd', 'e',
-                          RegularGrammar.right_bracket(), RegularGrammar.kleene_star()]
+                'class': [RegularGrammar.left_class(), 'a', RegularGrammar.character_range(), 'c', 'd', 'e',
+                          RegularGrammar.right_class(), RegularGrammar.kleene_star()]
             },
             'DFA': {
                 'Q': set(['S']),
@@ -1547,7 +1547,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Exact Interval',
             'expressions': {
-                'exact_count': ['a', RegularGrammar.left_curly(), 2, RegularGrammar.right_curly()],
+                'exact_count': ['a', RegularGrammar.left_interval(), 2, RegularGrammar.right_interval()],
             },
             'DFA': {
                 'Q': set(['S', 'A1', 'F', 'Err']),
@@ -1575,7 +1575,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Small Interval',
             'expressions': {
-                'small_interval': ['a', RegularGrammar.left_curly(), 2, 3, RegularGrammar.right_curly()],
+                'small_interval': ['a', RegularGrammar.left_interval(), 2, 3, RegularGrammar.right_interval()],
             },
             'DFA': {
                 'Q': set(['S', 'A1', 'A2', 'F', 'Err']),
@@ -1603,7 +1603,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Minimum Interval',
             'expressions': {
-                'minimum_interval': ['a', RegularGrammar.left_curly(), 2, 0, RegularGrammar.right_curly()],
+                'minimum_interval': ['a', RegularGrammar.left_interval(), 2, 0, RegularGrammar.right_interval()],
             },
             'DFA': {
                 'Q': set(['S', 'A1', 'F']),
@@ -1630,7 +1630,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Maximum Interval',
             'expressions': {
-                'maximum_interval': ['a', RegularGrammar.left_curly(), 0, 2, RegularGrammar.right_curly()],
+                'maximum_interval': ['a', RegularGrammar.left_interval(), 0, 2, RegularGrammar.right_interval()],
             },
             'DFA': {
                 'Q': set(['S', 'A1', 'F', 'Err']),
@@ -1658,8 +1658,8 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Complex Interval',
             'expressions': {
-                'complex_interval': [RegularGrammar.left_parenthesis(), 'a', RegularGrammar.kleene_star(), RegularGrammar.right_parenthesis(),
-                                     RegularGrammar.left_curly(), 2, 0, RegularGrammar.right_curly()],
+                'complex_interval': [RegularGrammar.left_group(), 'a', RegularGrammar.kleene_star(), RegularGrammar.right_group(),
+                                     RegularGrammar.left_interval(), 2, 0, RegularGrammar.right_interval()],
             },
             'DFA': {
                 'Q': set(['S']),
@@ -2037,10 +2037,10 @@ class TestScanner:
             'name': 'Implicit Concatenation Star Operator',
             'expressions': {
                 'permutation1': ['a', RegularGrammar.kleene_star(), 'b'],
-                'permutation2': ['a', RegularGrammar.kleene_star(), RegularGrammar.left_parenthesis(), 'b', RegularGrammar.right_parenthesis()],
-                'permutation3': [RegularGrammar.left_parenthesis(), 'a', RegularGrammar.right_parenthesis(), RegularGrammar.kleene_star(), 'b'],
-                'permutation4': [RegularGrammar.left_parenthesis(), 'a', RegularGrammar.right_parenthesis(), RegularGrammar.kleene_star(),
-                                 RegularGrammar.left_parenthesis(), 'b', RegularGrammar.right_parenthesis()]
+                'permutation2': ['a', RegularGrammar.kleene_star(), RegularGrammar.left_group(), 'b', RegularGrammar.right_group()],
+                'permutation3': [RegularGrammar.left_group(), 'a', RegularGrammar.right_group(), RegularGrammar.kleene_star(), 'b'],
+                'permutation4': [RegularGrammar.left_group(), 'a', RegularGrammar.right_group(), RegularGrammar.kleene_star(),
+                                 RegularGrammar.left_group(), 'b', RegularGrammar.right_group()]
             },
             'DFA': {
                 'Q': set(['A', 'B', 'Err']),
@@ -2073,10 +2073,10 @@ class TestScanner:
             'name': 'Implicit Concatenation Plus Operator',
             'expressions': {
                 'permutation1': ['a', RegularGrammar.kleene_plus(), 'b'],
-                'permutation2': ['a', RegularGrammar.kleene_plus(), RegularGrammar.left_parenthesis(), 'b', RegularGrammar.right_parenthesis()],
-                'permutation3': [RegularGrammar.left_parenthesis(), 'a', RegularGrammar.right_parenthesis(), RegularGrammar.kleene_plus(), 'b'],
-                'permutation4': [RegularGrammar.left_parenthesis(), 'a', RegularGrammar.right_parenthesis(), RegularGrammar.kleene_plus(),
-                                 RegularGrammar.left_parenthesis(), 'b', RegularGrammar.right_parenthesis()]
+                'permutation2': ['a', RegularGrammar.kleene_plus(), RegularGrammar.left_group(), 'b', RegularGrammar.right_group()],
+                'permutation3': [RegularGrammar.left_group(), 'a', RegularGrammar.right_group(), RegularGrammar.kleene_plus(), 'b'],
+                'permutation4': [RegularGrammar.left_group(), 'a', RegularGrammar.right_group(), RegularGrammar.kleene_plus(),
+                                 RegularGrammar.left_group(), 'b', RegularGrammar.right_group()]
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
@@ -2109,10 +2109,10 @@ class TestScanner:
             'name': 'Implicit Concatenation Question Operator',
             'expressions': {
                 'permutation1': ['a', RegularGrammar.maybe(), 'b'],
-                'permutation2': ['a', RegularGrammar.maybe(), RegularGrammar.left_parenthesis(), 'b', RegularGrammar.right_parenthesis()],
-                'permutation3': [RegularGrammar.left_parenthesis(), 'a', RegularGrammar.right_parenthesis(), RegularGrammar.maybe(), 'b'],
-                'permutation4': [RegularGrammar.left_parenthesis(), 'a', RegularGrammar.right_parenthesis(), RegularGrammar.maybe(),
-                                 RegularGrammar.left_parenthesis(), 'b', RegularGrammar.right_parenthesis()]
+                'permutation2': ['a', RegularGrammar.maybe(), RegularGrammar.left_group(), 'b', RegularGrammar.right_group()],
+                'permutation3': [RegularGrammar.left_group(), 'a', RegularGrammar.right_group(), RegularGrammar.maybe(), 'b'],
+                'permutation4': [RegularGrammar.left_group(), 'a', RegularGrammar.right_group(), RegularGrammar.maybe(),
+                                 RegularGrammar.left_group(), 'b', RegularGrammar.right_group()]
             },
             'DFA': {
                 'Q': set(['S', 'A', 'B', 'Err']),
@@ -2145,10 +2145,10 @@ class TestScanner:
             'name': 'Implicit Concatenation Question Operator',
             'expressions': {
                 'permutation1': ['a', RegularGrammar.alternative(), 'b'],
-                'permutation2': ['a', RegularGrammar.alternative(), RegularGrammar.left_parenthesis(), 'b', RegularGrammar.right_parenthesis()],
-                'permutation3': [RegularGrammar.left_parenthesis(), 'a', RegularGrammar.right_parenthesis(), RegularGrammar.alternative(), 'b'],
-                'permutation4': [RegularGrammar.left_parenthesis(), 'a', RegularGrammar.right_parenthesis(), RegularGrammar.alternative(),
-                                 RegularGrammar.left_parenthesis(), 'b', RegularGrammar.right_parenthesis()]
+                'permutation2': ['a', RegularGrammar.alternative(), RegularGrammar.left_group(), 'b', RegularGrammar.right_group()],
+                'permutation3': [RegularGrammar.left_group(), 'a', RegularGrammar.right_group(), RegularGrammar.alternative(), 'b'],
+                'permutation4': [RegularGrammar.left_group(), 'a', RegularGrammar.right_group(), RegularGrammar.alternative(),
+                                 RegularGrammar.left_group(), 'b', RegularGrammar.right_group()]
             },
             'DFA': {
                 'Q': set(['S', 'AB', 'Err']),
@@ -2180,8 +2180,8 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Randomness 1',
             'expressions': {
-                'random': ['a', RegularGrammar.kleene_star(), RegularGrammar.left_parenthesis(), 'b', RegularGrammar.alternative(),
-                           'c', 'd', RegularGrammar.right_parenthesis(), RegularGrammar.kleene_star()]
+                'random': ['a', RegularGrammar.kleene_star(), RegularGrammar.left_group(), 'b', RegularGrammar.alternative(),
+                           'c', 'd', RegularGrammar.right_group(), RegularGrammar.kleene_star()]
             },
             'DFA': {
                 'Q': set(['AC', 'B', 'DE', 'Err']),
@@ -2241,10 +2241,10 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Randomness 3',
             'expressions': {
-                'random': [RegularGrammar.left_parenthesis(), 'a', RegularGrammar.kleene_star(), 'b',
-                           RegularGrammar.right_parenthesis(), RegularGrammar.alternative(), RegularGrammar.left_parenthesis(),
+                'random': [RegularGrammar.left_group(), 'a', RegularGrammar.kleene_star(), 'b',
+                           RegularGrammar.right_group(), RegularGrammar.alternative(), RegularGrammar.left_group(),
                            'a', RegularGrammar.concatenation(), 'b', 'c', 'd', RegularGrammar.concatenation(), 'e',
-                           RegularGrammar.right_parenthesis()]
+                           RegularGrammar.right_group()]
             },
             'DFA': {
                 'Q': set(['S', 'A', 'A*', 'B', 'C', 'D', 'F', 'Err']),
@@ -2276,9 +2276,9 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Randomness 4',
             'expressions': {
-                'random': [RegularGrammar.left_parenthesis(), 'f', 'o', 'o', RegularGrammar.right_parenthesis(),
-                           RegularGrammar.maybe(), RegularGrammar.left_parenthesis(), 'b', 'a', 'r',
-                           RegularGrammar.right_parenthesis(), RegularGrammar.kleene_plus()]
+                'random': [RegularGrammar.left_group(), 'f', 'o', 'o', RegularGrammar.right_group(),
+                           RegularGrammar.maybe(), RegularGrammar.left_group(), 'b', 'a', 'r',
+                           RegularGrammar.right_group(), RegularGrammar.kleene_plus()]
             },
             'DFA': {
                 'Q': set(['S', 'F', 'FO', 'FOO', 'B', 'BA', 'BAR', 'Err']),
@@ -2310,9 +2310,9 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'White Space',
             'expressions': {
-                'white': [RegularGrammar.left_parenthesis(), ' ', RegularGrammar.alternative(), '\t', RegularGrammar.alternative(),
+                'white': [RegularGrammar.left_group(), ' ', RegularGrammar.alternative(), '\t', RegularGrammar.alternative(),
                           '\n', RegularGrammar.alternative(), '\r', RegularGrammar.alternative(), '\f',
-                          RegularGrammar.alternative(), '\v', RegularGrammar.right_parenthesis(), RegularGrammar.kleene_star()]
+                          RegularGrammar.alternative(), '\v', RegularGrammar.right_group(), RegularGrammar.kleene_star()]
             },
             'DFA': {
                 'Q': set(['S']),
@@ -2344,9 +2344,9 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Boolean',
             'expressions': {
-                'bool': [RegularGrammar.left_parenthesis(), 't', 'r', 'u', 'e', RegularGrammar.right_parenthesis(),
-                         RegularGrammar.alternative(), RegularGrammar.left_parenthesis(), 'f', 'a', 'l', 's', 'e',
-                         RegularGrammar.right_parenthesis()]
+                'bool': [RegularGrammar.left_group(), 't', 'r', 'u', 'e', RegularGrammar.right_group(),
+                         RegularGrammar.alternative(), RegularGrammar.left_group(), 'f', 'a', 'l', 's', 'e',
+                         RegularGrammar.right_group()]
             },
             'DFA': {
                 'Q': set(['S', 'T', 'R', 'F', 'A', 'L', 'US', 'E', 'Err']),
@@ -2381,7 +2381,7 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Character',
             'expressions': {
-                'char': ['\'', RegularGrammar.left_bracket(), RegularGrammar.character_negation(), RegularGrammar.right_bracket(), '\'']
+                'char': ['\'', RegularGrammar.left_class(), RegularGrammar.character_negation(), RegularGrammar.right_class(), '\'']
             },
             'DFA': {
                 'Q': set(['S', '_1', '_2', 'F', 'Err']),
@@ -2508,8 +2508,8 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'String',
             'expressions': {
-                'str': ['"', RegularGrammar.left_bracket(), RegularGrammar.character_negation(), '"',
-                        RegularGrammar.right_bracket(), RegularGrammar.kleene_star(), '"']
+                'str': ['"', RegularGrammar.left_class(), RegularGrammar.character_negation(), '"',
+                        RegularGrammar.right_class(), RegularGrammar.kleene_star(), '"']
             },
             'DFA': {
                 'Q': set(['S', '_', 'F', 'Err']),
@@ -2636,10 +2636,10 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Identifiers',
             'expressions': {
-                'id': [RegularGrammar.left_bracket(), '_', 'a', RegularGrammar.character_range(), 'z', 'A', RegularGrammar.character_range(),
-                       'Z', RegularGrammar.right_bracket(), RegularGrammar.left_bracket(), '_', 'a', RegularGrammar.character_range(), 'z',
+                'id': [RegularGrammar.left_class(), '_', 'a', RegularGrammar.character_range(), 'z', 'A', RegularGrammar.character_range(),
+                       'Z', RegularGrammar.right_class(), RegularGrammar.left_class(), '_', 'a', RegularGrammar.character_range(), 'z',
                        'A', RegularGrammar.character_range(), 'Z', '0', RegularGrammar.character_range(), '9',
-                       RegularGrammar.right_bracket(), RegularGrammar.kleene_star()]
+                       RegularGrammar.right_class(), RegularGrammar.kleene_star()]
             },
             'DFA': {
                 'Q': set(['Char', 'DigitOrChar', 'Err']),
@@ -2729,11 +2729,11 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Integer',
             'expressions': {
-                'int': ['0', RegularGrammar.alternative(), RegularGrammar.left_parenthesis(), RegularGrammar.left_bracket(), '-', '+',
-                        RegularGrammar.right_bracket(), RegularGrammar.maybe(), RegularGrammar.left_bracket(), '1',
-                        RegularGrammar.character_range(), '9', RegularGrammar.right_bracket(), RegularGrammar.left_bracket(),
-                        '0', RegularGrammar.character_range(), '9', RegularGrammar.right_bracket(), RegularGrammar.kleene_star(),
-                        RegularGrammar.right_parenthesis()]
+                'int': ['0', RegularGrammar.alternative(), RegularGrammar.left_group(), RegularGrammar.left_class(), '-', '+',
+                        RegularGrammar.right_class(), RegularGrammar.maybe(), RegularGrammar.left_class(), '1',
+                        RegularGrammar.character_range(), '9', RegularGrammar.right_class(), RegularGrammar.left_class(),
+                        '0', RegularGrammar.character_range(), '9', RegularGrammar.right_class(), RegularGrammar.kleene_star(),
+                        RegularGrammar.right_group()]
             },
             'DFA': {
                 'Q': set(['S', 'Zero', 'Sign', 'Int', 'Err']),
@@ -2772,14 +2772,14 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Float',
             'expressions': {
-                'float': [RegularGrammar.left_bracket(), '-', '+', RegularGrammar.right_bracket(), RegularGrammar.maybe(),
-                          RegularGrammar.left_bracket(), '0', RegularGrammar.character_range(), '9', RegularGrammar.right_bracket(),
-                          RegularGrammar.kleene_star(), '.', RegularGrammar.maybe(), RegularGrammar.left_bracket(), '0',
-                          RegularGrammar.character_range(), '9', RegularGrammar.right_bracket(), RegularGrammar.kleene_plus(),
-                          RegularGrammar.left_parenthesis(), RegularGrammar.left_bracket(), 'e', 'E', RegularGrammar.right_bracket(),
-                          RegularGrammar.left_bracket(), '-', '+', RegularGrammar.right_bracket(), RegularGrammar.maybe(),
-                          RegularGrammar.left_bracket(), '0', RegularGrammar.character_range(), '9', RegularGrammar.right_bracket(),
-                          RegularGrammar.kleene_plus(), RegularGrammar.right_parenthesis(), RegularGrammar.maybe()]
+                'float': [RegularGrammar.left_class(), '-', '+', RegularGrammar.right_class(), RegularGrammar.maybe(),
+                          RegularGrammar.left_class(), '0', RegularGrammar.character_range(), '9', RegularGrammar.right_class(),
+                          RegularGrammar.kleene_star(), '.', RegularGrammar.maybe(), RegularGrammar.left_class(), '0',
+                          RegularGrammar.character_range(), '9', RegularGrammar.right_class(), RegularGrammar.kleene_plus(),
+                          RegularGrammar.left_group(), RegularGrammar.left_class(), 'e', 'E', RegularGrammar.right_class(),
+                          RegularGrammar.left_class(), '-', '+', RegularGrammar.right_class(), RegularGrammar.maybe(),
+                          RegularGrammar.left_class(), '0', RegularGrammar.character_range(), '9', RegularGrammar.right_class(),
+                          RegularGrammar.kleene_plus(), RegularGrammar.right_group(), RegularGrammar.maybe()]
             },
             'DFA': {
                 'Q': set(['S', 'WholePart', 'ExpPart', 'FractionPart', 'eSignum', 'Sigfrac', 'Sigexp', 'Signum', 'Err']),
@@ -2821,8 +2821,8 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Line Comment',
             'expressions': {
-                'comment': [RegularGrammar.left_parenthesis(), '#', RegularGrammar.alternative(), ';', RegularGrammar.right_parenthesis(),
-                            RegularGrammar.left_bracket(), RegularGrammar.character_negation(), '\n', RegularGrammar.right_bracket(),
+                'comment': [RegularGrammar.left_group(), '#', RegularGrammar.alternative(), ';', RegularGrammar.right_group(),
+                            RegularGrammar.left_class(), RegularGrammar.character_negation(), '\n', RegularGrammar.right_class(),
                             RegularGrammar.kleene_star(), '\n']
             },
             'DFA': {
@@ -2950,9 +2950,9 @@ class TestScanner:
         TestScanner._run(**{
             'name': 'Block Comment',
             'expressions': {
-                'comment': ['/', RegularGrammar.left_bracket(), '*', RegularGrammar.right_bracket(),
-                            RegularGrammar.left_bracket(), RegularGrammar.character_negation(), RegularGrammar.right_bracket(),
-                            RegularGrammar.kleene_star(), RegularGrammar.left_bracket(), '*', RegularGrammar.right_bracket(), '/']
+                'comment': ['/', RegularGrammar.left_class(), '*', RegularGrammar.right_class(),
+                            RegularGrammar.left_class(), RegularGrammar.character_negation(), RegularGrammar.right_class(),
+                            RegularGrammar.kleene_star(), RegularGrammar.left_class(), '*', RegularGrammar.right_class(), '/']
             },
             'DFA': {
                 'Q': set(['BEGIN', 'SINK', 'FSLASH', 'SIGEND', 'END', 'ERR']),

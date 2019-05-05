@@ -25,14 +25,14 @@ class _RegularGrammarOperators(Enum):
     CONCATENATION = 2        # . (NOTE: optional)
     ALTERNATIVE = 3          # |
     MAYBE = 4                # ?
-    LEFT_PARENTHESIS = 5     # (
-    RIGHT_PARENTHESIS = 6    # )
-    LEFT_BRACKET = 7         # [
-    RIGHT_BRACKET = 8        # ]
+    LEFT_GROUP = 5           # (
+    RIGHT_GROUP = 6          # )
+    LEFT_CLASS = 7           # [
+    RIGHT_CLASS = 8          # ]
     CHARACTER_RANGE = 9      # -
     CHARACTER_NEGATION = 10  # ^
-    LEFT_CURLY = 11          # {
-    RIGHT_CURLY = 12         # }
+    LEFT_INTERVAL = 11       # {
+    RIGHT_INTERVAL = 12      # }
 
 
 class RegularGrammar:
@@ -238,7 +238,7 @@ class RegularGrammar:
         return _RegularGrammarOperators.MAYBE
 
     @staticmethod
-    def left_parenthesis():
+    def left_group():
         """Get the representation used for the given operator.
 
         Static readonly enum property representing the group beginning ('(')
@@ -247,10 +247,10 @@ class RegularGrammar:
         Return:
           _RegularGrammarOperators: The enum representation of the operator.
         """
-        return _RegularGrammarOperators.LEFT_PARENTHESIS
+        return _RegularGrammarOperators.LEFT_GROUP
 
     @staticmethod
-    def right_parenthesis():
+    def right_group():
         """Get the representation used for the given operator.
 
         Static readonly enum property representing the group ending (')')
@@ -259,10 +259,10 @@ class RegularGrammar:
         Return:
           _RegularGrammarOperators: The enum representation of the operator.
         """
-        return _RegularGrammarOperators.RIGHT_PARENTHESIS
+        return _RegularGrammarOperators.RIGHT_GROUP
 
     @staticmethod
-    def left_bracket():
+    def left_class():
         """Get the representation used for the given operator.
 
         Static readonly enum property representing the character class/range
@@ -271,10 +271,10 @@ class RegularGrammar:
         Return:
           _RegularGrammarOperators: The enum representation of the operator.
         """
-        return _RegularGrammarOperators.LEFT_BRACKET
+        return _RegularGrammarOperators.LEFT_CLASS
 
     @staticmethod
-    def right_bracket():
+    def right_class():
         """Get the representation used for the given operator.
 
         Static readonly enum property representing the character class/range
@@ -283,7 +283,7 @@ class RegularGrammar:
         Return:
           _RegularGrammarOperators: The enum representation of the operator.
         """
-        return _RegularGrammarOperators.RIGHT_BRACKET
+        return _RegularGrammarOperators.RIGHT_CLASS
 
     @staticmethod
     def character_range():
@@ -310,7 +310,7 @@ class RegularGrammar:
         return _RegularGrammarOperators.CHARACTER_NEGATION
 
     @staticmethod
-    def left_curly():
+    def left_interval():
         """Get the representation used for the given operator.
 
         Static readonly enum property representing the left curly
@@ -319,10 +319,10 @@ class RegularGrammar:
         Return:
           _RegularGrammarOperators: The enum representation of the operator.
         """
-        return _RegularGrammarOperators.LEFT_CURLY
+        return _RegularGrammarOperators.LEFT_INTERVAL
 
     @staticmethod
-    def right_curly():
+    def right_interval():
         """Get the representation used for the given operator.
 
         Static readonly enum property representing the right curly
@@ -331,7 +331,7 @@ class RegularGrammar:
         Return:
           _RegularGrammarOperators: The enum representation of the operator.
         """
-        return _RegularGrammarOperators.RIGHT_CURLY
+        return _RegularGrammarOperators.RIGHT_INTERVAL
 
     @property
     def name(self):
@@ -462,11 +462,11 @@ class RegularGrammar:
         output, literals = [], []
         expand, negation, prange = False, False, False
         for char in expr:
-            if char is RegularGrammar.left_bracket():
+            if char is RegularGrammar.left_class():
                 if expand:
                     raise ValueError('Error: Recursive class/range not allowed')
                 expand = True
-            elif char is RegularGrammar.right_bracket():
+            elif char is RegularGrammar.right_class():
                 if not expand:
                     raise ValueError('Error: Invalid character class/range; no start')
                 if prange:
@@ -477,11 +477,11 @@ class RegularGrammar:
                     literals = set(printable) - set(literals)
                 if not literals:
                     raise ValueError('Error: Empty character range/class not allowed')
-                output.append(RegularGrammar.left_parenthesis())
+                output.append(RegularGrammar.left_group())
                 for literal in literals:
                     output.append(literal)
                     output.append(RegularGrammar.alternative())
-                output[-1] = RegularGrammar.right_parenthesis()
+                output[-1] = RegularGrammar.right_group()
                 literals = []
             elif char is RegularGrammar.character_negation():
                 if not expand:
@@ -541,12 +541,12 @@ class RegularGrammar:
         interval, _min, _max = False, None, None
         begin, end = -1, -1
         for char in expr:
-            if char is RegularGrammar.left_curly():
+            if char is RegularGrammar.left_interval():
                 if interval:
                     raise ValueError('Recursive interval expressions not valid.')
                 interval = True
                 end = len(output)-1
-            elif char is RegularGrammar.right_curly():
+            elif char is RegularGrammar.right_interval():
                 if not interval:
                     raise ValueError('Undetected start of interval expression.')
                 if not _max and not _min:
@@ -559,12 +559,12 @@ class RegularGrammar:
                 if isinstance(output[end], str):
                     expression = [output[end]]
                     begin = end
-                elif output[end] is RegularGrammar.right_parenthesis():
+                elif output[end] is RegularGrammar.right_group():
                     count = 0
                     for _idx in range(end, -1, -1):
-                        if output[_idx] is RegularGrammar.right_parenthesis():
+                        if output[_idx] is RegularGrammar.right_group():
                             count -= 1
-                        if output[_idx] is RegularGrammar.left_parenthesis():
+                        if output[_idx] is RegularGrammar.left_group():
                             count += 1
                         if not count:
                             begin = _idx
@@ -585,14 +585,14 @@ class RegularGrammar:
                     if not _min:
                         maybe = True
                         _min = 1
-                    expanded = [RegularGrammar.left_parenthesis()]
+                    expanded = [RegularGrammar.left_group()]
                     for repetitions in range(_min, _max+1):
-                        _expanded = [RegularGrammar.left_parenthesis()]
+                        _expanded = [RegularGrammar.left_group()]
                         _expanded.extend(expression * repetitions)
-                        _expanded.append(RegularGrammar.right_parenthesis())
+                        _expanded.append(RegularGrammar.right_group())
                         _expanded.append(RegularGrammar.alternative())
                         expanded.extend(_expanded)
-                    expanded[-1] = RegularGrammar.right_parenthesis()
+                    expanded[-1] = RegularGrammar.right_group()
                     if maybe:
                         expanded.append(RegularGrammar.maybe())
                 output = output[:begin]  # cut the expression already in the output q
@@ -632,10 +632,10 @@ class RegularGrammar:
         """
         output = [expr[0]]
         for elem in expr[1:]:
-            if output[-1] is not RegularGrammar.left_parenthesis() and \
+            if output[-1] is not RegularGrammar.left_group() and \
                 output[-1] is not RegularGrammar.alternative() and \
                 output[-1] is not RegularGrammar.concatenation() and \
-                (elem is RegularGrammar.left_parenthesis() or isinstance(elem, str)):
+                (elem is RegularGrammar.left_group() or isinstance(elem, str)):
                 output.append(RegularGrammar.concatenation())
             output.append(elem)
         return output
@@ -660,8 +660,8 @@ class RegularGrammar:
           ValueError: if right parenthesis are unbalanaced.
         """
         _precedence = {  # Operator precedence (higher binds tighter)
-            RegularGrammar.left_parenthesis(): (3, None),   # n/a
-            RegularGrammar.right_parenthesis(): (3, None),  # n/a
+            RegularGrammar.left_group(): (3, None),   # n/a
+            RegularGrammar.right_group(): (3, None),  # n/a
             RegularGrammar.kleene_plus(): (2, False),       # right-associative
             RegularGrammar.kleene_star(): (2, False),       # right-associative
             RegularGrammar.maybe(): (2, False),             # right-associative
@@ -672,17 +672,17 @@ class RegularGrammar:
         stack, queue = [], []  # operators, output expression
 
         for token in expr:
-            if token is RegularGrammar.left_parenthesis():
+            if token is RegularGrammar.left_group():
                 stack.append(token)
-            elif token is RegularGrammar.right_parenthesis():
-                while stack and stack[-1] is not RegularGrammar.left_parenthesis():
+            elif token is RegularGrammar.right_group():
+                while stack and stack[-1] is not RegularGrammar.left_group():
                     queue.append(stack.pop())
                 if not stack:
                     raise ValueError('Error: unbalanced right parenthesis')
                 stack.pop()
             elif token in _precedence:
                 while stack and \
-                      stack[-1] is not RegularGrammar.left_parenthesis() and\
+                      stack[-1] is not RegularGrammar.left_group() and\
                       _precedence[token][0] <= _precedence[stack[-1]][0] and\
                       _precedence[token][1]:  # left-associative?
                     queue.append(stack.pop())
@@ -692,7 +692,7 @@ class RegularGrammar:
 
         while stack:
             token = stack.pop()
-            if token is RegularGrammar.left_parenthesis():
+            if token is RegularGrammar.left_group():
                 raise ValueError('Error: unbalanced left parenthesis')
             queue.append(token)
 
