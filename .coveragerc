@@ -1,3 +1,3 @@
 [run]
-#branch = True
+branch = True
 source = testing_venv/lib/${PYTHON_VERSION}/site-packages/spag

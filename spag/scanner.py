@@ -1057,19 +1057,14 @@ class RegularGrammar:
                 for part in partitions:
                     if source in part:
                         state_1 = part
-                        if state_2:
-                            break
                     if dest in part:
                         state_2 = part
-                        if state_1:
-                            break
                 Tp[symbols[symbol]][_states[state_1]] = state_2
 
         Sp = None
         for part in partitions:
             if S in part:
                 Sp = part
-                break
 
         Fp = {partition for partition in partitions if partition & F}
 

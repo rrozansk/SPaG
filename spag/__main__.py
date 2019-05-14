@@ -132,7 +132,7 @@ class CollectConfiguration(Action):
                     with open(specification) as input_specification:
                         if setting == 'parsers':
                             specifications.append(loads(input_specification.read()))
-                        elif setting == 'scanners':
+                        if setting == 'scanners':
                             specifications.append(CollectScannerSpecifications.collect(input_specification))
                 value = specifications
             elif setting in ('force', 'time', 'verbose'):
@@ -296,7 +296,7 @@ def main():
         exit(Exit.INVALID_ARGS)
 
     if len(argv) < 2 or args['help']:
-        cli.print_help()
+        cli.print_help(stdout)
         exit(Exit.SUCCESS)
 
     start, end = None, None
@@ -389,13 +389,12 @@ def main():
                 if args['verbose']:
                     stdout.write('{0} already exists; not overwriting.\n'.format(name))
                     stdout.flush()
-                continue
-
-            with open(name, 'w') as fd:
+            else:
                 if args['verbose']:
-                    stdout.write('Outputting {0} to disk...\n'.format(fd.name))
+                    stdout.write('Outputting {0} to disk...\n'.format(name))
                     stdout.flush()
-                fd.write(content)
+                with open(name, 'w') as fd:
+                    fd.write(content)
 
     stdout.flush()
     exit(Exit.SUCCESS)

@@ -31,27 +31,34 @@ class TestSPaGCLI:
         assert ret.stderr == ''
 
     @staticmethod
-    def test_help_non_empty(script_runner):
+    def test_help_non_empty_1(script_runner):
+        """
+        Ensure help message output is non-empty.
+        """
+        ret_help = script_runner.run('spag_cli')
+        assert ret_help.success
+        assert ret_help.stderr == ''
+
+    @staticmethod
+    def test_help_non_empty_2(script_runner):
         """
         Ensure help message output is non-empty.
         """
         ret_help = script_runner.run('spag_cli', '--help')
         assert ret_help.success
         assert ret_help.stderr == ''
-        assert ret_help.stdout != ''
 
     @staticmethod
-    @pytest.mark.script_launch_mode('subprocess')
     def test_default_help(script_runner):
         """
         Ensure help is the default behavior.
         """
-        ret_help = script_runner.run('spag_cli', '-h')
+        ret_help = script_runner.run('spag_cli')
         assert ret_help.success
         assert ret_help.stderr == ''
         help_output = ret_help.stdout
 
-        ret_default = script_runner.run('spag_cli')
+        ret_default = script_runner.run('spag_cli', '-h')
         assert ret_default.success
         assert ret_default.stderr == ''
         default_output = ret_default.stdout
