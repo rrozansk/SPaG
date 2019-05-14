@@ -59,17 +59,6 @@ class TestSPaGCLI:
         assert help_output == default_output
 
     @staticmethod
-    @pytest.mark.script_launch_mode('subprocess')
-    def test_module_invocation(script_runner):
-        """
-        Ensure help is the default behavior for module invocation.
-        """
-        ret_help = script_runner.run('python', '-m', 'spag')
-        assert ret_help.success
-        assert ret_help.stderr == ''
-        assert ret_help.stdout != ''
-
-    @staticmethod
     def test_rcfile_generation(script_runner):
         """
         Ensure valid configuration file (INI) generation.

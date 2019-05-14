@@ -400,7 +400,3 @@ def main():
     stdout.flush()
     exit(Exit.SUCCESS)
 # pylint: enable=too-many-branches,too-many-statements
-
-# python -m spag
-if __name__ == '__main__':
-    main()
