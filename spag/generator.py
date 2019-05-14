@@ -30,6 +30,7 @@ class Generator:
         self._parser = None
         self._filename = 'out'
         self._encoding = 'direct'
+        self._match = 'longest'
 
     @property
     def scanner(self):
@@ -155,6 +156,42 @@ class Generator:
             raise ValueError('encoding type not recognized')
 
         self._encoding = encoding
+
+    @property
+    def match(self):
+        """Get or set the matching strategy to be used for generation.
+
+        Query for or attempt to set the program matching strategy to be used
+        when generating source for the scanner and/or parser. Possible options
+        include:
+          'shortest': return a match immediately upon detection.
+          'longest': return the longest (maximal munch) match.
+
+        Args:
+          match (str): the matching strategy to use when generating code.
+
+        Return:
+          str: 'longest' if not set (default), otherwise the last set match.
+
+        Raises:
+          TypeError if match is not if type string
+          ValueError if match is empty
+          ValueError if given match is not recognized
+        """
+        return self._match
+
+    @match.setter
+    def match(self, match):
+        if not isinstance(match, str):
+            raise TypeError('match must be of type string')
+
+        if not match:
+            raise ValueError('match must be non empty')
+
+        if match not in ('shortest', 'longest'):
+            raise ValueError('match type not recognized')
+
+        self._match = match
 
     def _translate(self):
         """The method which subclasses must override to construct the output.

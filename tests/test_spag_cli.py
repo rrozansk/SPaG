@@ -144,11 +144,22 @@ class TestSPaGCLI:
 
     @staticmethod
     @pytest.mark.xfail
-    def test_invalid_encoding(script_runner, language):
+    def test_invalid_encoding(script_runner):
         """
         Ensure an invalid encoding throws an error.
         """
         ret = script_runner.run('spag_cli', '-g', 'c', '-f', '-e', 'fast')
+        assert ret.returncode == 1
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    @pytest.mark.xfail
+    def test_invalid_match(script_runner):
+        """
+        Ensure an invalid match throws an error.
+        """
+        ret = script_runner.run('spag_cli', '-g', 'c', '-f', '-m', 'fast')
         assert ret.returncode == 1
         assert ret.stderr == ''
         assert ret.stdout == ''
@@ -197,6 +208,25 @@ class TestSPaGCLI:
         with open('.spagrc', 'w') as rcfile:
             rcfile.write('''[SPaG]
                             encoding=fast
+                            force=False
+                            generate=c
+                            parsers=examples/Lisp/parser.json
+                            scanners=examples/Lisp/scanner.json
+                          ''')
+        ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 1
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_invalid_conf_match(script_runner):
+        """
+        Ensure invalid configuration match throws the proper error.
+        """
+        with open('.spagrc', 'w') as rcfile:
+            rcfile.write('''[SPaG]
+                            match=fast
+                            encoding=direct
                             force=False
                             generate=c
                             parsers=examples/Lisp/parser.json

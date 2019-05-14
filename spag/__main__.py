@@ -108,6 +108,9 @@ class CollectConfiguration(Action):
             if setting == 'encoding':
                 if value not in ('table', 'direct'):
                     raise ValueError('invalid encoding value')
+            elif setting == 'match':
+                if value not in ('longest', 'shortest'):
+                    raise ValueError('invalid match value')
             elif setting == 'generate':
                 value = [lang.strip() for lang in value.split(',')]
                 if len(value) == 1 and not value[0]:  # Empty setting check
@@ -154,6 +157,10 @@ configuration={0}
 # Choose the scanner/parser source encoding method. options include: 'table'
 # or 'direct'.
 encoding=direct
+
+# Choose the scanner/parser source matching method. options include: 'longest'
+# or 'shortest'.
+match=longest
 
 # Overwrite pre-exisintg files if they exist. Possible values include 'True' or
 # 'False'.
@@ -239,6 +246,10 @@ def cli_program():
     cli.add_argument('-h', '--help', action='store_true',
                      help='Show this help message and exit. The default behavior if '
                           'no arguments are supplied.')
+    cli.add_argument('-m', '--match', type=str, default='longest',
+                     choices=('longest', 'shortest'),
+                     help='Source program text matching strategy to use in the '
+                     'generated program.')
     cli.add_argument('-o', '--output', action='store', type=str, default='out',
                      metavar='base-filename',
                      help='Base-filename to derive generated output filename(s).')
@@ -337,6 +348,7 @@ def main():
         target = generator.__name__
         generator = generator()
         generator.encoding = args['encoding']
+        generator.match = args['match']
         generator.filename = args['output']
         generators.append((target, generator))
 

@@ -220,6 +220,74 @@ class TestGenerator:
         assert generator.encoding == 'direct', 'Invalid encoding set/retrieved'
 
     @staticmethod
+    def test_matching_default():
+        """
+        Ensure default matching retrieval works as expected upon successful
+        creation of a Generator object.
+        """
+        generator = Generator()
+        assert generator.match == 'longest', 'Invalid default match retrieved'
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Match not of type string.',
+        raises=TypeError,
+    )
+    def test_match_invalid():
+        """
+        Ensure a TypeError is raised when overwriting the Generator object's
+        match property if it is not of type string.
+        """
+        generator = Generator()
+        generator.match = None
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Match must be a non empty string.',
+        raises=ValueError,
+    )
+    def test_match_empty():
+        """
+        Ensure a ValueError is raised when overwriting the Generator object's
+        match property if it is an empty string.
+        """
+        generator = Generator()
+        generator.match = ''
+
+    @staticmethod
+    @pytest.mark.xfail(
+        reason='Match value not recognized.',
+        raises=ValueError,
+    )
+    def test_match_unrecognized():
+        """
+        Ensure a ValueError is raised when overwriting the Generator object's
+        match property if given an unrecognized string value.
+        """
+        generator = Generator()
+        generator.match = 'foo'
+
+    @staticmethod
+    def test_match_longest():
+        """
+        Ensure overwriting the match property works as expected when given
+        proper input as the string 'longest'.
+        """
+        generator = Generator()
+        generator.match = 'longest'
+        assert generator.match == 'longest', 'Invalid match set/retrieved'
+
+    @staticmethod
+    def test_match_shortest():
+        """
+        Ensure overwriting the match property works as expected when given
+        proper input as the string 'shortest'.
+        """
+        generator = Generator()
+        generator.match = 'shortest'
+        assert generator.match == 'shortest', 'Invalid match set/retrieved'
+
+    @staticmethod
     @pytest.mark.xfail(
         reason='Scanner or parser required for generation.',
         raises=ValueError,
