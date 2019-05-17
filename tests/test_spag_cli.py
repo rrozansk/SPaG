@@ -2,7 +2,7 @@
 Testing for SPaG CLI script located in spag/__main__.py
 """
 import pytest
-#from pkg_resources import resource_string
+from pkg_resources import Environment
 
 
 class TestSPaGCLI:
@@ -10,15 +10,18 @@ class TestSPaGCLI:
     A test suite for testing the SPaG CLI script.
     """
 
-    #@staticmethod
-    #def test_liscence_distro():
-    #    """
-    #    Ensure the LISCENCE is in the distribution.
-    #    """
-    #    pkg_license_output = resource_string('spag', 'LICENSE.txt').decode('ascii')
-    #    with open('LICENSE.txt') as fd:
-    #        git_license_output = fd.read()
-    #    assert git_license_output == pkg_license_output
+    @staticmethod
+    def test_liscence_distro():
+        """
+        Ensure the LISCENCE is in the distribution.
+        """
+        spag = Environment().__getitem__('spag')[0]
+        assert spag.has_metadata('LICENSE.txt')
+        pkg_license_output = spag.get_metadata('LICENSE.txt')
+        git_license_output = ''
+        with open('LICENSE.txt') as fd:
+            git_license_output = fd.read()
+        assert git_license_output == pkg_license_output
 
     @staticmethod
     def test_version(script_runner):
@@ -344,6 +347,19 @@ class TestSPaGCLI:
                             scanners=examples/Lisp/scanner.json
                           ''')
         ret = script_runner.run('spag_cli', '-c', '.spagrc')
+        assert ret.returncode == 0
+        assert ret.stderr == ''
+        assert ret.stdout == ''
+
+    @staticmethod
+    def test_generate_force(script_runner):
+        """
+        Ensure generating again overwrite files if force flag is set.
+        """
+        ret = script_runner.run('spag_cli',
+                                '-p', 'examples/Lisp/parser.json',
+                                '-s', 'examples/Lisp/scanner.json',
+                                '-g', 'c', '-f')
         assert ret.returncode == 0
         assert ret.stderr == ''
         assert ret.stdout == ''
