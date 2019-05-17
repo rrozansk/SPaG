@@ -21,6 +21,23 @@ class TestGenerator:
         assert generator is not None, 'No Generator produced'
 
     @staticmethod
+    @pytest.mark.parametrize('scanner', [
+        None,
+        RegularGrammar('test', {'foo': ['b', 'a', 'r']}),
+        pytest.param('invalid_scanner', marks=pytest.mark.xfail(
+            reason='Scanner not of type RegularGrammar or None.',
+            raises=TypeError,
+        )),
+    ])
+    def test_scanner(scanner):
+        """
+        Ensure the Generator object's scanner property behaves as expected.
+        """
+        generator = Generator()
+        generator.scanner = scanner
+        assert generator.scanner is scanner, 'Invalid scanner set/retrieved'
+
+    @staticmethod
     def test_scanner_default():
         """
         Ensure default scanner retrieval works as expected upon successful
@@ -30,38 +47,21 @@ class TestGenerator:
         assert generator.scanner is None, 'Invalid scanner default retrieved'
 
     @staticmethod
-    @pytest.mark.xfail(
-        reason='Scanner not of type RegularGrammar or None.',
-        raises=TypeError,
-    )
-    def test_scanner_invalid():
+    @pytest.mark.parametrize('parser', [
+        None,
+        ContextFreeGrammar('test', {'S': [['a']]}, 'S'),
+        pytest.param('invalid_parser', marks=pytest.mark.xfail(
+            reason='Parser not of type ContextFreeGrammar or None.',
+            raises=TypeError,
+        )),
+    ])
+    def test_parser(parser):
         """
-        Ensure a TypeError is raised when overwriting the Generator object's
-        scanner property if it is not of type RegularGrammar or None.
-        """
-        generator = Generator()
-        generator.scanner = 'invalid_scanner'
-
-    @staticmethod
-    def test_scanner_valid():
-        """
-        Ensure overwriting the scanner property works as expected when given
-        proper input as a RegularGrammar.
-        """
-        scanner = RegularGrammar('test', {'foo': ['b', 'a', 'r']})
-        generator = Generator()
-        generator.scanner = scanner
-        assert generator.scanner is scanner, 'Invalid scanner set/retrieved'
-
-    @staticmethod
-    def test_scanner_none():
-        """
-        Ensure overwriting the scanner property works as expected when given
-        proper input as None.
+        Ensure the Generator object's parser property behaves as expected.
         """
         generator = Generator()
-        generator.scanner = None
-        assert generator.scanner is None, 'Invalid scanner set/retrieved'
+        generator.parser = parser
+        assert generator.parser is parser, 'Invalid parser set/retrieved'
 
     @staticmethod
     def test_parser_default():
@@ -73,38 +73,24 @@ class TestGenerator:
         assert generator.parser is None, 'Invalid parser default retrieved'
 
     @staticmethod
-    @pytest.mark.xfail(
-        reason='Parser not of type ContextFreeGrammar or None.',
-        raises=TypeError,
-    )
-    def test_parser_invalid():
+    @pytest.mark.parametrize('filename', [
+        'foobar',
+        pytest.param(None, marks=pytest.mark.xfail(
+            reason='Filename not of type string.',
+            raises=TypeError,
+        )),
+        pytest.param('', marks=pytest.mark.xfail(
+            reason='Filename must be a non empty string.',
+            raises=ValueError,
+        )),
+    ])
+    def test_filename(filename):
         """
-        Ensure a TypeError is raised when overwriting the Generator's object
-        parser property if it is not of type ContextFreeGrammar or None.
-        """
-        generator = Generator()
-        generator.parser = 'invalid_parser'
-
-    @staticmethod
-    def test_parser_valid():
-        """
-        Ensure overwriting the paser property works as expected when given
-        proper input as a ContextFreeGrammar.
-        """
-        parser = ContextFreeGrammar('test', {'S': [['a']]}, 'S')
-        generator = Generator()
-        generator.parser = parser
-        assert generator.parser is parser, 'Invalid parser set/retrieved'
-
-    @staticmethod
-    def test_parser_none():
-        """
-        Ensure overwriting the paser property works as expected when given
-        proper input as None.
+        Ensure the Generator object's filename property behaves as expected.
         """
         generator = Generator()
-        generator.parser = None
-        assert generator.parser is None, 'Invalid parser set/retrieved'
+        generator.filename = filename
+        assert generator.filename == filename, 'Invalid filename set/retrieved'
 
     @staticmethod
     def test_filename_default():
@@ -116,40 +102,29 @@ class TestGenerator:
         assert generator.filename == 'out', 'Invalid default filename retrieved'
 
     @staticmethod
-    @pytest.mark.xfail(
-        reason='Filename not of type string.',
-        raises=TypeError,
-    )
-    def test_filename_invalid():
+    @pytest.mark.parametrize('encoding', [
+        'table',
+        'direct',
+        pytest.param(None, marks=pytest.mark.xfail(
+            reason='Encoding not of type string.',
+            raises=TypeError,
+        )),
+        pytest.param('', marks=pytest.mark.xfail(
+            reason='Encoding must be a non empty string.',
+            raises=ValueError,
+        )),
+        pytest.param('foo', marks=pytest.mark.xfail(
+            reason='Encoding value not recognized.',
+            raises=ValueError,
+        )),
+    ])
+    def test_encoding(encoding):
         """
-        Ensure a TypeError is raised when overwriting the Generator object's
-        filename property if it is not of type string.
-        """
-        generator = Generator()
-        generator.filename = None
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Filename must be a non empty string.',
-        raises=ValueError,
-    )
-    def test_filename_empty():
-        """
-        Ensure a ValueError is raised when overwriting the Generator object's
-        filename property if it is an empty string.
+        Ensure the Generator object's encoding property behaves as expected.
         """
         generator = Generator()
-        generator.filename = ''
-
-    @staticmethod
-    def test_filename_valid():
-        """
-        Ensure overwriting the filename property works as expected when given
-        proper input as a non empty string.
-        """
-        generator = Generator()
-        generator.filename = 'foobar'
-        assert generator.filename == 'foobar', 'Invalid filename set/retrieved'
+        generator.encoding = encoding
+        assert generator.encoding == encoding, 'Invalid encoding set/retrieved'
 
     @staticmethod
     def test_encoding_default():
@@ -161,63 +136,30 @@ class TestGenerator:
         assert generator.encoding == 'direct', 'Invalid default encoding retrieved'
 
     @staticmethod
-    @pytest.mark.xfail(
-        reason='Encoding not of type string.',
-        raises=TypeError,
-    )
-    def test_encoding_invalid():
-        """
-        Ensure a TypeError is raised when overwriting the Generator object's
-        encoding property if it is not of type string.
-        """
-        generator = Generator()
-        generator.encoding = None
+    @pytest.mark.parametrize('match', [
+        'longest',
+        'shortest',
+        pytest.param(None, marks=pytest.mark.xfail(
+            reason='Match not of type string.',
+            raises=TypeError,
+        )),
+        pytest.param('', marks=pytest.mark.xfail(
+            reason='Match must be a non empty string.',
+            raises=ValueError,
+        )),
 
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Encoding must be a non empty string.',
-        raises=ValueError,
-    )
-    def test_encoding_empty():
+        pytest.param('foo', marks=pytest.mark.xfail(
+            reason='Match value not recognized.',
+            raises=ValueError,
+        )),
+    ])
+    def test_match(match):
         """
-        Ensure a ValueError is raised when overwriting the Generator object's
-        encoding property if it is an empty string.
-        """
-        generator = Generator()
-        generator.encoding = ''
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Encoding value not recognized.',
-        raises=ValueError,
-    )
-    def test_encoding_unrecognized():
-        """
-        Ensure a ValueError is raised when overwriting the Generator object's
-        encoding property if given an unrecognized string value.
+        Ensure the Generator object's match property behaves as expected.
         """
         generator = Generator()
-        generator.encoding = 'foo'
-
-    @staticmethod
-    def test_encoding_table():
-        """
-        Ensure overwriting the encoding property works as expected when given
-        proper input as the string 'table'.
-        """
-        generator = Generator()
-        generator.encoding = 'table'
-        assert generator.encoding == 'table', 'Invalid encoding set/retrieved'
-
-    @staticmethod
-    def test_encoding_direct():
-        """
-        Ensure overwriting the encoding property works as expected when given
-        proper input as the string 'direct'.
-        """
-        generator = Generator()
-        generator.encoding = 'direct'
-        assert generator.encoding == 'direct', 'Invalid encoding set/retrieved'
+        generator.match = match
+        assert generator.match == match, 'Invalid matching-strategy set/retrieval'
 
     @staticmethod
     def test_matching_default():
@@ -227,65 +169,6 @@ class TestGenerator:
         """
         generator = Generator()
         assert generator.match == 'longest', 'Invalid default match retrieved'
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Match not of type string.',
-        raises=TypeError,
-    )
-    def test_match_invalid():
-        """
-        Ensure a TypeError is raised when overwriting the Generator object's
-        match property if it is not of type string.
-        """
-        generator = Generator()
-        generator.match = None
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Match must be a non empty string.',
-        raises=ValueError,
-    )
-    def test_match_empty():
-        """
-        Ensure a ValueError is raised when overwriting the Generator object's
-        match property if it is an empty string.
-        """
-        generator = Generator()
-        generator.match = ''
-
-    @staticmethod
-    @pytest.mark.xfail(
-        reason='Match value not recognized.',
-        raises=ValueError,
-    )
-    def test_match_unrecognized():
-        """
-        Ensure a ValueError is raised when overwriting the Generator object's
-        match property if given an unrecognized string value.
-        """
-        generator = Generator()
-        generator.match = 'foo'
-
-    @staticmethod
-    def test_match_longest():
-        """
-        Ensure overwriting the match property works as expected when given
-        proper input as the string 'longest'.
-        """
-        generator = Generator()
-        generator.match = 'longest'
-        assert generator.match == 'longest', 'Invalid match set/retrieved'
-
-    @staticmethod
-    def test_match_shortest():
-        """
-        Ensure overwriting the match property works as expected when given
-        proper input as the string 'shortest'.
-        """
-        generator = Generator()
-        generator.match = 'shortest'
-        assert generator.match == 'shortest', 'Invalid match set/retrieved'
 
     @staticmethod
     @pytest.mark.xfail(
