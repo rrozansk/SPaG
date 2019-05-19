@@ -96,6 +96,7 @@ class TestSPaGCLI:
         "examples/INI/scanner.json",
         "examples/JSON/scanner.json",
         "examples/Lisp/scanner.json",
+        "examples/WordCount/scanner.json",
         pytest.param("examples/Foobar/hukarz.json", marks=pytest.mark.xfail),
     ])
     def test_scanner_examples(script_runner, specification):
@@ -113,6 +114,7 @@ class TestSPaGCLI:
         "examples/INI/parser.json",
         "examples/JSON/parser.json",
         "examples/Lisp/parser.json",
+        "examples/WordCount/parser.json",
         pytest.param("examples/Foobar/hukarz.json", marks=pytest.mark.xfail),
     ])
     def test_parser_examples(script_runner, specification):

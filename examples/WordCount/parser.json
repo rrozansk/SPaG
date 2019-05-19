@@ -1,0 +1,24 @@
+{
+    "name": "WordCount",
+    "productions": {
+        "input": [
+            [
+                "word"
+            ],
+            [
+                "newline"
+            ],
+            [
+                "space"
+            ]
+        ],
+        "inputs": [
+            [
+                "input",
+                "inputs"
+            ],
+            []
+        ]
+    },
+    "start": "inputs"
+}
