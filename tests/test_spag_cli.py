@@ -93,6 +93,7 @@ class TestSPaGCLI:
 
     @staticmethod
     @pytest.mark.parametrize("specification", [
+        "examples/Calculator/scanner.json",
         "examples/INI/scanner.json",
         "examples/JSON/scanner.json",
         "examples/Lisp/scanner.json",
@@ -111,6 +112,7 @@ class TestSPaGCLI:
 
     @staticmethod
     @pytest.mark.parametrize("specification", [
+        "examples/Calculator/parser.json",
         "examples/INI/parser.json",
         "examples/JSON/parser.json",
         "examples/Lisp/parser.json",

@@ -1,0 +1,55 @@
+{
+    "name": "Calculator",
+    "productions": {
+        "expressions": [
+            [
+                "term",
+                "terms"
+            ]
+        ],
+        "terms": [
+            [
+                "add",
+                "term"
+            ],
+            [
+                "sub",
+                "term"
+            ],
+            []
+        ],
+        "term": [
+            [
+                "factor",
+                "factors"
+            ]
+        ],
+        "factors": [
+            [
+                "mul",
+                "factor"
+            ],
+            [
+                "div",
+                "factor"
+            ],
+            []
+        ],
+        "factor": [
+            [
+                "number"
+            ],
+            [
+                "parens"
+            ]
+        ],
+        "parens": [
+            [
+                "group-start",
+                "expressions",
+                "group-end"
+            ]
+        ]
+    },
+    "start": "expressions"
+}
