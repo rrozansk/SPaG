@@ -65,7 +65,7 @@ class RegularGrammar:
             * ()     (grouping -> disambiguation -> any expression)
             * {n}    (interval -> repitition -> exactly n)
             * {n,0}  (interval -> repitition -> minimum n)
-            * {n,m}  (interval -> repitition -> between n and m)
+            * {n,m}  (interval -> repitition -> between n (>= 0) and m)
 
         Other things to keep in mind (potential gotcha's):
 
@@ -105,16 +105,36 @@ class RegularGrammar:
           ValueError: if token identifier/type is empty
           TypeError: if token pattern is not a list
           ValueError: if token pattern is empty
-          TypeError: if token elem is not a string or _RegularGrammarOperators.
+          TypeError: if token elem is not a string, int, or _RegularGrammarOperators.
           ValueError: if token string list item is not length 1.
+          ValueError: Recursive interval expressions not valid.
+          ValueError: Undetected start of interval expression.
+          ValueError: Empty interval expression.
+          ValueError: Invalid interval, min must be less than max.
+          ValueError: Negative interval.
+          ValueError: Invalid group for interval expression.
+          ValueError: Feature limited to character/group expressions.
+          TypeError: Interval expression characters must be integers.
+          ValueError: Only two numbers required for interval expressions.
+          TypeError: Integers only permitted inside interval expressions.
+          ValueError: Undetected end of interval expression.
+          ValueError: if a recursive class/range is specified.
           ValueError: if character range has no starting bracket.
           ValueError: if character range has no ending bracket.
+          ValueError: if a class/range is empty.
+          ValueError: if character negation is outside a pair of brackets.
+          ValueError: if character double negation is attempted.
+          ValueError: if character range is outside a pair of brackets.
+          ValueError: if character range has no starting character specified.
+          ValueError: if character range is immediately followed by the same.
+          ValueError: if an operator other than range or negation appears in the range/class.
+          ValueError: if character range has no ending character specified.
           ValueError: if left parenthesis are unbalanaced.
           ValueError: if right parenthesis are unbalanaced.
-          ValueError: if concatentation is supplied with an improper arguments
-          ValueError: if alternation is supplied with an improper arguments
-          ValueError: if kleene star is supplied with an improper arguments
-          ValueError: if kleene plus is supplied with an improper arguments
+          ValueError: if concatentation is supplied with improper arguments
+          ValueError: if alternation is supplied with improper arguments
+          ValueError: if kleene star is supplied with improper arguments
+          ValueError: if kleene plus is supplied with improper arguments
           ValueError: if choice is supplied with an improper arguments
           ValueError: if the input expression is invalid
         """
@@ -446,37 +466,36 @@ class RegularGrammar:
               with all character classes and ranges elimintated.
 
         Raises:
+          ValueError: if a recursive class/range is specified.
           ValueError: if character range has no starting bracket.
           ValueError: if character range has no ending bracket.
-          ValueError: if a recursive class/range is specified.
           ValueError: if a class/range is empty.
           ValueError: if character negation is outside a pair of brackets.
-          ValueError: if character negation is not first in a pair of brackets.
-          ValueError: if character negation is immediately followed by the same.
+          ValueError: if character double negation is attempted.
           ValueError: if character range is outside a pair of brackets.
           ValueError: if character range has no starting character specified.
-          ValueError: if character range has no ending character specified.
           ValueError: if character range is immediately followed by the same.
           ValueError: if an operator other than range or negation appears in the range/class.
+          ValueError: if character range has no ending character specified.
         """
         output, literals = [], []
         expand, negation, prange = False, False, False
         for char in expr:
             if char is RegularGrammar.left_class():
                 if expand:
-                    raise ValueError('Error: Recursive class/range not allowed')
+                    raise ValueError('Recursive class/range not allowed')
                 expand = True
             elif char is RegularGrammar.right_class():
                 if not expand:
-                    raise ValueError('Error: Invalid character class/range; no start')
+                    raise ValueError('Invalid character class/range; no start')
                 if prange:
-                    raise ValueError('Error: Character range no specified end character')
+                    raise ValueError('Character range no specified end character')
                 expand = False
                 if negation:
                     negation = False
                     literals = set(printable) - set(literals)
                 if not literals:
-                    raise ValueError('Error: Empty character range/class not allowed')
+                    raise ValueError('Empty character range/class not allowed')
                 output.append(RegularGrammar.left_group())
                 for literal in literals:
                     output.append(literal)
@@ -485,21 +504,21 @@ class RegularGrammar:
                 literals = []
             elif char is RegularGrammar.character_negation():
                 if not expand:
-                    raise ValueError('Error: Character negation only allow in character class/range')
+                    raise ValueError('Character negation only allow in character class/range')
                 if negation:
-                    raise ValueError('Error: Character double negation not allowed')
+                    raise ValueError('Character double negation not allowed')
                 negation = True
             elif char is RegularGrammar.character_range():
                 if not expand:
-                    raise ValueError('Error: Character range only allow in character range')
+                    raise ValueError('Character range only allow in character range')
                 if not literals:
-                    raise ValueError('Error: Character range no specified starting character')
+                    raise ValueError('Character range no specified starting character')
                 if prange:
-                    raise ValueError('Error: Character double range not allowed')
+                    raise ValueError('Character double range not allowed')
                 prange = True
             elif expand:
                 if isinstance(char, _RegularGrammarOperators):
-                    raise ValueError('Error: Operator not allowed in character range/class')
+                    raise ValueError('Operator not allowed in character range/class')
                 if prange:
                     prange = False
                     _char = literals.pop()
@@ -509,7 +528,7 @@ class RegularGrammar:
             else:
                 output.append(char)
         if expand:
-            raise ValueError('Error: character class/range end not specified')
+            raise ValueError('character class/range end not specified')
         return output
 
     @staticmethod
@@ -533,8 +552,11 @@ class RegularGrammar:
           ValueError: Empty interval expression.
           ValueError: Invalid interval, min must be less than max.
           ValueError: Negative interval.
+          ValueError: Invalid group for interval expression.
+          ValueError: Feature limited to character/group expressions.
           TypeError: Interval expression characters must be integers.
           ValueError: Only two numbers required for interval expressions.
+          TypeError: Integers only permitted inside interval expressions.
           ValueError: Undetected end of interval expression.
         """
         output = []
@@ -736,10 +758,10 @@ class RegularGrammar:
           dict[str, str]: map of identifier/type to final state, G
 
         Raises:
-          ValueError: if concatentation is supplied with an improper arguments
-          ValueError: if alternation is supplied with an improper arguments
-          ValueError: if kleene star is supplied with an improper arguments
-          ValueError: if kleene plus is supplied with an improper arguments
+          ValueError: if concatentation is supplied with improper arguments
+          ValueError: if alternation is supplied with improper arguments
+          ValueError: if kleene star is supplied with improper arguments
+          ValueError: if kleene plus is supplied with improper arguments
           ValueError: if choice is supplied with an improper arguments
           ValueError: if the input expression is invalid
         """

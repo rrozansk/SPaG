@@ -1,6 +1,6 @@
 SPaG (Scanner, Parser, and Generator)
 ================================================================================
-[![MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/rrozansk/SPaG/blob/master/LICENSE.txt) ![COV](https://img.shields.io/badge/Coverage-99%25-green.svg) ![VER](https://img.shields.io/badge/Version-1.0.0a0-yellow.svg)
+[![MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/rrozansk/SPaG/blob/master/LICENSE.txt) ![COV](https://img.shields.io/badge/Coverage-99%25-green.svg) [![VER](https://img.shields.io/badge/Version-1.0.0a0-yellow.svg)](https://github.com/rrozansk/SPaG/blob/master/setup.py#L14)
 
   - [Introduction](#introduction)
   - [Installation](#installation)
@@ -29,34 +29,35 @@ formal and well defined. Thorough table driven testing is also utilized to
 ensure correctness of implementation. The program generator(s) comprise the
 extensible portion of the framework allowing new targeted languages to be easily
 [pluged-in](#generators). Included in the framework is a script which lightly
-wraps the core library functionality to accepts user input file(s) to help drive
-the compilation/generation process from the command line. The
+wraps the core library functionality to accept user input file(s) which help
+drive the compilation/generation process from the command line. The
 [overview](#overview) below describes in detail what each component sets out to
 do, how it accomplished those intended goals, and the accepted input.
 
 # Installation
 
 Installation is supported through multiple methods, all of which are listed
-below. Any required dependencies along with the steps needed for a proper install
-are listed. Installation installs the module containing scanner
+below. Any required dependencies along with the steps needed for a proper
+install are listed. Installation installs the module containing scanner
 (RegularGrammar), parser (ContextFreeGrammar), and generator (Generator) objects
-as well as a command line script for easily generating scanners and/or parsers
-from input specification(s) and optional configuration file. It also installs
-any supported core language [generators](#status) which may grow over time.
+as well as a command line script (spag_cli) for easily generating scanners
+and/or parsers from input specification(s) and optional configuration file. It
+also installs any supported core language [generators](#status) which may grow
+over time.
 
 ## Source
 
-Install from source for the latest up to date code. This may include unreleased
-bug fixes, feature extensions, or newly supported language child generators.
-Since the code is going to built from source it is generally a good idea to also
-test it before installation or package distribution. For this prupose a Makefile
-is included to automate testing, linting, virtual environment
-installation/cleanup, etc. While the framework is pure, dependent free, Python
-the testing is not and some prerequisites are required. All required python
-packages are listed in the
+Install directly from the source code. This may include unreleased bug fixes,
+feature extensions, or newly supported language child generators depending on
+which git commit is to be built. For this reason it is a good idea to test the
+commit you wish to build from, ensuring it is a proper build candidate. To help
+with this process Makefile recipes are included to automate testing, linting,
+virtual environment installation/cleanup, etc. However, note that while the
+framework is pure, dependent free, Python the testing is not and requires
+prerequisites. All required python packages are listed in the
 [requirments](https://github.com/rrozansk/SPaG/blob/master/requirements.txt).
-However, since these packages are installed in a virtual environment with the
-help of Make the only requirements the user needs to worry are those which must
+Since these packages are installed in a virtual environment with the help of
+Make the only requirements the user needs to worry about are those which must
 be installed on the machine itself and include:
   * git (>= v2.1.3)
   * make (>= v4.1)
@@ -143,7 +144,7 @@ guidelines:
       * ()     (grouping -> disambiguation -> any expression)
       * {n}    (interval -> repitition -> exactly n)
       * {n,0}  (interval -> repitition -> minimum n)
-      * {n,m}  (interval -> repitition -> between n and m)
+      * {n,m}  (interval -> repitition -> between n (>= 0) and m)
 
   * other things to keep in mind (potential gotcha's):
       * full unicode input is supported
@@ -186,12 +187,12 @@ backtracking.
 
 ## Generator
 
-The base generator is the object which all generators must inherit from. It is
-responsible for allowing easy getting and setting of the same set of options
-across all generators as well as providing basic protections against bad
-option combinations, program input, and generator output. It also allows easy
-reuse of language generators to compile many specifications into the same output
-language while allowing easy configuration option changes between generation.
+The base generator is an object which all generators must inherit from. It is
+responsible for allowing easy configuration of options across all generators as
+well as providing basic protections against bad option combinations, program
+input, and generator output. It also allows easy reuse of language generators to
+compile many specifications into the same output language while allowing easy
+configuration option changes between generation.
 
 # Generators
 
@@ -206,7 +207,7 @@ However, this is not always the case since it is possible to write other
 generators, say for example [cowsay](https://en.wikipedia.org/wiki/Cowsay). This
 illustrates the fact that the generators comprise the extensible portion of the
 package. This plug-in segment of SPaG will grow over time to subsume more
-generators into the core implementation. These implementation will be for
+generators into the core implementation. These implementations will be for
 programming languages only. While the newly subsumed generators will be
 immediately available if building from source, they will only be only available
 in the pip repository as a newer release of the SPaG package. Below is the
@@ -263,13 +264,12 @@ $ spag_cli -c .spagrc # Provide flag(s) for overwriting values here.
 
 Creating a new generator is extremely simple, as it only requires the addition
 of a single file. This file must contain a class definition following the proper
-naming conventions set forth for the new output language to be picked up by the
-pacakge script. Furthermore, all python package prerequisites are listed in the
-[requirments](https://github.com/rrozansk/SPaG/blob/master/requirements.txt)
-file. The below code block serves as a template for createing new generators
-which should be placed under spag/generators. The filename (denoted between
-curly brackets in the template below) should be named after the language being
-compiled to. Notice should also be taken between the capital and lowercase 'F'.
+naming conventions set forth for the new output language to be importable up by
+the package script. The below code block serves as a template for creating new
+generators which should be placed under spag/generators. The filename (denoted
+between curly brackets in the template below) should be named after the language
+being compiled to. Notice should also be taken between the capital and lowercase
+'F'.
 
 ```python
 """
