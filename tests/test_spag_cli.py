@@ -1,8 +1,10 @@
 """
 Testing for SPaG CLI script located in spag/__main__.py
 """
+from json import dumps
 import pytest
 from pkg_resources import Environment
+from spag.__main__ import SPaGEncoder
 
 
 class TestSPaGCLI:
@@ -105,7 +107,7 @@ class TestSPaGCLI:
         Ensure all scanners under the examples directory are sucessfully run
         through SPaG.
         """
-        ret = script_runner.run('spag_cli', '-s', specification, '-v', '-t')
+        ret = script_runner.run('spag_cli', '-s', specification, '-v', '-d', '-t')
         assert ret.returncode == 0
         assert ret.stderr == ''
         assert ret.stdout == ''
@@ -124,7 +126,7 @@ class TestSPaGCLI:
         Ensure all parsers under the examples directory are sucessfully run
         through SPaG.
         """
-        ret = script_runner.run('spag_cli', '-p', specification, '-v', '-t')
+        ret = script_runner.run('spag_cli', '-p', specification, '-v', '-d', '-t')
         assert ret.returncode == 0
         assert ret.stderr == ''
         assert ret.stdout == ''
@@ -346,6 +348,7 @@ class TestSPaGCLI:
             rcfile.write('''[SPaG]
                             force=False
                             verbose=True
+                            debug=True
                             generate=c
                             parsers=examples/Lisp/parser.json
                             scanners=examples/Lisp/scanner.json
@@ -403,3 +406,12 @@ class TestSPaGCLI:
         assert ret.returncode == 3
         assert ret.stderr == ''
         assert ret.stdout == ''
+
+    @staticmethod
+    @pytest.mark.xfail
+    def test_json_spag_encoder():
+        """
+        Ensure the SPaGEncoder correctly throws an error if the type is not
+        recognized.
+        """
+        dumps(set(), indent='  ', cls=SPaGEncoder)

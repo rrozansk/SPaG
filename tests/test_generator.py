@@ -2,9 +2,9 @@
 Testing for Generator objects located in src/generator.py
 """
 import pytest
-from spag.scanner import RegularGrammar
-from spag.parser import ContextFreeGrammar
 from spag.generator import Generator
+from spag.parser import ContextFreeGrammar
+from spag.scanner import RegularGrammar
 
 
 class TestGenerator:

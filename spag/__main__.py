@@ -6,11 +6,12 @@ for the generator(s) of interest.
 """
 from argparse import ArgumentParser, Action
 from configparser import ConfigParser
-from enum import IntEnum, unique
-from json import loads
+from enum import Enum, IntEnum, unique
+from json import dumps, JSONEncoder, loads
 from os.path import isfile
 from sys import argv, stdout
 from time import time
+from spag.generator import Generator
 from spag.generators import __all__ as languages
 from spag.parser import ContextFreeGrammar
 from spag.scanner import RegularGrammar
@@ -29,6 +30,55 @@ class Exit(IntEnum):
     INVALID_SCANNER = 2 # Invalid scanner specification.
     INVALID_PARSER = 3  # Invalid parser specification.
     FAIL_GENERATE = 4   # Program generation failed.
+
+# pylint: disable=method-hidden
+class SPaGEncoder(JSONEncoder):
+    """Encoder to correctly output SPaG objects when marshaling to JSON."""
+
+    def default(self, o):
+        """Serialize SPaG objects, for all other objects defer to the super."""
+        if isinstance(o, RegularGrammar):
+            return {
+                "name": o.name,
+                "expressions": o.expressions,
+                "states": list(o.states),
+                "alphabet": list(o.alphabet),
+                "transitions": list(o.transitions),
+                "start": o.start,
+                "accepting": list(o.accepting),
+                "types": {k: list(v) for k, v in o.types.items()}
+            }
+        if isinstance(o, ContextFreeGrammar):
+            transitions, rows, cols = o.table
+            transitions = [[list(s) for s in los] for los in transitions]
+            rows = {str(k): v for k, v in rows.items()}
+            cols = {str(k): v for k, v in cols.items()}
+            return {
+                "name": o.name,
+                "start": o.start,
+                "terminals": list(o.terminals),
+                "nonterminals": list(o.nonterminals),
+                "first": {k: list(v) for k, v in o.first.items()},
+                "follow": {k: list(v) for k, v in o.follow.items()},
+                "rules": [list(rule) for rule in o.rules],
+                "table": {
+                    "rows": rows,
+                    "columns": cols,
+                    "transitions": transitions
+                }
+            }
+        if isinstance(o, Generator):
+            return {
+                "scanner": o.scanner.name if o.scanner else None,
+                "parser": o.parser.name if o.parser else None,
+                "filename": o.filename,
+                "encoding": o.encoding,
+                "match": o.match
+            }
+        if isinstance(o, Enum):
+            return str(o)
+        return JSONEncoder.default(self, o)
+# pylint: enable=method-hidden
 
 class DynamicGeneratorImport(Action):
     """Dynamically import the generator(s) required for source output."""
@@ -135,7 +185,7 @@ class CollectConfiguration(Action):
                         if setting == 'scanners':
                             specifications.append(CollectScannerSpecifications.collect(input_specification))
                 value = specifications
-            elif setting in ('force', 'time', 'verbose'):
+            elif setting in ('force', 'time', 'verbose', 'debug'):
                 value = CollectConfiguration.bool(str(value))
             elif setting in ('configuration', 'output'):
                 pass
@@ -195,6 +245,10 @@ time=True
 
 # Output extra messages when run. Possible values include 'True' or 'False'.
 verbose=True
+
+# Output the instantiated scanner, parser, and generator object(s) as JSON
+# to ensure processing of the input specifications went as expected.
+debug=False
 '''.format(values))
         exit(Exit.SUCCESS)
 
@@ -232,6 +286,10 @@ def cli_program():
     cli.add_argument('-c', '--configuration', type=open, metavar='rcfile',
                      action=CollectConfiguration,
                      help='Collect arguments from rcfile instead of command line.')
+    cli.add_argument('-d', '--debug', action='store_true',
+                     help='Dump the instantiated scanner, parser, and generator '
+                          'into a JSON object to inspect/ensure the input was '
+                          'converted and processed as expected')
     cli.add_argument('-e', '--encoding', type=str, default='direct',
                      choices=('table', 'direct'),
                      help='Source program encoding to use for the generated output.')
@@ -317,6 +375,9 @@ def main():
         if args['verbose']:
             stdout.write('done\n')
             stdout.flush()
+        if args['debug']:
+            stdout.write('Scanner: {0}\n'.format(dumps(scanners[-1], indent='  ', cls=SPaGEncoder)))
+            stdout.flush()
         if args['time']:
             stdout.write('Elapsed time ({0} scanner): {1}s\n'.format(scanner['name'],
                                                                      end-start))
@@ -337,6 +398,9 @@ def main():
         end = time()
         if args['verbose']:
             stdout.write('done\n')
+            stdout.flush()
+        if args['debug']:
+            stdout.write('Parser: {0}\n'.format(dumps(parsers[-1], indent='  ', cls=SPaGEncoder)))
             stdout.flush()
         if args['time']:
             stdout.write('Elapsed time ({0} parser): {1}s\n'.format(parser['name'],
@@ -365,6 +429,9 @@ def main():
             target = target + '_' + scanner.name
         if parser:
             target = target + '_' + parser.name
+        if args['debug']:
+            stdout.write('Generator: {0}\n'.format(dumps(generators, indent='  ', cls=SPaGEncoder)))
+            stdout.flush()
         if args['verbose']:
             stdout.write('Generating {0} code...'.format(target))
             stdout.flush()

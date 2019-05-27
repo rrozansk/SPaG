@@ -55,8 +55,6 @@ confidence=
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
 disable=broad-except,
-        redefined-outer-name,
-        superfluous-parens,
         undefined-all-variable,
         unidiomatic-typecheck,
         unused-argument
